@@ -113,7 +113,7 @@ export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefres
     // }
 
     const lastPlayer = playersList[playersList.length - 1];
-    if (!lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {
+    if (stopIfNoPoints && !lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {
       morePlayersLeft = false;
     }
   }

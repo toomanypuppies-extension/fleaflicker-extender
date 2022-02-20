@@ -29,6 +29,7 @@
             multiple
             :color="themeAccentColor"
             bordered
+            clearable
           />
         </div>
         <div class="v-flex">
@@ -41,6 +42,7 @@
             multiple
             :color="themeAccentColor"
             bordered
+            clearable
           />
           <span class="spacer"></span>
 
@@ -53,6 +55,7 @@
             multiple
             :color="themeAccentColor"
             bordered
+            clearable
           />
         </div>
         <div class="h-flex">
@@ -82,42 +85,55 @@
         </div>
       </div>
       <div v-if="settings" class="settingsContainer" :style="containerStyles">
-        <div class="v-flex">
-          <va-select
-            label="Favorite Team"
-            :options="teamOptions"
-            v-model="favoriteTeam"
-            placeholder="Seattle Kraken"
-            maxHeight="300px"
-            bordered
-            :color="themeAccentColor"
-          />
-          <span class="spacer"></span>
+        <div class="h-flex">
+          <div class="v-flex">
+            <va-select
+              label="Favorite Team"
+              :options="teamOptions"
+              v-model="favoriteTeam"
+              placeholder="Seattle Kraken"
+              maxHeight="300px"
+              bordered
+              :color="themeAccentColor"
+            />
+            <span class="spacer"></span>
 
-          <va-button
-            :rounded="false"
-            bordered
-            class="refreshButton"
-            @click="refreshPlayers"
-            :color="themeAccentColor"
-            :text-color="themeBaseColor"
-            >Refresh Players</va-button
-          >
+            <va-button
+              :rounded="false"
+              bordered
+              class="refreshButton"
+              @click="refreshPlayers"
+              :color="themeAccentColor"
+              :text-color="themeBaseColor"
+              >Refresh Players</va-button
+            >
+          </div>
+          <div class="v-flex">
+            <va-checkbox
+              v-model="darkMode"
+              :color="themeAccentColor"
+              label="Dark Mode"
+            ></va-checkbox>
+            <span class="spacer"></span>
+
+            <va-checkbox
+              v-model="excludeIfNoPoints"
+              :color="themeAccentColor"
+              label="Only show players that have points this year (refresh if changed)"
+            >
+            </va-checkbox>
+          </div>
         </div>
-        <div class="v-flex">
-          <va-checkbox
-            v-model="darkMode"
-            :color="themeAccentColor"
-            label="Dark Mode"
-          ></va-checkbox>
-          <span class="spacer"></span>
-
-          <va-checkbox
-            v-model="excludeIfNoPoints"
-            :color="themeAccentColor"
-            label="Only list players that have points this year"
-          >
-          </va-checkbox>
+        <div class="notice">
+          <p>
+            Players are fetched daily, and after a transaction is made in the
+            selected league. Once fetched they are stored locally so that things
+            perform faster on the page. The "Refresh Players" button will let
+            you force a refresh of local data from fleaflicker. It is
+            recommended to only show players who have points this year as that
+            excludes about half the players which makes the search functions
+            perform better.
+          </p>
         </div>
       </div>
       <div class="tableContainer" :style="containerStyles">
@@ -177,22 +193,23 @@ import { getLeagueId } from "./utils/util";
 export default {
   data() {
     return {
-      filter: "",
-      players: [],
       loading: true,
       teamOptions: TEAM_LIST,
-      teamSelections: [],
       injuryOptions: INJURY_LIST,
-      injurySelections: [],
       positionOptions: POSITION_OPTIONS,
-      positionSelections: [],
+      players: [],
+      filter: "",
       drawerExpanded: true,
+      teamSelections: [],
+      injurySelections: [],
+      positionSelections: [],
       mustHaveGameToday: false,
       onlyFreeAgents: true,
       excludeIfNoPoints: true,
       settings: false,
       favoriteTeam: "Seattle Kraken",
       darkMode: true,
+      selectedPlayer: null,
       columns: [
         {
           key: "name",
@@ -272,7 +289,20 @@ export default {
           sortingFn: this.numSortFn,
         },
       ],
-      selectedPlayer: null,
+      stateToStore: [
+        "filter",
+        "drawerExpanded",
+        "teamSelections",
+        "injurySelections",
+        "positionSelections",
+        "mustHaveGameToday",
+        "onlyFreeAgents",
+        "excludeIfNoPoints",
+        "settings",
+        "favoriteTeam",
+        "darkMode",
+        "selectedPlayer",
+      ],
     };
   },
   methods: {
@@ -324,17 +354,22 @@ export default {
     },
   },
   created() {
-    if (getStore("excludeIfNoPoints") !== undefined) {
-      this.excludeIfNoPoints = getStore("excludeIfNoPoints");
-    } else {
-      this.excludeIfNoPoints = true;
-    }
-    this.favoriteTeam = getStore("favoriteTeam") || "Seattle Kraken";
+    this.stateToStore.forEach((item) => {
+      // load state from store
+      const val = getStore(item);
+      if (val !== undefined && val !== null) {
+        this[item] = val;
+      }
+
+      // Setup watcher to store info
+      this.$watch(item, (val) => {
+        setStore(item, val);
+      });
+    });
   },
   mounted() {
     const leagueId = getLeagueId();
     this.loadPlayers(leagueId);
-    console.log(this.players);
   },
   computed: {
     filteredPlayers() {
@@ -411,10 +446,10 @@ export default {
       return TEAM_ABBR_TO_COLORS[abbr].secondary;
     },
     themeBaseColor() {
-      return this.darkMode ? "#333333" : "#f2f2f2";
+      return this.darkMode ? "#333333" : "#e2e2e2";
     },
     themeAccentColor() {
-      return this.darkMode ? "#f2f2f2" : "#333333";
+      return this.darkMode ? "#e2e2e2" : "#333333";
     },
     teamBackgroundColorStyle() {
       return `background-color: ${this.teamMainColor}`;
@@ -437,12 +472,12 @@ export default {
     },
   },
   watch: {
-    excludeIfNoPoints(val) {
-      setStore("excludeIfNoPoints", val);
-    },
-    favoriteTeam(val) {
-      setStore("favoriteTeam", val);
-    },
+    // excludeIfNoPoints(val) {
+    //   setStore("excludeIfNoPoints", val);
+    // },
+    // favoriteTeam(val) {
+    //   setStore("favoriteTeam", val);
+    // },
   },
 };
 </script>
@@ -493,9 +528,11 @@ export default {
 }
 
 .settingsContainer {
-  display: flex;
-  /* height: 120px; */
   margin-bottom: 1em;
+}
+
+.notice {
+  padding: 1em;
 }
 
 .tableContainer {
@@ -521,7 +558,7 @@ export default {
 .v-flex {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: space-around;
   padding: 0.5em;
   width: 100%;
 }
@@ -546,42 +583,29 @@ export default {
 .darkTheme .va-input--bordered .va-input__container {
   background: unset;
 }
-.darkTheme .va-input__content__input {
-  color: #f2f2f2 !important;
-}
-/* .lightTheme input,
-select {
-  color: #333333 !important;
-  background: #f2f2f2 !important;
-}
-.lightTheme .va-checkbox__square,
-.va-button {
-  color: #333333 !important;
-  background: #f2f2f2 !important;
-  border-color: #333333;
-}
-.lightTheme .va-select-option-list,
-.va-select-option-list__option,
-.va-select-option-list__option i {
-  color: #f2f2f2 !important;
-  background: #333333 !important;
-} */
 
-.darkTheme .va-input--bordered .va-input__container .darkTheme input,
-select {
-  color: #f2f2f2 !important;
-  background: #333333 !important;
+.darkTheme .va-input__content__input {
+  color: #e2e2e2 !important;
 }
+
+.lightTheme .va-input__icons i {
+  background: unset !important;
+  color: #333333 !important;
+}
+.darkTheme .va-input__icons i {
+  color: #e2e2e2 !important;
+  background: unset !important;
+}
+
 .darkTheme .va-checkbox__square {
-  color: #f2f2f2 !important;
+  color: #e2e2e2 !important;
   background: #333333 !important;
-  border-color: #f2f2f2;
+  border-color: #e2e2e2;
 }
-.darkTheme .va-select-option-list,
 .va-select-option-list__option,
 .va-select-option-list__option i {
   color: #333333 !important;
-  background: #f2f2f2 !important;
+  background: #e2e2e2 !important;
 }
 
 /*
@@ -590,22 +614,6 @@ select {
 .va-select-option-list {
   color: rgb(52, 73, 94);
 }
-/* --va-select-dropdown-background: #fff;
-    --va-select-scroll-color: grey;
-    --va-select-box-shadow: 0 4px 8px rgba(59,63,73,0.15);
-    --va-data-table-thead-border: 2px solid var(--va-vue-darkest-blue);
-    --va-data-table-thead-color: var(--va-vue-darkest-blue);
-    --va-input-color: var(--va-background,#f5f9fb);
-    --va-input-text-color: var(--va-dark,#262824);
-    --va-input-scroll-color: var(--va-divided,#e1e9f8);
-    --va-input-bordered-color: var(--va-divided,#e1e9f8);
-    --va-message-list-color: var(--va-gray);
-    --va-input-success-color: var(--va-success);
-    --va-input-success-background: #f1f7ee;
-    --va-input-error-color: var(--va-danger);
-    --va-input-error-background: #fdefef;
-    --va-input-placeholder-text-color: #bac2bb;
-    --va-input-container-label-color: #4ae387; */
 
 /**
 * Fleaflicker overrides
