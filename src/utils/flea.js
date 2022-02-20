@@ -67,6 +67,7 @@ const convertPlayerObjects = (players) => {
     const owner = player.owner?.name;
 
     return {
+      id: player.proPlayer.id,
       name: player.proPlayer.nameFull,
       team: player.proPlayer.proTeamAbbreviation,
       owner,
@@ -85,6 +86,7 @@ const convertPlayerObjects = (players) => {
         image: player.proPlayer?.headshotUrl,
         proTeam: player.proPlayer.proTeam,
         rankFantasy: player.rankFantasy,
+        news: player.proPlayer?.news?.[0],
       }
     }
   })
@@ -105,12 +107,9 @@ export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefres
     playersList = playersList.concat(response.players);
     offset = response.resultOffsetNext;
 
-    /**
-     * Left in to not hit the API too much during dev work. Comment in during dev
-     */
-    // if (offset >= 300) {
-    //   morePlayersLeft = false;
-    // }
+    if (offset >= response.resultTotal) {
+      morePlayersLeft = false;
+    }
 
     const lastPlayer = playersList[playersList.length - 1];
     if (stopIfNoPoints && !lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {

@@ -56,7 +56,8 @@ export const TEAM_LIST = [
   "Vancouver Canucks",
   "Vegas Golden Knights",
   "Washington Capitals",
-  "Winnipeg Jets"
+  "Winnipeg Jets",
+  "Free Agent"
 ]
 
 export const TEAM_NAME_TO_ABBR = {
@@ -73,25 +74,26 @@ export const TEAM_NAME_TO_ABBR = {
   "Detroit Red Wings": "DET",
   "Edmonton Oilers": "EDM",
   "Florida Panthers": "FLA",
-  "Los Angeles Kings": "LAK",
+  "Los Angeles Kings": "LA",
   "Minnesota Wild": "MIN",
   "Montreal Canadiens": "MTL",
   "Nashville Predators": "NSH",
-  "New Jersey Devils": "NJD",
+  "New Jersey Devils": "NJ",
   "New York Islanders": "NYI",
   "New York Rangers": "NYR",
   "Ottawa Senators": "OTT",
   "Philadelphia Flyers": "PHI",
   "Pittsburgh Penguins": "PIT",
-  "San Jose Sharks": "SJS",
+  "San Jose Sharks": "SJ",
   "Seattle Kraken": "SEA",
   "St. Louis Blues": "STL",
-  "Tampa Bay Lightning": "TBL",
+  "Tampa Bay Lightning": "TB",
   "Toronto Maple Leafs": "TOR",
   "Vancouver Canucks": "VAN",
   "Vegas Golden Knights": "VGK",
   "Washington Capitals": "WSH",
-  "Winnipeg Jets": "WPG"
+  "Winnipeg Jets": "WPG",
+  "Free Agent": "FA"
 }
 
 export const TEAM_ABBR_TO_NAME = {
@@ -108,25 +110,26 @@ export const TEAM_ABBR_TO_NAME = {
   "DET": "Detroit Red Wings",
   "EDM": "Edmonton Oilers",
   "FLA": "Florida Panthers",
-  "LAK": "Los Angeles Kings",
+  "LA": "Los Angeles Kings",
   "MIN": "Minnesota Wild",
   "MTL": "Montreal Canadiens",
   "NSH": "Nashville Predators",
-  "NJD": "New Jersey Devils",
+  "NJ": "New Jersey Devils",
   "NYI": "New York Islanders",
   "NYR": "New York Rangers",
   "OTT": "Ottawa Senators",
   "PHI": "Philadelphia Flyers",
   "PIT": "Pittsburgh Penguins",
-  "SJS": "San Jose Sharks",
+  "SJ": "San Jose Sharks",
   "SEA": "Seattle Kraken",
   "STL": "St. Louis Blues",
-  "TBL": "Tampa Bay Lightning",
+  "TB": "Tampa Bay Lightning",
   "TOR": "Toronto Maple Leafs",
   "VAN": "Vancouver Canucks",
   "VGK": "Vegas Golden Knights",
   "WSH": "Washington Capitals",
-  "WPG": "Winnipeg Jets"
+  "WPG": "Winnipeg Jets",
+  "FA": "Free Agent"
 }
 
 export const TEAM_ABBR_TO_COLORS = {
@@ -182,7 +185,7 @@ export const TEAM_ABBR_TO_COLORS = {
     primary: '#041E42',
     secondary: '#C8102E',
   },
-  "LAK": {
+  "LA": {
     primary: '#111111',
     secondary: '#A2AAAD',
   },
@@ -198,7 +201,7 @@ export const TEAM_ABBR_TO_COLORS = {
     primary: '#041E42',
     secondary: '#FFB81C',
   },
-  "NJD": {
+  "NJ": {
     primary: '#000000',
     secondary: '#CE1126',
   },
@@ -222,7 +225,7 @@ export const TEAM_ABBR_TO_COLORS = {
     primary: '#000000',
     secondary: '#FCB514',
   },
-  "SJS": {
+  "SJ": {
     primary: '#006D75',
     secondary: '#EA7200',
   },
@@ -234,7 +237,7 @@ export const TEAM_ABBR_TO_COLORS = {
     primary: '#002F87',
     secondary: '#FCB514',
   },
-  "TBL": {
+  "TB": {
     primary: '#002868',
     secondary: '#FFFFFF',
   },
