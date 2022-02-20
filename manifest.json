@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+  "version": "1.0.0",
+  "name": "Fleaflicker Extender",
+  "description": "A Vue Browser Extension",
+  "permissions": [
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.fleaflicker.com/nhl/leagues/*"
+      ],
+      "run_at": "document_idle",
+      "js": [
+        "dist/main.js"
+      ],
+      "css": [
+        "dist/main.css"
+      ]
+    }
+  ]
+}
