@@ -19,3 +19,7 @@
     may need unlimitedStorage
 
   Set design to favorite teams color. Have a spot to add it and store in localstorage
+
+  TODO
+  Update players if transaction occurs in league
+  Update players if last time pulled was yesterday

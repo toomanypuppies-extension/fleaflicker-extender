@@ -5,7 +5,8 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "watch": "parcel watch",
-    "build": "parcel build"
+    "build": "parcel build --no-scope-hoist",
+    "build:final": "parcel build --no-scope-hoist --dist-dir=extension-build/dist --no-source-maps"
   },
   "alias": {
     "process": false

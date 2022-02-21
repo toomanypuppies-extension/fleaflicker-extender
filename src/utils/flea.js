@@ -94,7 +94,12 @@ const convertPlayerObjects = (players) => {
 
 export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
   const storedPlayers = getStore('players');
-  if (!forceRefresh && storedPlayers) {
+  const playersStoreTime = getStore('playersFetchedAt');
+  let storedLessThanHourAgo = false;
+  if (playersStoreTime) {
+    storedLessThanHourAgo = (new Date().getTime() - parseInt(playersStoreTime, 10)) < (60 * 60 * 1000);
+  }
+  if (!forceRefresh && storedPlayers && storedLessThanHourAgo) {
     console.log('loaded players from store')
     return storedPlayers;
   }
@@ -122,6 +127,7 @@ export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefres
   const players = convertPlayerObjects(playersList);
 
   setStore('players', players);
+  setStore('playersFetchedAt', new Date().getTime());
 
   return players;
 }

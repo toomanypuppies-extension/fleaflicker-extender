@@ -126,13 +126,12 @@
         </div>
         <div class="notice">
           <p>
-            Players are fetched daily, and after a transaction is made in the
-            selected league. Once fetched they are stored locally so that things
-            perform faster on the page. The "Refresh Players" button will let
-            you force a refresh of local data from fleaflicker. It is
-            recommended to only show players who have points this year as that
-            excludes about half the players which makes the search functions
-            perform better.
+            Players are fetched once every hour if the extension is being used.
+            Once fetched they are stored locally so that things perform faster
+            on the page. The "Refresh Players" button will let you force a
+            refresh of local data from fleaflicker. It is recommended to only
+            show players who have points this year as that excludes about half
+            the players which makes the search functions perform better.
           </p>
         </div>
       </div>
@@ -416,7 +415,6 @@ export default {
         this.excludeIfNoPoints,
         forceRefresh
       );
-      console.log(result);
       this.players = result;
       this.loading = false;
     },
@@ -670,6 +668,7 @@ export default {
 }
 
 .notice {
+  background: rgba(0, 0, 0, 0.1);
   padding: 1em;
 }
 
