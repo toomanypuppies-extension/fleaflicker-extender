@@ -7,6 +7,9 @@ A chrome/firefox extension to extend the capabilities of the fleaflicker site.
 1. Clone this repo locally and `cd` into the repo root
 2. Have yarn installed and run `yarn`
 
+> yarn version 1.22 should be used. Install instructions can be found at https://classic.yarnpkg.com/lang/en/docs/install/
+> This was built on a windows machine, but no difference would be expected if building this on linux/mac
+
 ### Chrome build
 3. Run `yarn build:chrome`
 4. (Optional if packaging for upload to store) Use 7z or other zip util to zip `extension-build-chrome`
