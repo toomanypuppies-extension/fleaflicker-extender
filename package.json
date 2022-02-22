@@ -6,7 +6,8 @@
   "scripts": {
     "watch": "parcel watch",
     "build": "parcel build --no-scope-hoist",
-    "build:final": "parcel build --no-scope-hoist --dist-dir=extension-build/dist --no-source-maps"
+    "build:chrome": "rm -rf extension-build-chrome/dist && parcel build --no-scope-hoist --dist-dir=extension-build-chrome/dist --no-source-maps",
+    "build:firefox": "rm -rf extension-build-firefox/dist && parcel build --no-scope-hoist --dist-dir=extension-build-firefox/dist --no-source-maps"
   },
   "alias": {
     "process": false

@@ -1,25 +1,38 @@
+# Fleaflicker extended
 
+A chrome/firefox extension to extend the capabilities of the fleaflicker site.
 
+## Build
+
+1. Clone this repo locally and `cd` into the repo root
+2. Have yarn installed and run `yarn`
+
+### Chrome build
+3. Run `yarn build:chrome`
+4. (Optional if packaging for upload to store) Use 7z or other zip util to zip `extension-build-chrome`
+
+### Firefox build
+3. Run `yarn build:firefox`
+4. (Optional if packaging for upload to store) Use 7z or other zip util to zip the contents of `extension-build-firefox`
+
+## Local Dev
+
+1. Clone this repo locally and `cd` into the repo root
+2. Have yarn installed and run `yarn`
+3. Run `yarn watch`
+4. Open chrome and go to extension manager page
+5. Toggle developer mode on
+6. Click "Load Unpacked"
+7. Navigate to fleaflicker site to see extension load in
+
+>
+> Any changes to the extension require that you hit the refresh button on the extensions page for the unpacked extension. Hot module reloading does not work.
+>
 
 ## Todo
-  Have it pull all player data and put it in a cache
-    Check FetchLeagueActivity on load and see if last one occurred since cache update. If so, then re-fetch.
-    re-fetch if last fetch was yesterday.
-  Search by Team
-  Search by Number of games in period
-  Search by if they have a game today (in requestedGames object)
-  Search by position
-  Search by Injury (show Injury.typeAbbreviaition and Injury.description if injured)
-  Sort on normal sort criteria
-  Show Total, Avg, Last 1, Last 5, Last 10 on search page
-  Link to dobber page for them
-  Link to daily faceoff roster page for their team
-  use chrome storage for storing data
-    permissions: https://developer.chrome.com/docs/extensions/mv3/declare_permissions/
-    may need unlimitedStorage
-
-  Set design to favorite teams color. Have a spot to add it and store in localstorage
-
-  TODO
-  Update players if transaction occurs in league
-  Update players if last time pulled was yesterday
+- Check FetchLeagueActivity on load and see if last any activity occurred since cache update. If so, then re-fetch. Else re-fetch if last fetch was yesterday.
+- Find a way to see what days each player has games this week. Be able to display column showing "M, Tu, Th, Sa"
+- Modualize components to support multiple sports using this extension
+- Build in pruning for localStorage entries to keep usage at minimum
+- See if unlimited storage permission should be requested for localstorage use
+- Add in search by nickname easter egg. "Johnny Hockey" === "Johnny Gaudrea"
