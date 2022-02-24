@@ -286,7 +286,7 @@ import {
   TEAM_ABBR_TO_COLORS,
   TEAM_ABBR_TO_NAME,
 } from "./contants";
-import { getAllPlayers } from "./utils/flea";
+import { getAllPlayers } from "./api/flea";
 import { getStore, setStore } from "./utils/storage";
 import { getLeagueId } from "./utils/util";
 
