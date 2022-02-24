@@ -1,8 +1,8 @@
 import { createApp } from 'vue';
 import { VuesticPlugin } from 'vuestic-ui';
 import App from './App.vue';
-import './main.css'
 import 'vuestic-ui/dist/vuestic-ui.css'
+import './styles/main.css'
 
 const extenstion = document.createElement('div');
 extenstion.id = 'extensionMount';

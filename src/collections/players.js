@@ -29,7 +29,7 @@ export const convertPlayerObjects = (players) => {
     const last5 = player.lastX?.[1]?.value?.formatted && parseFloat(player.lastX[1].value.formatted, 10) || 0.0;
     const last10 = player.lastX?.[2]?.value?.formatted && parseFloat(player.lastX[2].value.formatted, 10) || 0.0;
 
-    const gamesThisWeek = player.numGamesInSchedulePeriod;
+    const gamesThisWeek = player.numGamesInSchedulePeriod || 0;
 
     const owner = player.owner?.name;
 

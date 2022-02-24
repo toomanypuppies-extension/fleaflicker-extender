@@ -4,7 +4,7 @@
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "watch": "parcel watch",
+    "watch": "parcel watch --no-source-maps --no-hmr",
     "build": "parcel build --no-scope-hoist",
     "build:chrome": "rm -rf extension-build-chrome/dist && parcel build --no-scope-hoist --dist-dir=extension-build-chrome/dist --no-source-maps",
     "build:firefox": "rm -rf extension-build-firefox/dist && parcel build --no-scope-hoist --dist-dir=extension-build-firefox/dist --no-source-maps"
@@ -13,12 +13,15 @@
     "process": false
   },
   "devDependencies": {
+    "@parcel/transformer-sass": "2.3.1",
     "@parcel/transformer-vue": "^2.3.1",
-    "parcel": "^2.3.1"
+    "parcel": "^2.3.1",
+    "sass": "^1.49.8"
   },
   "dependencies": {
     "@vueuse/core": "^7.6.2",
     "axios": "^0.26.0",
+    "lodash": "^4.17.21",
     "vue": "^3.2.31",
     "vuestic-ui": "^1.3.4"
   }
