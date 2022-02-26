@@ -2,6 +2,8 @@ export const FLEA_API_BASE = 'https://www.fleaflicker.com/api';
 
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
 
+export const SPORT_HOCKEY = 'hockey';
+
 export const SORT_OPTIONS = {
   total: 'SORT_SEASON_TOTAL',
 }

@@ -142,7 +142,7 @@
         </div>
       </div>
       <div class="tableContainer" :style="containerStyles">
-        <table class="va-table datatable">
+        <!-- <table class="va-table datatable">
           <thead>
             <tr>
               <th>Name</th>
@@ -175,7 +175,22 @@
               <td>{{ player.last10 }}</td>
             </tr>
           </tbody>
-        </table>
+        </table> -->
+        <PlayerTable
+          ref="playerTable"
+          :players="players"
+          sport="hockey"
+          :onlyFreeAgents="onlyFreeAgents"
+          :injurySelections="injurySelections"
+          :themeBaseColor="themeBaseColor"
+          :themeAccentColor="themeAccentColor"
+          :teamSelections="teamSelections"
+          :positionSelections="positionSelections"
+          :mustHaveGameToday="mustHaveGameToday"
+          :excludeIfNoPoints="excludeIfNoPoints"
+          :filter="filter"
+          @playerSelected="(player) => (selectedPlayer = player)"
+        />
 
         <!-- <va-data-table
           :items="filteredPlayers"
@@ -332,6 +347,7 @@ import {
 import { getAllPlayers } from "./api/flea";
 import { getStore, setStore } from "./utils/storage";
 import { getLeagueId } from "./utils/util";
+import PlayerTable from "./components/PlayerTable.vue";
 
 export default {
   data() {
@@ -457,6 +473,9 @@ export default {
       ],
     };
   },
+  components: {
+    PlayerTable,
+  },
   methods: {
     async loadPlayers(forceRefresh) {
       this.loading = true;
@@ -466,7 +485,9 @@ export default {
         forceRefresh
       );
       this.players = result;
-      this.setFilteredPlayers();
+      console.log("GOT EM", this.players);
+      // this.$refs.playerTable.setFilteredPlayers();
+      // this.setFilteredPlayers();
       this.loading = false;
     },
     debounceFiltering() {
@@ -476,7 +497,8 @@ export default {
 
       this.filterBufferTimer = setTimeout(() => {
         console.log("FILTERING PLAYERS");
-        this.setFilteredPlayers();
+        this.$refs.playerTable.setFilteredPlayers();
+        // this.setFilteredPlayers();
       }, 500);
     },
     toggleDrawer() {
@@ -514,55 +536,55 @@ export default {
         background: `${this.themeBaseColor}`,
       };
     },
-    setFilteredPlayers() {
-      console.log("SETTING FILTERED PLAYERS");
-      const teamSelectionsAbbr = this.teamSelections.map(
-        (sel) => TEAM_NAME_TO_ABBR[sel]
-      );
+    // setFilteredPlayers() {
+    //   console.log("SETTING FILTERED PLAYERS");
+    //   const teamSelectionsAbbr = this.teamSelections.map(
+    //     (sel) => TEAM_NAME_TO_ABBR[sel]
+    //   );
 
-      this.filteredPlayers = this.players.filter((player) => {
-        if (this.onlyFreeAgents && player.owner) {
-          return false;
-        }
+    //   this.filteredPlayers = this.players.filter((player) => {
+    //     if (this.onlyFreeAgents && player.owner) {
+    //       return false;
+    //     }
 
-        if (this.mustHaveGameToday && !player.hasGameToday) {
-          return false;
-        }
+    //     if (this.mustHaveGameToday && !player.hasGameToday) {
+    //       return false;
+    //     }
 
-        if (
-          this.teamSelections.length > 0 &&
-          !teamSelectionsAbbr.includes(player.team)
-        ) {
-          return false;
-        }
+    //     if (
+    //       this.teamSelections.length > 0 &&
+    //       !teamSelectionsAbbr.includes(player.team)
+    //     ) {
+    //       return false;
+    //     }
 
-        if (this.injurySelections.length > 0) {
-          if (!player.injury && this.injurySelections.includes("HEALTHY")) {
-            // no-op
-          } else if (!this.injurySelections.includes(player.injury)) {
-            return false;
-          }
-        }
+    //     if (this.injurySelections.length > 0) {
+    //       if (!player.injury && this.injurySelections.includes("HEALTHY")) {
+    //         // no-op
+    //       } else if (!this.injurySelections.includes(player.injury)) {
+    //         return false;
+    //       }
+    //     }
 
-        if (this.positionSelections.length > 0) {
-          const intersection = this.positionSelections.filter((pos) =>
-            player.positions.includes(pos)
-          );
-          if (intersection.length === 0) {
-            return false;
-          }
-        }
+    //     if (this.positionSelections.length > 0) {
+    //       const intersection = this.positionSelections.filter((pos) =>
+    //         player.positions.includes(pos)
+    //       );
+    //       if (intersection.length === 0) {
+    //         return false;
+    //       }
+    //     }
 
-        if (
-          this.filter !== "" &&
-          !player.name.toLowerCase().includes(this.filter.toLowerCase())
-        ) {
-          return false;
-        }
+    //     if (
+    //       this.filter !== "" &&
+    //       !player.name.toLowerCase().includes(this.filter.toLowerCase())
+    //     ) {
+    //       return false;
+    //     }
 
-        return true;
-      });
-    },
+    //     return true;
+    //   });
+    // },
   },
   created() {
     this.stateToStore.forEach((item) => {
@@ -583,21 +605,21 @@ export default {
     this.loadPlayers();
   },
   computed: {
-    filteredColumns() {
-      return this.columns.filter((col) => {
-        if (this.onlyFreeAgents && col.key === "owner") {
-          return false;
-        }
-        if (
-          this.injurySelections.length === 1 &&
-          this.injurySelections.includes("HEALTHY") &&
-          col.key === "injury"
-        ) {
-          return false;
-        }
-        return true;
-      });
-    },
+    // filteredColumns() {
+    //   return this.columns.filter((col) => {
+    //     if (this.onlyFreeAgents && col.key === "owner") {
+    //       return false;
+    //     }
+    //     if (
+    //       this.injurySelections.length === 1 &&
+    //       this.injurySelections.includes("HEALTHY") &&
+    //       col.key === "injury"
+    //     ) {
+    //       return false;
+    //     }
+    //     return true;
+    //   });
+    // },
     teamMainColor() {
       const abbr = TEAM_NAME_TO_ABBR[this.favoriteTeam];
       return TEAM_ABBR_TO_COLORS[abbr].primary;
