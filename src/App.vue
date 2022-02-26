@@ -154,6 +154,7 @@
           :mustHaveGameToday="mustHaveGameToday"
           :excludeIfNoPoints="excludeIfNoPoints"
           :filter="filter"
+          :teamSecondaryColor="teamSecondaryColor"
           @playerSelected="(player) => selectPlayer(player)"
         />
       </div>
@@ -357,7 +358,6 @@ export default {
       }
 
       this.filterBufferTimer = setTimeout(() => {
-        console.log("FILTERING PLAYERS");
         this.$refs.playerTable.setFilteredPlayers();
       }, 500);
     },
@@ -368,7 +368,7 @@ export default {
       this.selectedPlayer = null;
     },
     selectPlayer(player) {
-      if (this.selectedPlayer !== player) {
+      if (this.selectedPlayer?.id !== player.id) {
         this.selectedPlayer = player;
       } else {
         this.selectedPlayer = null;

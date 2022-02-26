@@ -1,30 +1,47 @@
 <template>
   <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-    <table
-      class="va-table datatable"
-      :class="{ tableLoading: loading }"
-      :style="bindCssVars"
-    >
+    <table class="va-table datatable" :class="{ tableLoading: loading }">
       <thead>
         <tr>
           <th
             v-for="column in columns"
             :key="column.key"
-            @click="() => sortColumn(column)"
+            @click="() => handledSortSingleClick(column)"
+            @dblclick="() => handledSortDoubleClick(column)"
             class="headerStyles hoverEffects"
           >
-            {{ column.name }}
-            <va-icon
-              v-if="sortMap[column.key] === 'desc'"
-              class="material-icons"
-              size="1em"
-              >expand_more</va-icon
-            ><va-icon
-              v-if="sortMap[column.key] === 'asc'"
-              class="material-icons"
-              size="1em"
-              >expand_less</va-icon
-            >
+            <span class="colHeadContent">
+              {{ column.name }}
+              <va-icon
+                v-if="sortMap[column.key] === 'desc'"
+                class="material-icons"
+                size="1em"
+                >expand_more</va-icon
+              >
+              <va-icon
+                v-if="
+                  sortMap[column.key] === 'desc' &&
+                  sortColumns[1] === column.key
+                "
+                class="material-icons"
+                size="1em"
+                >expand_more</va-icon
+              >
+              <va-icon
+                v-if="sortMap[column.key] === 'asc'"
+                class="material-icons"
+                size="1em"
+                >expand_less</va-icon
+              >
+              <va-icon
+                v-if="
+                  sortMap[column.key] === 'asc' && sortColumns[1] === column.key
+                "
+                class="material-icons"
+                size="1em"
+                >expand_less</va-icon
+              >
+            </span>
           </th>
         </tr>
       </thead>
@@ -44,11 +61,9 @@
   </va-inner-loading>
 </template>
 
-// TODO
-// Persist sorting to localStore so it stays between navigations
-
 <script>
 import { SPORT_HOCKEY, TEAM_NAME_TO_ABBR } from "../contants";
+import { getStore, setStore } from "../utils/storage";
 export default {
   data() {
     return {
@@ -130,6 +145,10 @@ export default {
       },
       filteredPlayers: [],
       sortMap: {},
+      sortColumns: [],
+      stateToStore: ["sortMap", "sortColumns"],
+      isDblClick: false,
+      dblClickTimer: null,
     };
   },
   props: {
@@ -143,6 +162,7 @@ export default {
     mustHaveGameToday: Boolean,
     excludeIfNoPoints: Boolean,
     filter: String,
+    teamSecondaryColor: String,
   },
   computed: {
     columns() {
@@ -172,9 +192,6 @@ export default {
       const teamSelectionsAbbr = this.teamSelections.map(
         (sel) => TEAM_NAME_TO_ABBR[sel]
       );
-
-      // Reset sorts on filter changee
-      this.sortMap = {};
 
       this.filteredPlayers = this.players.filter((player) => {
         if (this.onlyFreeAgents && player.owner) {
@@ -218,30 +235,78 @@ export default {
 
         return true;
       });
+
+      // Re-apply sort after filtering
+      if (this.sortColumns.length > 0) {
+        this.sortPlayerList();
+      }
     },
     numSortFn(a, b) {
-      return b - a;
+      const aA = a || 0;
+      const bB = b || 0;
+      return bB - aA;
     },
     stringSortFn(a, b) {
-      return a?.localeCompare(b);
+      const aA = a || "";
+      const bB = b || "";
+      return aA.localeCompare(bB);
     },
-    sortColumn(column) {
-      // Allow for sorting of up to 2 or 3 columns. Shift sorting to as they are clicked through
-      if (this.sortMap[column.key] === "desc") {
-        this.sortMap[column.key] = "asc";
-      } else {
-        this.sortMap[column.key] = "desc";
+    handledSortSingleClick(column) {
+      if (this.dblClickTimer) {
+        clearTimeout(this.dblClickTimer);
+      }
+      this.dblClickTimer = setTimeout(() => {
+        this.configureSortColumn(column);
+      }, 300);
+    },
+    handledSortDoubleClick(column) {
+      if (this.dblClickTimer) {
+        clearTimeout(this.dblClickTimer);
+      }
+      this.removeSortColumn(column);
+    },
+    configureSortColumn(column) {
+      if (
+        this.sortColumns.length >= 2 &&
+        !this.sortColumns.includes(column.key)
+      ) {
+        return;
       }
 
-      this.filteredPlayers = this.filteredPlayers.sort((a, b) => {
-        aVal =
-          this.sortMap[column.key] === "desc" ? a[column.key] : b[column.key];
-        bVal =
-          this.sortMap[column.key] === "desc" ? b[column.key] : a[column.key];
-        return column.sortingFn(aVal, bVal);
-      });
+      if (!this.sortColumns.includes(column.key)) {
+        this.sortColumns.push(column.key);
+      }
+
+      // Allow for sorting of up to 2 or 3 columns. Shift sorting to as they are clicked through
+      if (!this.sortMap[column.key]) {
+        this.sortMap[column.key] = "desc";
+      } else if (this.sortMap[column.key] === "desc") {
+        this.sortMap[column.key] = "asc";
+      } else {
+        this.removeSortColumn(column);
+      }
+
+      this.sortPlayerList();
     },
-    setSelectedPlayer(player) {},
+    removeSortColumn(column) {
+      this.sortMap[column.key] = null;
+      this.sortColumns = this.sortColumns.filter((col) => col !== column.key);
+    },
+    sortPlayerList() {
+      this.sortColumns
+        .slice()
+        .reverse()
+        .forEach((col) => {
+          const column = this.columns.find((c) => c.key === col);
+
+          this.filteredPlayers = this.filteredPlayers.sort((a, b) => {
+            aVal = this.sortMap[col] === "desc" ? a[col] : b[col];
+            bVal = this.sortMap[col] === "desc" ? b[col] : a[col];
+
+            return column.sortingFn(aVal, bVal);
+          });
+        });
+    },
   },
   watch: {
     players(newPlayers, oldPlayers) {
@@ -250,10 +315,30 @@ export default {
       }
     },
   },
+  created() {
+    this.stateToStore.forEach((item) => {
+      // load state from store
+      const val = getStore(item);
+      if (val !== undefined && val !== null) {
+        this[item] = val;
+      }
+
+      // Setup watcher to store info
+      this.$watch(
+        item,
+        (val) => {
+          setStore(item, val);
+        },
+        {
+          deep: true,
+        }
+      );
+    });
+  },
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .tableLoading {
   height: 200px;
 }
@@ -265,5 +350,9 @@ export default {
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
   border-bottom: 2px var(--themeAccentColor) solid;
+}
+.colHeadContent {
+  display: flex;
+  font-size: 0.625rem;
 }
 </style>
