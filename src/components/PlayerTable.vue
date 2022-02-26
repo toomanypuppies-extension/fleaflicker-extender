@@ -1,33 +1,50 @@
 <template>
-  <table class="va-table datatable">
-    <thead>
-      <tr>
-        <th
-          v-for="column in columns"
-          :key="column.key"
-          :style="headerStyles"
-          @click="() => sortColumn(column)"
+  <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
+    <table
+      class="va-table datatable"
+      :class="{ tableLoading: loading }"
+      :style="bindCssVars"
+    >
+      <thead>
+        <tr>
+          <th
+            v-for="column in columns"
+            :key="column.key"
+            @click="() => sortColumn(column)"
+            class="headerStyles hoverEffects"
+          >
+            {{ column.name }}
+            <va-icon
+              v-if="sortMap[column.key] === 'desc'"
+              class="material-icons"
+              size="1em"
+              >expand_more</va-icon
+            ><va-icon
+              v-if="sortMap[column.key] === 'asc'"
+              class="material-icons"
+              size="1em"
+              >expand_less</va-icon
+            >
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          v-for="player in filteredPlayers"
+          :key="player.id"
+          @click="$emit('playerSelected', player)"
+          class="hoverEffects"
         >
-          {{ column.name }}
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr
-        v-for="player in filteredPlayers"
-        :key="player.id"
-        @click="$emit('playerSelected', player)"
-      >
-        <td v-for="column in columns" :key="`${column.key}-${player.id}`">
-          {{ player[column.key] }}
-        </td>
-      </tr>
-    </tbody>
-  </table>
+          <td v-for="column in columns" :key="`${column.key}-${player.id}`">
+            {{ player[column.key] }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </va-inner-loading>
 </template>
 
 // TODO
-// Row / Header hover states
 // Persist sorting to localStore so it stays between navigations
 
 <script>
@@ -112,14 +129,14 @@ export default {
         ],
       },
       filteredPlayers: [],
+      sortMap: {},
     };
   },
   props: {
+    loading: Boolean,
     players: Array,
     sport: String,
     onlyFreeAgents: Boolean,
-    themeBaseColor: String,
-    themeAccentColor: String,
     teamSelections: Array,
     injurySelections: Array,
     positionSelections: Array,
@@ -149,20 +166,15 @@ export default {
 
       return sportColumns;
     },
-    headerStyles() {
-      return {
-        color: `${this.themeAccentColor}`,
-        background: `${this.themeBaseColor}`,
-        borderBottom: `2px ${this.themeAccentColor} solid`,
-      };
-    },
   },
   methods: {
     setFilteredPlayers() {
-      console.log("SETTING FILTERED PLAYERS");
       const teamSelectionsAbbr = this.teamSelections.map(
         (sel) => TEAM_NAME_TO_ABBR[sel]
       );
+
+      // Reset sorts on filter changee
+      this.sortMap = {};
 
       this.filteredPlayers = this.players.filter((player) => {
         if (this.onlyFreeAgents && player.owner) {
@@ -206,8 +218,6 @@ export default {
 
         return true;
       });
-
-      console.log("filtered", this.filteredPlayers, this.players);
     },
     numSortFn(a, b) {
       return b - a;
@@ -216,9 +226,18 @@ export default {
       return a?.localeCompare(b);
     },
     sortColumn(column) {
+      // Allow for sorting of up to 2 or 3 columns. Shift sorting to as they are clicked through
+      if (this.sortMap[column.key] === "desc") {
+        this.sortMap[column.key] = "asc";
+      } else {
+        this.sortMap[column.key] = "desc";
+      }
+
       this.filteredPlayers = this.filteredPlayers.sort((a, b) => {
-        aVal = a[column.key];
-        bVal = b[column.key];
+        aVal =
+          this.sortMap[column.key] === "desc" ? a[column.key] : b[column.key];
+        bVal =
+          this.sortMap[column.key] === "desc" ? b[column.key] : a[column.key];
         return column.sortingFn(aVal, bVal);
       });
     },
@@ -234,5 +253,17 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
+.tableLoading {
+  height: 200px;
+}
+.hoverEffects:hover {
+  cursor: pointer;
+  background: var(--teamSecondaryColor30Opacity);
+}
+.headerStyles {
+  color: var(--themeAccentColor);
+  background: var(--themeBaseColor);
+  border-bottom: 2px var(--themeAccentColor) solid;
+}
 </style>

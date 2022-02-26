@@ -7,10 +7,10 @@
       lightTheme: !darkMode,
       darkTheme: darkMode,
     }"
-    :style="themeColorStyle"
+    :style="bindCssVars"
   >
-    <div class="mainContent" :style="teamBackgroundColorStyle">
-      <div class="formContainer" :style="containerStyles">
+    <div class="mainContent">
+      <div class="formContainer containerColor">
         <div class="v-flex">
           <va-input
             label="Search"
@@ -90,7 +90,7 @@
           </div>
         </div>
       </div>
-      <div v-if="settings" class="settingsContainer" :style="containerStyles">
+      <div v-if="settings" class="settingsContainer containerColor">
         <div class="h-flex">
           <div class="v-flex">
             <va-select
@@ -141,75 +141,23 @@
           </p>
         </div>
       </div>
-      <div class="tableContainer" :style="containerStyles">
-        <!-- <table class="va-table datatable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Team</th>
-              <th>Owner</th>
-              <th>Todays Game</th>
-              <th>Games Remaining</th>
-              <th>Position</th>
-              <th>Injury</th>
-              <th>Points</th>
-              <th>Avg</th>
-              <th>Last 1</th>
-              <th>Last 5</th>
-              <th>Last 10</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="player in filteredPlayers" :key="player.id">
-              <td>{{ player.name }}</td>
-              <td>{{ player.team }}</td>
-              <td>{{ player.owner }}</td>
-              <td>{{ player.todaysGame }}</td>
-              <td>{{ player.gamesThisWeek }}</td>
-              <td>{{ player.position }}</td>
-              <td>{{ player.injury }}</td>
-              <td>{{ player.points }}</td>
-              <td>{{ player.avg }}</td>
-              <td>{{ player.last1 }}</td>
-              <td>{{ player.last5 }}</td>
-              <td>{{ player.last10 }}</td>
-            </tr>
-          </tbody>
-        </table> -->
+      <div class="tableContainer containerColor">
         <PlayerTable
           ref="playerTable"
+          :loading="loading"
           :players="players"
           sport="hockey"
           :onlyFreeAgents="onlyFreeAgents"
           :injurySelections="injurySelections"
-          :themeBaseColor="themeBaseColor"
-          :themeAccentColor="themeAccentColor"
           :teamSelections="teamSelections"
           :positionSelections="positionSelections"
           :mustHaveGameToday="mustHaveGameToday"
           :excludeIfNoPoints="excludeIfNoPoints"
           :filter="filter"
-          @playerSelected="(player) => (selectedPlayer = player)"
+          @playerSelected="(player) => selectPlayer(player)"
         />
-
-        <!-- <va-data-table
-          :items="filteredPlayers"
-          :columns="columns"
-          :selected-color="teamSecondaryColor"
-          :loading-color="teamSecondaryColor"
-          hoverable
-          :animated="false"
-          clickable
-          :loading="loading"
-          @row:click="selectPlayer"
-        >
-        </va-data-table> -->
       </div>
-      <div
-        v-if="selectedPlayer"
-        class="playerContainer"
-        :style="containerStyles"
-      >
+      <div v-if="selectedPlayer" class="playerContainer containerColor">
         <div class="playerContainerLeft">
           <va-icon
             @click="closePlayer"
@@ -323,11 +271,7 @@
         </div>
       </div>
     </div>
-    <div
-      @click="toggleDrawer"
-      class="expandCollapse"
-      :style="teamBackgroundColorStyle"
-    >
+    <div @click="toggleDrawer" class="expandCollapse">
       <va-icon class="material-icons" :color="teamSecondaryColor" size="large"
         >sports_hockey</va-icon
       >
@@ -360,10 +304,7 @@ export default {
       players: [],
       filteredPlayers: [],
       filter: "",
-      // sortBy: "points",
-      // sortingOrder: "asc",
-      // perPage: 50,
-      // currentPage: 1,
+
       drawerExpanded: true,
       teamSelections: [],
       injurySelections: [],
@@ -377,85 +318,7 @@ export default {
       selectedPlayer: null,
       leagueId: null,
       filterBufferTimer: null,
-      columns: [
-        {
-          key: "name",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "team",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "owner",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "todaysGame",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "gamesThisWeek",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "position",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "injury",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-        },
-        {
-          key: "points",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "avg",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last1",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last5",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last10",
-          sortable: true,
-          headerStyle: this.headerStyles,
-          // style: this.rowStyles,
-          sortingFn: this.numSortFn,
-        },
-      ],
+
       stateToStore: [
         "filter",
         "sortBy",
@@ -478,6 +341,7 @@ export default {
   },
   methods: {
     async loadPlayers(forceRefresh) {
+      this.players = [];
       this.loading = true;
       const result = await getAllPlayers(
         this.leagueId,
@@ -485,9 +349,6 @@ export default {
         forceRefresh
       );
       this.players = result;
-      console.log("GOT EM", this.players);
-      // this.$refs.playerTable.setFilteredPlayers();
-      // this.setFilteredPlayers();
       this.loading = false;
     },
     debounceFiltering() {
@@ -498,7 +359,6 @@ export default {
       this.filterBufferTimer = setTimeout(() => {
         console.log("FILTERING PLAYERS");
         this.$refs.playerTable.setFilteredPlayers();
-        // this.setFilteredPlayers();
       }, 500);
     },
     toggleDrawer() {
@@ -507,15 +367,12 @@ export default {
     closePlayer() {
       this.selectedPlayer = null;
     },
-    selectPlayer(event) {
-      if (this.selectedPlayer !== event.item) {
-        this.selectedPlayer = event.item;
+    selectPlayer(player) {
+      if (this.selectedPlayer !== player) {
+        this.selectedPlayer = player;
       } else {
         this.selectedPlayer = null;
       }
-    },
-    numSortFn(a, b) {
-      return b - a;
     },
     toggleSettings() {
       this.settings = !this.settings;
@@ -523,68 +380,6 @@ export default {
     refreshPlayers() {
       this.loadPlayers(true);
     },
-    headerStyles() {
-      return {
-        color: `${this.themeAccentColor}`,
-        background: `${this.themeBaseColor}`,
-        borderBottom: `2px ${this.themeAccentColor} solid`,
-      };
-    },
-    rowStyles() {
-      return {
-        color: `${this.themeAccentColor}`,
-        background: `${this.themeBaseColor}`,
-      };
-    },
-    // setFilteredPlayers() {
-    //   console.log("SETTING FILTERED PLAYERS");
-    //   const teamSelectionsAbbr = this.teamSelections.map(
-    //     (sel) => TEAM_NAME_TO_ABBR[sel]
-    //   );
-
-    //   this.filteredPlayers = this.players.filter((player) => {
-    //     if (this.onlyFreeAgents && player.owner) {
-    //       return false;
-    //     }
-
-    //     if (this.mustHaveGameToday && !player.hasGameToday) {
-    //       return false;
-    //     }
-
-    //     if (
-    //       this.teamSelections.length > 0 &&
-    //       !teamSelectionsAbbr.includes(player.team)
-    //     ) {
-    //       return false;
-    //     }
-
-    //     if (this.injurySelections.length > 0) {
-    //       if (!player.injury && this.injurySelections.includes("HEALTHY")) {
-    //         // no-op
-    //       } else if (!this.injurySelections.includes(player.injury)) {
-    //         return false;
-    //       }
-    //     }
-
-    //     if (this.positionSelections.length > 0) {
-    //       const intersection = this.positionSelections.filter((pos) =>
-    //         player.positions.includes(pos)
-    //       );
-    //       if (intersection.length === 0) {
-    //         return false;
-    //       }
-    //     }
-
-    //     if (
-    //       this.filter !== "" &&
-    //       !player.name.toLowerCase().includes(this.filter.toLowerCase())
-    //     ) {
-    //       return false;
-    //     }
-
-    //     return true;
-    //   });
-    // },
   },
   created() {
     this.stateToStore.forEach((item) => {
@@ -605,21 +400,15 @@ export default {
     this.loadPlayers();
   },
   computed: {
-    // filteredColumns() {
-    //   return this.columns.filter((col) => {
-    //     if (this.onlyFreeAgents && col.key === "owner") {
-    //       return false;
-    //     }
-    //     if (
-    //       this.injurySelections.length === 1 &&
-    //       this.injurySelections.includes("HEALTHY") &&
-    //       col.key === "injury"
-    //     ) {
-    //       return false;
-    //     }
-    //     return true;
-    //   });
-    // },
+    bindCssVars() {
+      return {
+        "--themeAccentColor": this.themeAccentColor,
+        "--themeBaseColor": this.themeBaseColor,
+        "--teamMainColor": this.teamMainColor,
+        "--teamSecondaryColor": this.teamSecondaryColor,
+        "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
+      };
+    },
     teamMainColor() {
       const abbr = TEAM_NAME_TO_ABBR[this.favoriteTeam];
       return TEAM_ABBR_TO_COLORS[abbr].primary;
@@ -633,15 +422,6 @@ export default {
     },
     themeAccentColor() {
       return this.darkMode ? "#e2e2e2" : "#333333";
-    },
-    teamBackgroundColorStyle() {
-      return `background-color: ${this.teamMainColor}`;
-    },
-    teamBorderStyle() {
-      return `border: 2px ${this.teamSecondaryColor} solid`;
-    },
-    themeColorStyle() {
-      return `color: ${this.themeAccentColor}`;
     },
     containerStyles() {
       return {
@@ -708,7 +488,7 @@ export default {
   transition: all 350ms;
   height: 100vh;
   width: calc(100vw - 100px);
-  color: rgb(52, 73, 94);
+  color: var(--themeAccentColor);
 }
 
 .fleaflicker-extender-drawer {
@@ -743,6 +523,7 @@ export default {
   height: 48px;
   width: 48px;
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
+  background-color: var(--teamMainColor);
 }
 .mainContent {
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
@@ -751,6 +532,12 @@ export default {
   height: 100%;
   width: 100%;
   padding: 1em;
+  background-color: var(--teamMainColor);
+}
+.containerColor {
+  border: 2px var(--teamSecondaryColor) solid;
+  color: var(--themeAccentColor);
+  background: var(--themeBaseColor);
 }
 .formContainer {
   display: flex;
