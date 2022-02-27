@@ -8,10 +8,7 @@ export const convertEpochToTimeString = (epoch) => {
   return new Date(parseInt(epoch, 10)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-/**
- * Gets the previous or current monday
- */
-export const beginningOfWeekString = () => {
+export const beginningOfWeek = () => {
   let d = new Date();
   const day = d.getDay();
 
@@ -21,13 +18,18 @@ export const beginningOfWeekString = () => {
     d = new Date(d.setHours(-24 * 6))
   }
 
-  return d.toISOString().split('T')[0]
+  return d;
 }
 
 /**
- * Gets the next or current sunday
+ * Gets the previous or current monday
  */
-export const endOfWeekString = () => {
+export const beginningOfWeekString = () => {
+  return beginningOfWeek().toISOString().split('T')[0]
+}
+
+
+export const endOfWeek = () => {
   let d = new Date();
   const day = d.getDay();
 
@@ -35,5 +37,12 @@ export const endOfWeekString = () => {
     d = new Date(d.setHours(24 * (7 - day)))
   }
 
-  return d.toISOString().split('T')[0]
+  return d;
+}
+
+/**
+ * Gets the next or current sunday
+ */
+export const endOfWeekString = () => {
+  return endOfWeek().toISOString().split('T')[0]
 }

@@ -118,9 +118,9 @@ export default {
     Filter,
   },
   methods: {
-    async loadGames() {
+    async loadGames(forceRefresh) {
       this.gamesByTeam = {};
-      const result = await getGamesThisWeek();
+      const result = await getGamesThisWeek(forceRefresh);
       this.gamesByTeam = result;
     },
     async loadPlayers(forceRefresh) {
@@ -161,6 +161,7 @@ export default {
     },
     refreshPlayers() {
       this.loadPlayers(true);
+      this.loadGames(true);
     },
     updateModel(key, val) {
       console.log("UPDATE", key, val);

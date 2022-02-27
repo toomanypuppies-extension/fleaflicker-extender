@@ -2,14 +2,28 @@
 
 import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, TEAM_NAME_TO_ABBR } from '../contants';
-import { beginningOfWeekString, endOfWeekString } from '../utils/util';
+import { getStore, setStore } from '../utils/storage';
+import { beginningOfWeek, beginningOfWeekString, endOfWeek, endOfWeekString } from '../utils/util';
 
 
 const buildUrl = (segment) => {
   return `${NHL_API_BASE}/${segment}`;
 }
 
-export const getGamesThisWeek = async () => {
+export const getGamesThisWeek = async (forceRefresh = false) => {
+  const storedGames = getStore('gamesThisWeek');
+  const gamesStoreTime = getStore('gamesThisWeekFetchedAt');
+  let storedThisWeek = false;
+  if (gamesStoreTime) {
+    const storeTime = parseInt(gamesStoreTime, 10);
+    if (beginningOfWeek().getTime() < storeTime < endOfWeek().getTime()) {
+      storedThisWeek = true;
+    }
+  }
+  if (!forceRefresh && storedThisWeek && storedGames) {
+    return storedGames;
+  }
+
   try {
     const response = await axios.get(buildUrl('schedule'), {
       params: {
@@ -17,7 +31,12 @@ export const getGamesThisWeek = async () => {
         endDate: endOfWeekString()
       }
     })
-    return convertGameObjects(response.data);
+    const games = convertGameObjects(response.data);
+
+    setStore('gamesThisWeek', games);
+    setStore('gamesThisWeekFetchedAt', new Date().getTime());
+
+    return games;
   } catch (err) {
     console.error(err)
   }
