@@ -10,86 +10,11 @@
     :style="bindCssVars"
   >
     <div class="mainContent">
-      <div class="formContainer containerColor">
-        <div class="v-flex">
-          <va-input
-            label="Search"
-            placeholder="Johnny Hockey"
-            bordered
-            :color="themeAccentColor"
-            v-model="filter"
-            @update:model-value="debounceFiltering"
-          />
-          <span class="spacer"></span>
-          <va-select
-            label="Injury"
-            :options="injuryOptions"
-            v-model="injurySelections"
-            @update:model-value="debounceFiltering"
-            placeholder="OUT"
-            maxHeight="300px"
-            multiple
-            :color="themeAccentColor"
-            bordered
-            clearable
-          />
-        </div>
-        <div class="v-flex">
-          <va-select
-            label="Teams"
-            :options="teamOptions"
-            v-model="teamSelections"
-            @update:model-value="debounceFiltering"
-            placeholder="Seattle Kraken"
-            maxHeight="300px"
-            multiple
-            :color="themeAccentColor"
-            bordered
-            clearable
-          />
-          <span class="spacer"></span>
-
-          <va-select
-            label="Position"
-            :options="positionOptions"
-            v-model="positionSelections"
-            @update:model-value="debounceFiltering"
-            placeholder="F"
-            maxHeight="300px"
-            multiple
-            :color="themeAccentColor"
-            bordered
-            clearable
-          />
-        </div>
-        <div class="h-flex">
-          <div class="v-flex">
-            <va-checkbox
-              v-model="mustHaveGameToday"
-              @update:model-value="debounceFiltering"
-              label="Has Game Today"
-              :color="themeAccentColor"
-            />
-            <span class="spacer"></span>
-
-            <va-checkbox
-              v-model="onlyFreeAgents"
-              @update:model-value="debounceFiltering"
-              label="Only Free Agents"
-              :color="themeAccentColor"
-            />
-          </div>
-          <div class="settings">
-            <va-icon
-              @click="toggleSettings"
-              class="material-icons"
-              :color="themeAccentColor"
-              size="medium"
-              >settings</va-icon
-            >
-          </div>
-        </div>
-      </div>
+      <Filter
+        @update="updateFilterModel"
+        @toggleSettings="toggleSettings"
+        :themeAccentColor="themeAccentColor"
+      />
       <Settings
         :openSettings="openSettings"
         :themeAccentColor="themeAccentColor"
@@ -132,9 +57,6 @@
 
 <script>
 import {
-  INJURY_LIST,
-  POSITION_OPTIONS,
-  TEAM_LIST,
   TEAM_NAME_TO_ABBR,
   TEAM_ABBR_TO_COLORS,
   TEAM_ABBR_TO_NAME,
@@ -145,36 +67,33 @@ import { getLeagueId } from "./utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
 import Settings from "./components/Settings.vue";
+import Filter from "./components/Filter.vue";
 
 export default {
   data() {
     return {
-      loading: true,
-      teamOptions: TEAM_LIST,
       teamAbbrToName: TEAM_ABBR_TO_NAME,
-      injuryOptions: INJURY_LIST,
-      positionOptions: POSITION_OPTIONS,
+      leagueId: null,
+      loading: true,
       players: [],
-      filteredPlayers: [],
-      filter: "",
-
       drawerExpanded: false,
+      filterBufferTimer: null,
+      // filter
+      filter: "",
       teamSelections: [],
       injurySelections: [],
       positionSelections: [],
       mustHaveGameToday: false,
       onlyFreeAgents: true,
+      // settings
       excludeIfNoPoints: true,
       favoriteTeam: "Seattle Kraken",
       darkMode: true,
       openSettings: false,
+      // player card
       selectedPlayer: null,
-      leagueId: null,
-      filterBufferTimer: null,
-
       stateToStore: [
         "filter",
-        "sortBy",
         "drawerExpanded",
         "teamSelections",
         "injurySelections",
@@ -193,6 +112,7 @@ export default {
     PlayerList,
     PlayerCard,
     Settings,
+    Filter,
   },
   methods: {
     async loadPlayers(forceRefresh) {
@@ -237,6 +157,10 @@ export default {
     updateModel(key, val) {
       console.log("UPDATE", key, val);
       this[key] = val;
+    },
+    updateFilterModel(key, val) {
+      this[key] = val;
+      this.debounceFiltering();
     },
   },
   created() {
@@ -344,19 +268,6 @@ export default {
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
 }
-.formContainer {
-  display: flex;
-  margin-bottom: 1em;
-}
-.settingsContainer {
-  margin-bottom: 1em;
-}
-.notice {
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1em;
-  margin: 0.5em;
-}
-
 .v-flex {
   display: flex;
   flex-direction: column;

@@ -174,7 +174,7 @@ export default {
   position: relative;
   margin-top: 1em;
   display: grid;
-  padding: 1.5em;
+  padding: 1.25em;
   grid-template-columns: repeat(3, 1fr);
   gap: 1em;
 }

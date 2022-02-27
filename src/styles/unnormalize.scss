@@ -3,6 +3,126 @@
 * https://github.com/toomanypuppies-extension/fleaflicker-extender/issues/2
 */
 .desktop {
+  // a,
+  abbr,
+  acronym,
+  address,
+  applet,
+  article,
+  aside,
+  audio,
+  b,
+  big,
+  blockquote,
+  body,
+  canvas,
+  caption,
+  center,
+  cite,
+  code,
+  dd,
+  del,
+  details,
+  dfn,
+  // div,
+  dl,
+  dt,
+  em,
+  embed,
+  fieldset,
+  figcaption,
+  figure,
+  footer,
+  form,
+  h1,
+  h2,
+  h3,
+  h5,
+  h6,
+  header,
+  hgroup,
+  html,
+  // i,
+  iframe,
+  img,
+  ins,
+  kbd,
+  label,
+  legend,
+  // li,
+  mark,
+  menu,
+  nav,
+  object,
+  ol,
+  output,
+  p,
+  pre,
+  q,
+  ruby,
+  s,
+  samp,
+  section,
+  // span,
+  strike,
+  strong,
+  sub,
+  summary,
+  sup,
+  time,
+  tr,
+  tt,
+  u,
+  ul,
+  var,
+  video {
+    font-size: 14px;
+  }
+
+
+  /**
+  * Lots of specific fixes here for the fleaflicker UI. Brittle fixes, but luckily the UI rarely changes
+  */
+  table,
+  tbody,
+  td,
+  tfoot,
+  th,
+  thead {
+    font-size: 13px;
+  }
+
+  h4 {
+    font-size: 18px;
+  }
+
+  .h4, .h5, .h6, h4, h5, h6 {
+    margin-top: 9.5px;
+    margin-bottom: 9.5px;
+
+    &.list-group-item-heading {
+      margin-top: 0;
+      margin-bottom: 5px;
+    }
+  }
+
+  small {
+    font-size: 12px;
+  }
+
+  .btn-xs {
+    font-size: 12px;
+  }
+
+  .small {
+    font-size: 75% !important;
+  }
+
+  .list-group {
+    font-size: 14px;
+  }
+}
+.fleaflicker-extender-drawer {
   a,
   abbr,
   acronym,
@@ -84,6 +204,6 @@
   ul,
   var,
   video {
-    font-size: 14px;
+    font-size: 16px;
   }
 }

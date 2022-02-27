@@ -9,7 +9,7 @@
               :key="column.key"
               @click="() => handledSortSingleClick(column)"
               @dblclick="() => handledSortDoubleClick(column)"
-              class="headerStyles hoverEffects"
+              class="headerStyles"
             >
               <span class="colHeadContent">
                 {{ column.name }}
@@ -349,6 +349,12 @@ export default {
   // Fix fleaflicker override here
   background-color: unset;
   width: 100%;
+  position: relative;
+
+  th {
+    position: sticky;
+    top: 0;
+  }
 }
 .tableLoading {
   height: 200px;
@@ -360,7 +366,14 @@ export default {
 .headerStyles {
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
-  border-bottom: 2px var(--themeAccentColor) solid;
+  box-shadow: inset 0 -2px 0 var(--themeAccentColor);
+  border-bottom: unset;
+
+  &:hover {
+    cursor: pointer;
+    background: var(--themeAccentColor);
+    color: var(--themeBaseColor);
+  }
 }
 .colHeadContent {
   display: flex;
