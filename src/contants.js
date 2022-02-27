@@ -1,6 +1,19 @@
 export const FLEA_API_BASE = 'https://www.fleaflicker.com/api';
+export const NHL_API_BASE = 'https://statsapi.web.nhl.com/api/v1';
 
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
+
+export const SPORT_HOCKEY = 'hockey';
+
+export const DATE_MAP = {
+  0: 'Mo',
+  1: 'Tu',
+  2: 'We',
+  3: 'Th',
+  4: 'Fr',
+  5: 'Sa',
+  6: 'Su'
+}
 
 export const SORT_OPTIONS = {
   total: 'SORT_SEASON_TOTAL',
@@ -77,6 +90,8 @@ export const TEAM_NAME_TO_ABBR = {
   "Los Angeles Kings": "LA",
   "Minnesota Wild": "MIN",
   "Montreal Canadiens": "MTL",
+  // Second entry for Montreal for NHL API
+  "Montréal Canadiens": "MTL",
   "Nashville Predators": "NSH",
   "New Jersey Devils": "NJ",
   "New York Islanders": "NYI",

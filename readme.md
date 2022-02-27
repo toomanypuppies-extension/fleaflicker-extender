@@ -35,6 +35,11 @@ A chrome/firefox extension to extend the capabilities of the fleaflicker site.
 ## Todo
 - Check FetchLeagueActivity on load and see if last any activity occurred since cache update. If so, then re-fetch. Else re-fetch if last fetch was yesterday.
 - Find a way to see what days each player has games this week. Be able to display column showing "M, Tu, Th, Sa"
+  - Integrate with nhlstats to get games for this week, join with players:
+  - https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
+  - Build in "Has games these days select dropdown"
+- Create select dropdown to filter by fantasy owner(s) (lets people quickly compare player to player for their matchup)
+- Build in "Current week or future week dropdown"
 - Modualize components to support multiple sports using this extension
 - Build in pruning for localStorage entries to keep usage at minimum
 - See if unlimited storage permission should be requested for localstorage use
