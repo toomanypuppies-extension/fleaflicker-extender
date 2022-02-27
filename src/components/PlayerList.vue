@@ -1,64 +1,67 @@
 <template>
-  <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-    <table class="va-table datatable" :class="{ tableLoading: loading }">
-      <thead>
-        <tr>
-          <th
-            v-for="column in columns"
-            :key="column.key"
-            @click="() => handledSortSingleClick(column)"
-            @dblclick="() => handledSortDoubleClick(column)"
-            class="headerStyles hoverEffects"
+  <div class="tableContainer containerColor">
+    <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
+      <table class="va-table datatable" :class="{ tableLoading: loading }">
+        <thead>
+          <tr>
+            <th
+              v-for="column in columns"
+              :key="column.key"
+              @click="() => handledSortSingleClick(column)"
+              @dblclick="() => handledSortDoubleClick(column)"
+              class="headerStyles hoverEffects"
+            >
+              <span class="colHeadContent">
+                {{ column.name }}
+                <va-icon
+                  v-if="sortMap[column.key] === 'desc'"
+                  class="material-icons"
+                  size="1em"
+                  >expand_more</va-icon
+                >
+                <va-icon
+                  v-if="
+                    sortMap[column.key] === 'desc' &&
+                    sortColumns[1] === column.key
+                  "
+                  class="material-icons"
+                  size="1em"
+                  >expand_more</va-icon
+                >
+                <va-icon
+                  v-if="sortMap[column.key] === 'asc'"
+                  class="material-icons"
+                  size="1em"
+                  >expand_less</va-icon
+                >
+                <va-icon
+                  v-if="
+                    sortMap[column.key] === 'asc' &&
+                    sortColumns[1] === column.key
+                  "
+                  class="material-icons"
+                  size="1em"
+                  >expand_less</va-icon
+                >
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="player in filteredPlayers"
+            :key="player.id"
+            @click="$emit('playerSelected', player)"
+            class="hoverEffects"
           >
-            <span class="colHeadContent">
-              {{ column.name }}
-              <va-icon
-                v-if="sortMap[column.key] === 'desc'"
-                class="material-icons"
-                size="1em"
-                >expand_more</va-icon
-              >
-              <va-icon
-                v-if="
-                  sortMap[column.key] === 'desc' &&
-                  sortColumns[1] === column.key
-                "
-                class="material-icons"
-                size="1em"
-                >expand_more</va-icon
-              >
-              <va-icon
-                v-if="sortMap[column.key] === 'asc'"
-                class="material-icons"
-                size="1em"
-                >expand_less</va-icon
-              >
-              <va-icon
-                v-if="
-                  sortMap[column.key] === 'asc' && sortColumns[1] === column.key
-                "
-                class="material-icons"
-                size="1em"
-                >expand_less</va-icon
-              >
-            </span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="player in filteredPlayers"
-          :key="player.id"
-          @click="$emit('playerSelected', player)"
-          class="hoverEffects"
-        >
-          <td v-for="column in columns" :key="`${column.key}-${player.id}`">
-            {{ player[column.key] }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </va-inner-loading>
+            <td v-for="column in columns" :key="`${column.key}-${player.id}`">
+              {{ player[column.key] }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </va-inner-loading>
+  </div>
 </template>
 
 <script>
@@ -277,7 +280,6 @@ export default {
         this.sortColumns.push(column.key);
       }
 
-      // Allow for sorting of up to 2 or 3 columns. Shift sorting to as they are clicked through
       if (!this.sortMap[column.key]) {
         this.sortMap[column.key] = "desc";
       } else if (this.sortMap[column.key] === "desc") {
@@ -339,6 +341,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.tableContainer {
+  max-height: 100%;
+  overflow-y: scroll;
+}
+.tableContainer .datatable {
+  // Fix fleaflicker override here
+  background-color: unset;
+  width: 100%;
+}
 .tableLoading {
   height: 200px;
 }
