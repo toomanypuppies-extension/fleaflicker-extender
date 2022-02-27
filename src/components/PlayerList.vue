@@ -10,6 +10,7 @@
               @click="() => handledSortSingleClick(column)"
               @dblclick="() => handledSortDoubleClick(column)"
               class="headerStyles"
+              :class="{ cursor: column.sortable }"
             >
               <span class="colHeadContent">
                 {{ column.name }}
@@ -55,7 +56,12 @@
             class="hoverEffects"
           >
             <td v-for="column in columns" :key="`${column.key}-${player.id}`">
-              {{ player[column.key] }}
+              <template v-if="column.key === 'gameDays'">
+                {{ gamesByTeam && gamesByTeam[player?.team]?.join(", ") }}
+              </template>
+              <template v-else>
+                {{ player[column.key] }}
+              </template>
             </td>
           </tr>
         </tbody>
@@ -101,6 +107,11 @@ export default {
             name: "Games Remaining",
             sortable: true,
             sortingFn: this.numSortFn,
+          },
+          {
+            key: "gameDays",
+            name: "Game Days",
+            sortable: false,
           },
           {
             key: "position",
@@ -157,6 +168,7 @@ export default {
   props: {
     loading: Boolean,
     players: Array,
+    gamesByTeam: Object,
     sport: String,
     onlyFreeAgents: Boolean,
     teamSelections: Array,
@@ -255,6 +267,8 @@ export default {
       return aA.localeCompare(bB);
     },
     handledSortSingleClick(column) {
+      if (!column.sortable) return;
+
       if (this.dblClickTimer) {
         clearTimeout(this.dblClickTimer);
       }
@@ -263,6 +277,8 @@ export default {
       }, 300);
     },
     handledSortDoubleClick(column) {
+      if (!column.sortable) return;
+
       if (this.dblClickTimer) {
         clearTimeout(this.dblClickTimer);
       }
@@ -370,9 +386,13 @@ export default {
   border-bottom: unset;
 
   &:hover {
-    cursor: pointer;
     background: var(--themeAccentColor);
     color: var(--themeBaseColor);
+  }
+}
+.cursor {
+  &:hover {
+    cursor: pointer;
   }
 }
 .colHeadContent {

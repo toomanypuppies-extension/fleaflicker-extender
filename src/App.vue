@@ -25,9 +25,10 @@
 
       <PlayerList
         ref="PlayerList"
+        sport="hockey"
         :loading="loading"
         :players="players"
-        sport="hockey"
+        :gamesByTeam="gamesByTeam"
         :onlyFreeAgents="onlyFreeAgents"
         :injurySelections="injurySelections"
         :teamSelections="teamSelections"
@@ -62,6 +63,7 @@ import {
   TEAM_ABBR_TO_NAME,
 } from "./contants";
 import { getAllPlayers } from "./api/flea";
+import { getGamesThisWeek } from "./api/nhl";
 import { getStore, setStore } from "./utils/storage";
 import { getLeagueId } from "./utils/util";
 import PlayerList from "./components/PlayerList.vue";
@@ -76,6 +78,7 @@ export default {
       leagueId: null,
       loading: true,
       players: [],
+      gamesByTeam: {},
       drawerExpanded: false,
       filterBufferTimer: null,
       // filter
@@ -115,6 +118,11 @@ export default {
     Filter,
   },
   methods: {
+    async loadGames() {
+      this.gamesByTeam = {};
+      const result = await getGamesThisWeek();
+      this.gamesByTeam = result;
+    },
     async loadPlayers(forceRefresh) {
       this.players = [];
       this.loading = true;
@@ -180,6 +188,7 @@ export default {
   },
   mounted() {
     this.loadPlayers();
+    this.loadGames();
   },
   computed: {
     bindCssVars() {

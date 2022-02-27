@@ -25,7 +25,7 @@ export const getPlayers = async (leagueId, freeAgent = true, offset = 0) => {
     });
     return response.data;
   } catch (err) {
-    console.log(err);
+    console.error(err);
   }
 }
 
@@ -37,7 +37,6 @@ export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefres
     storedLessThanHourAgo = (new Date().getTime() - parseInt(playersStoreTime, 10)) < (60 * 60 * 1000);
   }
   if (!forceRefresh && storedPlayers && storedLessThanHourAgo) {
-    console.log('loaded players from store')
     return storedPlayers;
   }
 
@@ -58,8 +57,6 @@ export const getAllPlayers = async (leagueId, stopIfNoPoints = true, forceRefres
       morePlayersLeft = false;
     }
   }
-
-  console.log(playersList);
 
   const players = convertPlayerObjects(playersList);
 
