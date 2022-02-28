@@ -35,7 +35,6 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
 
     setStore('gamesThisWeek', games);
     setStore('gamesThisWeekFetchedAt', new Date().getTime());
-
     return games;
   } catch (err) {
     console.error(err)

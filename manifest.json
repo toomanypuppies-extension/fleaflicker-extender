@@ -4,7 +4,8 @@
   "name": "Fleaflicker Extender",
   "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.  ",
   "permissions": [
-    "activeTab"
+    "https://statsapi.web.nhl.com/api/*",
+    "https://www.fleaflicker.com/api/*"
   ],
   "content_scripts": [
     {

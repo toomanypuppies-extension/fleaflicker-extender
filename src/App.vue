@@ -164,7 +164,6 @@ export default {
       this.loadGames(true);
     },
     updateModel(key, val) {
-      console.log("UPDATE", key, val);
       this[key] = val;
     },
     updateFilterModel(key, val) {

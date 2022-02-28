@@ -3,7 +3,10 @@
   "version": "0.1.1",
   "name": "Fleaflicker Extender",
   "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.  ",
-  "permissions": [],
+  "permissions": [
+    "https://statsapi.web.nhl.com/api/*",
+    "https://www.fleaflicker.com/api/*"
+  ],
   "icons": {
     "16": "icons/icon-16x16.png",
     "48": "icons/icon-48x48.png",
