@@ -176,7 +176,6 @@ export default {
     teamSelections: Array,
     injurySelections: Array,
     positionSelections: Array,
-    mustHaveGameToday: Boolean,
     excludeIfNoPoints: Boolean,
     filter: String,
     teamSecondaryColor: String,
@@ -225,10 +224,6 @@ export default {
 
       this.filteredPlayers = this.players.filter((player) => {
         if (this.onlyFreeAgents && player.owner) {
-          return false;
-        }
-
-        if (this.mustHaveGameToday && !player.hasGameToday) {
           return false;
         }
 

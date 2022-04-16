@@ -51,45 +51,38 @@
         clearable
       />
     </div>
-    <div class="h-flex">
-      <div class="v-flex">
-        <va-select
-          v-model="gameDaysSelections"
-          @update:model-value="(val) => emitUpdate('gameDaysSelections', val)"
-          :options="daysOptions"
-          :color="themeAccentColor"
-          label="Game Days"
-          placeholder="Mo, Tu"
-          maxHeight="300px"
-          multiple
-          bordered
-          clearable
-        />
+    <div class="v-flex">
+      <va-select
+        v-model="gameDaysSelections"
+        @update:model-value="(val) => emitUpdate('gameDaysSelections', val)"
+        :options="daysOptions"
+        :color="themeAccentColor"
+        label="Game Days"
+        placeholder="Mo, Tu"
+        maxHeight="300px"
+        multiple
+        bordered
+        clearable
+      />
 
-        <va-checkbox
-          v-model="mustHaveGameToday"
-          @update:model-value="(val) => emitUpdate('mustHaveGameToday', val)"
-          :color="themeAccentColor"
-          label="Has Game Today"
-        />
-        <span class="spacer"></span>
+      <span class="spacer"></span>
 
-        <va-checkbox
-          v-model="onlyFreeAgents"
-          @update:model-value="(val) => emitUpdate('onlyFreeAgents', val)"
-          :color="themeAccentColor"
-          label="Only Free Agents"
-        />
-      </div>
-      <div>
-        <va-icon
-          @click="$emit('toggleSettings')"
-          :color="themeAccentColor"
-          class="material-icons"
-          size="medium"
-          >settings</va-icon
-        >
-      </div>
+      <va-checkbox
+        class="tall-checkbox"
+        v-model="onlyFreeAgents"
+        @update:model-value="(val) => emitUpdate('onlyFreeAgents', val)"
+        :color="themeAccentColor"
+        label="Only Free Agents"
+      />
+    </div>
+    <div class="settings-icon">
+      <va-icon
+        @click="$emit('toggleSettings')"
+        :color="themeAccentColor"
+        class="material-icons"
+        size="medium"
+        >settings</va-icon
+      >
     </div>
   </div>
 </template>
@@ -120,7 +113,6 @@ export default {
       injurySelections: [],
       positionSelections: [],
       gameDaysSelections: [],
-      mustHaveGameToday: false,
       onlyFreeAgents: true,
       stateToStore: [
         // This may be redundant since it happens in above app area
@@ -130,7 +122,6 @@ export default {
         "injurySelections",
         "positionSelections",
         "gameDaysSelections",
-        "mustHaveGameToday",
         "onlyFreeAgents",
       ],
     };
@@ -161,5 +152,12 @@ export default {
 .formContainer {
   display: flex;
   margin-bottom: 1em;
+}
+.settings-icon {
+  flex-shrink: 1;
+  padding: 0.5em;
+}
+.tall-checkbox {
+  height: 38px;
 }
 </style>
