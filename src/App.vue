@@ -32,6 +32,7 @@
         :onlyFreeAgents="onlyFreeAgents"
         :injurySelections="injurySelections"
         :teamSelections="teamSelections"
+        :gameDaysSelections="gameDaysSelections"
         :positionSelections="positionSelections"
         :mustHaveGameToday="mustHaveGameToday"
         :excludeIfNoPoints="excludeIfNoPoints"
@@ -86,6 +87,7 @@ export default {
       teamSelections: [],
       injurySelections: [],
       positionSelections: [],
+      gameDaysSelections: [],
       mustHaveGameToday: false,
       onlyFreeAgents: true,
       // settings
@@ -101,6 +103,7 @@ export default {
         "teamSelections",
         "injurySelections",
         "positionSelections",
+        "gameDaysSelections",
         "mustHaveGameToday",
         "onlyFreeAgents",
         "excludeIfNoPoints",

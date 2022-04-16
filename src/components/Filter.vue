@@ -53,6 +53,19 @@
     </div>
     <div class="h-flex">
       <div class="v-flex">
+        <va-select
+          v-model="gameDaysSelections"
+          @update:model-value="(val) => emitUpdate('gameDaysSelections', val)"
+          :options="daysOptions"
+          :color="themeAccentColor"
+          label="Game Days"
+          placeholder="Mo, Tu"
+          maxHeight="300px"
+          multiple
+          bordered
+          clearable
+        />
+
         <va-checkbox
           v-model="mustHaveGameToday"
           @update:model-value="(val) => emitUpdate('mustHaveGameToday', val)"
@@ -83,6 +96,7 @@
 
 <script>
 import {
+  DAYS_ARRAY,
   INJURY_LIST,
   POSITION_OPTIONS,
   TEAM_ABBR_TO_NAME,
@@ -100,17 +114,22 @@ export default {
       teamAbbrToName: TEAM_ABBR_TO_NAME,
       injuryOptions: INJURY_LIST,
       positionOptions: POSITION_OPTIONS,
+      daysOptions: DAYS_ARRAY,
       filter: "",
       teamSelections: [],
       injurySelections: [],
       positionSelections: [],
+      gameDaysSelections: [],
       mustHaveGameToday: false,
       onlyFreeAgents: true,
       stateToStore: [
+        // This may be redundant since it happens in above app area
+        // I should move to vuex :P
         "filter",
         "teamSelections",
         "injurySelections",
         "positionSelections",
+        "gameDaysSelections",
         "mustHaveGameToday",
         "onlyFreeAgents",
       ],

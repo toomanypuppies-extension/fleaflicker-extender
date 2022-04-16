@@ -73,6 +73,7 @@
 <script>
 import { SPORT_HOCKEY, TEAM_NAME_TO_ABBR } from "../contants";
 import { getStore, setStore } from "../utils/storage";
+import { containsAll } from "../utils/util";
 export default {
   data() {
     return {
@@ -171,6 +172,7 @@ export default {
     gamesByTeam: Object,
     sport: String,
     onlyFreeAgents: Boolean,
+    gameDaysSelections: Array,
     teamSelections: Array,
     injurySelections: Array,
     positionSelections: Array,
@@ -201,6 +203,19 @@ export default {
 
       return sportColumns;
     },
+    teamsMatchingGamesDaysSelection() {
+      if (!this.gameDaysSelections || this.gameDaysSelections.length === 0)
+        return [];
+      const matchedTeams = [];
+
+      for (const [teamAbbr, teamGames] of Object.entries(this.gamesByTeam)) {
+        if (containsAll(teamGames, this.gameDaysSelections)) {
+          matchedTeams.push(teamAbbr);
+        }
+      }
+
+      return matchedTeams;
+    },
   },
   methods: {
     setFilteredPlayers() {
@@ -215,6 +230,12 @@ export default {
 
         if (this.mustHaveGameToday && !player.hasGameToday) {
           return false;
+        }
+
+        if (this.gameDaysSelections && this.gameDaysSelections.length > 0) {
+          if (!this.teamsMatchingGamesDaysSelection.includes(player.team)) {
+            return false;
+          }
         }
 
         if (

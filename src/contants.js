@@ -5,6 +5,16 @@ export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/'
 
 export const SPORT_HOCKEY = 'hockey';
 
+export const DAYS_ARRAY = [
+  'Mo',
+  'Tu',
+  'We',
+  'Th',
+  'Fr',
+  'Sa',
+  'Su'
+]
+
 export const DATE_MAP = {
   0: 'Mo',
   1: 'Tu',
