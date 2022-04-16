@@ -138,7 +138,10 @@ export default {
     },
     selectedPlayerDobberLink() {
       if (this.selectedPlayer?.name) {
-        const kebabName = this.selectedPlayer.name?.split(" ")?.join("-");
+        const kebabName = this.selectedPlayer.name
+          ?.split(" ")
+          ?.join("-")
+          ?.replaceAll(".", "");
         return `https://frozenpool.dobbersports.com/players/${kebabName.toLowerCase()}`;
       }
       return null;
@@ -158,7 +161,10 @@ export default {
     },
     selectedPlayerFleaflickerLink() {
       if (this.selectedPlayer?.name) {
-        const kebabName = this.selectedPlayer.name?.split(" ")?.join("-");
+        const kebabName = this.selectedPlayer.name
+          ?.split(" ")
+          ?.join("-")
+          ?.replaceAll(".", "");
         return ` https://www.fleaflicker.com/nhl/leagues/${
           this.leagueId
         }/players/${kebabName.toLowerCase()}-${this.selectedPlayer.id}`;

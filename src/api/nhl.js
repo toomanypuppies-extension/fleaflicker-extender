@@ -12,7 +12,7 @@ const buildUrl = (segment) => {
 
 /**
  * Formats given date for the NHL API
- * @param {Date}} date
+ * @param {Date} date
  */
 const dateToNHLString = (date) => {
   return date.toISOString().split('T')[0];
