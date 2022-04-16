@@ -3,20 +3,30 @@
 import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, TEAM_NAME_TO_ABBR } from '../contants';
 import { getStore, setStore } from '../utils/storage';
-import { beginningOfWeek, beginningOfWeekString, endOfWeek, endOfWeekString } from '../utils/util';
+import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday } from 'date-fns'
 
 
 const buildUrl = (segment) => {
   return `${NHL_API_BASE}/${segment}`;
 }
 
+/**
+ * Formats given date for the NHL API
+ * @param {Date}} date
+ */
+const dateToNHLString = (date) => {
+  return date.toISOString().split('T')[0];
+}
+
 export const getGamesThisWeek = async (forceRefresh = false) => {
+  const now = new Date();
   const storedGames = getStore('gamesThisWeek');
   const gamesStoreTime = getStore('gamesThisWeekFetchedAt');
   let storedThisWeek = false;
   if (gamesStoreTime) {
     const storeTime = parseInt(gamesStoreTime, 10);
-    if (beginningOfWeek().getTime() < storeTime < endOfWeek().getTime()) {
+    const storeDate = new Date(storeTime);
+    if (isSameWeek(storeDate, now, 1)) {
       storedThisWeek = true;
     }
   }
@@ -25,10 +35,12 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
   }
 
   try {
+    const monday = isMonday(now) ? now : previousMonday(now);
+    const sunday = isSunday(now) ? now : nextSunday(now);
     const response = await axios.get(buildUrl('schedule'), {
       params: {
-        startDate: beginningOfWeekString(),
-        endDate: endOfWeekString()
+        startDate: dateToNHLString(monday),
+        endDate: dateToNHLString(sunday)
       }
     })
     const games = convertGameObjects(response.data);
