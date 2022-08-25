@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, TEAM_NAME_TO_ABBR } from '../contants';
-import { getStore, setStore } from '../utils/storage';
+import { getStore, setStore } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
 
 

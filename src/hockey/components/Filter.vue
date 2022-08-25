@@ -95,7 +95,7 @@ import {
   TEAM_ABBR_TO_NAME,
   TEAM_LIST,
 } from "../contants";
-import { getStore, setStore } from "../utils/storage";
+import { getStore, setStore } from "../../utils/storage";
 
 export default {
   props: {

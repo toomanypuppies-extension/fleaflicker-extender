@@ -1,4 +1,4 @@
-import { convertEpochToTimeString } from "../utils/util";
+import { convertEpochToTimeString } from "../../utils/util";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;

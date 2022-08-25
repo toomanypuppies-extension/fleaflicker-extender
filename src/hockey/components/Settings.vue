@@ -80,8 +80,8 @@
 
 <script>
 import { TEAM_LIST } from "../contants";
-import { getStore, setStore } from "../utils/storage";
-import { version } from "../../package.json";
+import { getStore, setStore } from "../../utils/storage";
+import { version } from "../../../package.json";
 
 export default {
   data() {

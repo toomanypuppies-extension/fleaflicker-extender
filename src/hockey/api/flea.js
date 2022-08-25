@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FLEA_API_BASE, SORT_OPTIONS } from '../contants';
-import { setStore, getStore } from '../utils/storage';
+import { setStore, getStore } from '../../utils/storage';
 import { convertPlayerObjects } from '../collections/players';
 
 

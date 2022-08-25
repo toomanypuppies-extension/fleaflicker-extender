@@ -72,8 +72,8 @@
 
 <script>
 import { SPORT_HOCKEY, TEAM_NAME_TO_ABBR } from "../contants";
-import { getStore, setStore } from "../utils/storage";
-import { containsAll } from "../utils/util";
+import { getStore, setStore } from "../../utils/storage";
+import { containsAll } from "../../utils/util";
 export default {
   data() {
     return {
