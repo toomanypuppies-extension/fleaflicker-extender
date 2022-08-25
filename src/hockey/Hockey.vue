@@ -1,5 +1,5 @@
 <template>
-  <div
+  <!-- <div
     class="fleaflicker-extender-drawer"
     :class="{
       expanded: drawerExpanded,
@@ -8,52 +8,50 @@
       darkTheme: darkMode,
     }"
     :style="bindCssVars"
-  >
-    <div class="mainContent">
-      <Filter
-        @update="updateFilterModel"
-        @toggleSettings="toggleSettings"
-        :themeAccentColor="themeAccentColor"
-      />
-      <Settings
-        :openSettings="openSettings"
-        :themeAccentColor="themeAccentColor"
-        :themeBaseColor="themeBaseColor"
-        @update="updateModel"
-        @refreshPlayers="refreshPlayers"
-      />
+  > -->
+  <Filter
+    @update="updateFilterModel"
+    @toggleSettings="toggleSettings"
+    :themeAccentColor="themeAccentColor"
+  />
+  <Settings
+    :openSettings="openSettings"
+    :themeAccentColor="themeAccentColor"
+    :themeBaseColor="themeBaseColor"
+    @update="updateModel"
+    @refreshPlayers="refreshPlayers"
+  />
 
-      <PlayerList
-        ref="PlayerList"
-        sport="hockey"
-        :loading="loading"
-        :players="players"
-        :gamesByTeam="gamesByTeam"
-        :onlyFreeAgents="onlyFreeAgents"
-        :injurySelections="injurySelections"
-        :teamSelections="teamSelections"
-        :gameDaysSelections="gameDaysSelections"
-        :positionSelections="positionSelections"
-        :excludeIfNoPoints="excludeIfNoPoints"
-        :filter="filter"
-        :teamSecondaryColor="teamSecondaryColor"
-        @playerSelected="(player) => selectPlayer(player)"
-      />
-      <PlayerCard
-        :selectedPlayer="selectedPlayer"
-        :leagueId="leagueId"
-        :teamAbbrToName="teamAbbrToName"
-        @fleaflickerNav="toggleDrawer"
-        @clearSelectedPlayer="clearSelectedPlayer"
-      />
-    </div>
-
+  <PlayerList
+    ref="PlayerList"
+    sport="hockey"
+    :loading="loading"
+    :players="players"
+    :gamesByTeam="gamesByTeam"
+    :onlyFreeAgents="onlyFreeAgents"
+    :injurySelections="injurySelections"
+    :teamSelections="teamSelections"
+    :gameDaysSelections="gameDaysSelections"
+    :positionSelections="positionSelections"
+    :excludeIfNoPoints="excludeIfNoPoints"
+    :filter="filter"
+    :teamSecondaryColor="teamSecondaryColor"
+    @playerSelected="(player) => selectPlayer(player)"
+  />
+  <PlayerCard
+    :selectedPlayer="selectedPlayer"
+    :leagueId="leagueId"
+    :teamAbbrToName="teamAbbrToName"
+    @fleaflickerNav="toggleDrawer"
+    @clearSelectedPlayer="clearSelectedPlayer"
+  />
+  <!--
     <div @click="toggleDrawer" class="expandCollapse">
       <va-icon class="material-icons" :color="teamSecondaryColor" size="large"
         >sports_hockey</va-icon
       >
-    </div>
-  </div>
+    </div> -->
+  <!-- </div> -->
 </template>
 
 <script>
@@ -62,7 +60,7 @@ import {
   TEAM_ABBR_TO_COLORS,
   TEAM_ABBR_TO_NAME,
 } from "./contants";
-import { getAllPlayers } from "./api/flea";
+import { getAllHockeyPlayers } from "../utils/flea";
 import { getGamesThisWeek } from "./api/nhl";
 import { getStore, setStore } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
@@ -126,7 +124,7 @@ export default {
     async loadPlayers(forceRefresh) {
       this.players = [];
       this.loading = true;
-      const result = await getAllPlayers(
+      const result = await getAllHockeyPlayers(
         this.leagueId,
         this.excludeIfNoPoints,
         forceRefresh
@@ -219,119 +217,4 @@ export default {
 </script>
 
 <style lang="scss">
-.fleaflicker-extender-drawer {
-  z-index: 100;
-  position: fixed;
-  bottom: 0;
-  transition: all 350ms;
-  height: 100vh;
-  width: calc(100vw - 100px);
-  color: var(--themeAccentColor);
-}
-
-.fleaflicker-extender-drawer {
-  &.collapsed {
-    right: calc(-100vw + 100px);
-  }
-  &.expanded {
-    right: 0;
-  }
-
-  /**
-  * Fleaflicker overrides
-  */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    text-shadow: unset !important;
-  }
-}
-
-.expandCollapse {
-  position: absolute;
-  left: -48px;
-  bottom: 48px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  width: 48px;
-  box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
-  background-color: var(--teamMainColor);
-}
-.mainContent {
-  box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-  padding: 1em;
-  background-color: var(--teamMainColor);
-}
-.containerColor {
-  border: 2px var(--teamSecondaryColor) solid;
-  color: var(--themeAccentColor);
-  background: var(--themeBaseColor);
-}
-.v-flex {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: 0.5em;
-  width: 100%;
-}
-.spacer {
-  height: 0.5em;
-}
-.h-flex {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 0.5em;
-  width: 100%;
-}
-.align-center {
-  align-items: center;
-}
-.flex-spaceBetween {
-  display: flex;
-  justify-content: space-between;
-}
-
-/*
-  * VUESTIC OVERRIDES
-  */
-.va-select-option-list {
-  color: rgb(52, 73, 94);
-}
-
-.lightTheme .va-input--bordered.va-input__container,
-.darkTheme .va-input--bordered .va-input__container {
-  background: unset;
-}
-.darkTheme .va-input__content__input {
-  color: #e2e2e2 !important;
-}
-.lightTheme .va-input__icons i {
-  background: unset !important;
-  color: #333333 !important;
-}
-.darkTheme .va-input__icons i {
-  color: #e2e2e2 !important;
-  background: unset !important;
-}
-.darkTheme .va-checkbox__square {
-  color: #e2e2e2 !important;
-  background: #333333 !important;
-  border-color: #e2e2e2;
-}
-.va-select-option-list__option,
-.va-select-option-list__option i {
-  color: #333333 !important;
-  background: #e2e2e2 !important;
-}
 </style>
