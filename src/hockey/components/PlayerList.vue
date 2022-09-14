@@ -1,7 +1,14 @@
 <template>
   <div class="tableContainer containerColor">
-    <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-      <table class="va-table datatable" :class="{ tableLoading: loading }">
+    <va-inner-loading
+      :loading="loading"
+      :size="60"
+      :color="teamSecondaryColor"
+    >
+      <table
+        class="va-table datatable"
+        :class="{ tableLoading: loading }"
+      >
         <thead>
           <tr>
             <th
@@ -18,8 +25,7 @@
                   v-if="sortMap[column.key] === 'desc'"
                   class="material-icons"
                   size="1em"
-                  >expand_more</va-icon
-                >
+                >expand_more</va-icon>
                 <va-icon
                   v-if="
                     sortMap[column.key] === 'desc' &&
@@ -27,14 +33,12 @@
                   "
                   class="material-icons"
                   size="1em"
-                  >expand_more</va-icon
-                >
+                >expand_more</va-icon>
                 <va-icon
                   v-if="sortMap[column.key] === 'asc'"
                   class="material-icons"
                   size="1em"
-                  >expand_less</va-icon
-                >
+                >expand_less</va-icon>
                 <va-icon
                   v-if="
                     sortMap[column.key] === 'asc' &&
@@ -42,8 +46,7 @@
                   "
                   class="material-icons"
                   size="1em"
-                  >expand_less</va-icon
-                >
+                >expand_less</va-icon>
               </span>
             </th>
           </tr>
@@ -55,7 +58,10 @@
             @click="$emit('playerSelected', player)"
             class="hoverEffects"
           >
-            <td v-for="column in columns" :key="`${column.key}-${player.id}`">
+            <td
+              v-for="column in columns"
+              :key="`${column.key}-${player.id}`"
+            >
               <template v-if="column.key === 'gameDays'">
                 {{ gamesByTeam && gamesByTeam[player?.team]?.join(", ") }}
               </template>
@@ -71,7 +77,7 @@
 </template>
 
 <script>
-import { SPORT_HOCKEY, TEAM_NAME_TO_ABBR } from "../contants";
+import { SPORT_HOCKEY, HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
 import { getStore, setStore } from "../../utils/storage";
 import { containsAll } from "../../utils/util";
 export default {
@@ -219,7 +225,7 @@ export default {
   methods: {
     setFilteredPlayers() {
       const teamSelectionsAbbr = this.teamSelections.map(
-        (sel) => TEAM_NAME_TO_ABBR[sel]
+        (sel) => HOCKEY_TEAM_NAME_TO_ABBR[sel]
       );
 
       this.filteredPlayers = this.players.filter((player) => {
@@ -377,6 +383,7 @@ export default {
   max-height: 100%;
   overflow-y: scroll;
 }
+
 .tableContainer .datatable {
   // Fix fleaflicker override here
   background-color: unset;
@@ -388,13 +395,16 @@ export default {
     top: 0;
   }
 }
+
 .tableLoading {
   height: 200px;
 }
+
 .hoverEffects:hover {
   cursor: pointer;
   background: var(--teamSecondaryColor30Opacity);
 }
+
 .headerStyles {
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
@@ -406,11 +416,13 @@ export default {
     color: var(--themeBaseColor);
   }
 }
+
 .cursor {
   &:hover {
     cursor: pointer;
   }
 }
+
 .colHeadContent {
   display: flex;
   font-size: 0.625rem;

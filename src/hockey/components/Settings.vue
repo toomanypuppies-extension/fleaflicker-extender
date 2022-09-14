@@ -1,5 +1,8 @@
 <template>
-  <div v-if="openSettings" class="settingsContainer containerColor">
+  <div
+    v-if="openSettings"
+    class="settingsContainer containerColor"
+  >
     <div class="h-flex">
       <div class="v-flex">
         <va-select
@@ -21,8 +24,7 @@
           @click="$emit('refreshPlayers')"
           :color="themeAccentColor"
           :text-color="themeBaseColor"
-          >Refresh Players</va-button
-        >
+        >Refresh Players</va-button>
       </div>
       <div class="v-flex">
         <va-checkbox
@@ -49,10 +51,19 @@
       <ul class="tipsList">
         <li>
           You can sort up to two columns at a time.
-          <va-icon class="material-icons" size="1em">expand_more</va-icon> will
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon> will
           be shown on the primary sort column, and
-          <va-icon class="material-icons" size="1em">expand_more</va-icon
-          ><va-icon class="material-icons" size="1em">expand_more</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon>
           will be shown on the secondary sort column.
         </li>
         <li>
@@ -62,7 +73,10 @@
         </li>
         <li>
           Click the
-          <va-icon class="material-icons" size="1em">sports_hockey</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >sports_hockey</va-icon>
           icon in the lower left to open/close the extension.
         </li>
         <li>
@@ -79,7 +93,7 @@
 </template>
 
 <script>
-import { TEAM_LIST } from "../contants";
+import { HOCKEY_TEAM_LIST } from "../constants";
 import { getStore, setStore } from "../../utils/storage";
 import { version } from "../../../package.json";
 
@@ -119,7 +133,7 @@ export default {
   },
   computed: {
     favoriteTeamOptions() {
-      return TEAM_LIST.filter((t) => t !== "Free Agent");
+      return HOCKEY_TEAM_LIST.filter((t) => t !== "Free Agent");
     },
   },
 };
@@ -131,18 +145,22 @@ export default {
   padding: 1em;
   margin: 1em;
 }
+
 .tipsHeader {
   font-size: 1.25em;
   padding-bottom: 0.5em;
 }
+
 .tipsList {
   list-style: square;
   padding-left: 2em;
 }
+
 .settingsContainer {
   position: relative;
   margin-bottom: 1em;
 }
+
 .version {
   position: absolute;
   top: 0;

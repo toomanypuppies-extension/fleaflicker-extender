@@ -81,8 +81,7 @@
         :color="themeAccentColor"
         class="material-icons"
         size="medium"
-        >settings</va-icon
-      >
+      >settings</va-icon>
     </div>
   </div>
 </template>
@@ -90,11 +89,11 @@
 <script>
 import {
   DAYS_ARRAY,
-  INJURY_LIST,
-  POSITION_OPTIONS,
-  TEAM_ABBR_TO_NAME,
-  TEAM_LIST,
-} from "../contants";
+  HOCKEY_INJURY_LIST,
+  HOCKEY_POSITION_OPTIONS,
+  HOCKEY_TEAM_ABBR_TO_NAME,
+  HOCKEY_TEAM_LIST,
+} from "../constants";
 import { getStore, setStore } from "../../utils/storage";
 
 export default {
@@ -103,10 +102,10 @@ export default {
   },
   data() {
     return {
-      teamOptions: TEAM_LIST,
-      teamAbbrToName: TEAM_ABBR_TO_NAME,
-      injuryOptions: INJURY_LIST,
-      positionOptions: POSITION_OPTIONS,
+      teamOptions: HOCKEY_TEAM_LIST,
+      teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
+      injuryOptions: HOCKEY_INJURY_LIST,
+      positionOptions: HOCKEY_POSITION_OPTIONS,
       daysOptions: DAYS_ARRAY,
       filter: "",
       teamSelections: [],
@@ -153,10 +152,12 @@ export default {
   display: flex;
   margin-bottom: 1em;
 }
+
 .settings-icon {
   flex-shrink: 1;
   padding: 0.5em;
 }
+
 .tall-checkbox {
   height: 38px;
 }

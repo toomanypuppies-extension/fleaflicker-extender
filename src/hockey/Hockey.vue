@@ -56,10 +56,10 @@
 
 <script>
 import {
-  TEAM_NAME_TO_ABBR,
-  TEAM_ABBR_TO_COLORS,
-  TEAM_ABBR_TO_NAME,
-} from "./contants";
+  HOCKEY_TEAM_NAME_TO_ABBR,
+  HOCKEY_TEAM_ABBR_TO_COLORS,
+  HOCKEY_TEAM_ABBR_TO_NAME,
+} from "./constants";
 import { getAllHockeyPlayers } from "../utils/flea";
 import { getGamesThisWeek } from "./api/nhl";
 import { getStore, setStore } from "../utils/storage";
@@ -72,7 +72,7 @@ import Filter from "./components/Filter.vue";
 export default {
   data() {
     return {
-      teamAbbrToName: TEAM_ABBR_TO_NAME,
+      teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
       leagueId: null,
       loading: true,
       players: [],
@@ -199,12 +199,12 @@ export default {
       };
     },
     teamMainColor() {
-      const abbr = TEAM_NAME_TO_ABBR[this.favoriteTeam];
-      return TEAM_ABBR_TO_COLORS[abbr].primary;
+      const abbr = HOCKEY_TEAM_NAME_TO_ABBR[this.favoriteTeam];
+      return HOCKEY_TEAM_ABBR_TO_COLORS[abbr].primary;
     },
     teamSecondaryColor() {
-      const abbr = TEAM_NAME_TO_ABBR[this.favoriteTeam];
-      return TEAM_ABBR_TO_COLORS[abbr].secondary;
+      const abbr = HOCKEY_TEAM_NAME_TO_ABBR[this.favoriteTeam];
+      return HOCKEY_TEAM_ABBR_TO_COLORS[abbr].secondary;
     },
     themeBaseColor() {
       return this.darkMode ? "#333333" : "#e2e2e2";
@@ -217,4 +217,5 @@ export default {
 </script>
 
 <style lang="scss">
+
 </style>

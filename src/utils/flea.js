@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/contants';
+import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
 import { setStore, getStore } from './storage';
 import { convertPlayerObjects } from '../hockey/collections/players';
 

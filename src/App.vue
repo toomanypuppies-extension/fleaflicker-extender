@@ -8,24 +8,28 @@
   >
     <div class="mainContent">
       <Hockey v-if="sport === 'nhl'" />
-      <Football v-if="sport === 'nfl'" :leagueId="leagueId" />
+      <Football
+        v-if="sport === 'nfl'"
+        :leagueId="leagueId"
+      />
     </div>
 
-    <div @click="toggleDrawer" class="expandCollapse">
+    <div
+      @click="toggleDrawer"
+      class="expandCollapse"
+    >
       <va-icon
         v-if="sport === 'nhl'"
         class="material-icons"
-        color="#99d9d9"
+        :color="teamSecondaryColor"
         size="large"
-        >sports_hockey</va-icon
-      >
+      >sports_hockey</va-icon>
       <va-icon
         v-if="sport === 'nfl'"
         class="material-icons"
-        color="#99d9d9"
+        :color="teamSecondaryColor"
         size="large"
-        >sports_football</va-icon
-      >
+      >sports_football</va-icon>
     </div>
   </div>
 </template>
@@ -34,18 +38,14 @@
 import { getLeagueId, getSport } from "./utils/util";
 import Hockey from "./hockey/Hockey.vue";
 import Football from "./football/Football.vue";
+import { mapState } from "vuex";
+import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from './hockey/constants';
+import { FOOTBALL_TEAM_NAME_TO_ABBR, FOOTBALL_TEAM_ABBR_TO_COLORS } from './football/constants';
 
 export default {
-  data() {
-    return {
-      sport: null,
-      leagueId: null,
-      drawerExpanded: false,
-    };
-  },
   created() {
-    this.sport = getSport();
-    this.leagueId = getLeagueId();
+    this.$store.commit('setSport', getSport());
+    this.$store.commit('setLeagueId', getLeagueId());
   },
   components: {
     Hockey,
@@ -53,9 +53,28 @@ export default {
   },
   methods: {
     toggleDrawer() {
-      this.drawerExpanded = !this.drawerExpanded;
+      this.$store.commit('toggleDrawer');
     },
   },
+  computed: mapState({
+    sport: state => state.sport,
+    leagueId: state => state.leagueId,
+    drawerExpanded: state => state.drawerExpanded,
+    teamSecondaryColor(state) {
+      let color;
+      switch (state.sport) {
+        case 'nhl':
+          const abbr1 = HOCKEY_TEAM_NAME_TO_ABBR[state.nhl.favoriteTeam];
+          color = HOCKEY_TEAM_ABBR_TO_COLORS[abbr1].secondary;
+        case 'nfl':
+          const abbr2 = FOOTBALL_TEAM_NAME_TO_ABBR[state.nfl.favoriteTeam];
+          color = FOOTBALL_TEAM_ABBR_TO_COLORS[abbr2].secondary;
+        default:
+          break;
+      }
+      return color;
+    }
+  }),
 };
 </script>
 
@@ -76,10 +95,12 @@ export default {
   width: calc(100vw - 100px);
   color: var(--themeAccentColor);
 }
+
 .fleaflicker-extender-drawer {
   &.collapsed {
     right: calc(-100vw + 100px);
   }
+
   &.expanded {
     right: 0;
   }
@@ -96,6 +117,7 @@ export default {
     text-shadow: unset !important;
   }
 }
+
 .expandCollapse {
   position: absolute;
   left: -48px;
@@ -109,6 +131,7 @@ export default {
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
   background-color: var(--teamMainColor);
 }
+
 .mainContent {
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
   display: flex;
@@ -118,11 +141,13 @@ export default {
   padding: 1em;
   background-color: var(--teamMainColor);
 }
+
 .containerColor {
   border: 2px var(--teamSecondaryColor) solid;
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
 }
+
 .v-flex {
   display: flex;
   flex-direction: column;
@@ -130,9 +155,11 @@ export default {
   padding: 0.5em;
   width: 100%;
 }
+
 .spacer {
   height: 0.5em;
 }
+
 .h-flex {
   display: flex;
   flex-direction: row;
@@ -140,13 +167,16 @@ export default {
   padding: 0.5em;
   width: 100%;
 }
+
 .align-center {
   align-items: center;
 }
+
 .flex-spaceBetween {
   display: flex;
   justify-content: space-between;
 }
+
 /*
   * VUESTIC OVERRIDES
   */
@@ -158,22 +188,27 @@ export default {
 .darkTheme .va-input--bordered .va-input__container {
   background: unset;
 }
+
 .darkTheme .va-input__content__input {
   color: #e2e2e2 !important;
 }
+
 .lightTheme .va-input__icons i {
   background: unset !important;
   color: #333333 !important;
 }
+
 .darkTheme .va-input__icons i {
   color: #e2e2e2 !important;
   background: unset !important;
 }
+
 .darkTheme .va-checkbox__square {
   color: #e2e2e2 !important;
   background: #333333 !important;
   border-color: #e2e2e2;
 }
+
 .va-select-option-list__option,
 .va-select-option-list__option i {
   color: #333333 !important;

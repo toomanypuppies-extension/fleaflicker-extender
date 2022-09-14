@@ -1,7 +1,7 @@
 // Ex: https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
 
 import axios from 'axios';
-import { NHL_API_BASE, DATE_MAP, TEAM_NAME_TO_ABBR } from '../contants';
+import { NHL_API_BASE, DATE_MAP, HOCKEY_TEAM_NAME_TO_ABBR } from '../constants';
 import { getStore, setStore } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
 
@@ -50,8 +50,8 @@ const convertGameObjects = (gamesResponse) => {
   const gamesByTeam = {};
   gamesByDate.forEach((day, index) => {
     day.games.forEach(game => {
-      const awayTeam = TEAM_NAME_TO_ABBR[game.teams.away.team.name];
-      const homeTeam = TEAM_NAME_TO_ABBR[game.teams.home.team.name];
+      const awayTeam = HOCKEY_TEAM_NAME_TO_ABBR[game.teams.away.team.name];
+      const homeTeam = HOCKEY_TEAM_NAME_TO_ABBR[game.teams.home.team.name];
 
       if (gamesByTeam[awayTeam]) {
         gamesByTeam[awayTeam].push(DATE_MAP[index]);
