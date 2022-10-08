@@ -1,4 +1,4 @@
-import { set, debounce, merge } from 'lodash';
+import { set, debounce, merge, get } from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors } from './utils/util';
@@ -35,14 +35,14 @@ export const store = createStore({
     return merge(defaultState, localStorageState)
   },
   mutations: {
+    toggleDrawer(state) {
+      state.drawerExpanded = !state.drawerExpanded;
+    },
     setSport(state, payload) {
       state.sport = payload;
     },
     setLeagueId(state, payload) {
       state.leagueId = payload;
-    },
-    toggleDrawer(state) {
-      state.drawerExpanded = !state.drawerExpanded;
     },
     setDarkMode(state, payload) {
       state.settings.darkMode = payload;
@@ -52,6 +52,9 @@ export const store = createStore({
     },
     setKeyValue(state, { key, value }) {
       set(state, key, value)
+    },
+    toggleKeyValue(state, { key }) {
+      set(state, key, !get(state, key))
     }
   },
   getters: {

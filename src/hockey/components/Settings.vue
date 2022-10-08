@@ -92,6 +92,7 @@
 <script>
 import { HOCKEY_TEAM_LIST } from "../constants";
 import { version } from "../../../package.json";
+import { mapGetters } from "vuex";
 
 export default {
   data() {
@@ -99,15 +100,18 @@ export default {
       version: version,
     };
   },
-
-  props: {
-    openSettings: Boolean,
-    themeAccentColor: String,
-    themeBaseColor: String,
-  },
   computed: {
+    ...mapGetters([
+      'themeBaseColor',
+      'themeAccentColor'
+    ]),
     favoriteTeamOptions() {
       return HOCKEY_TEAM_LIST.filter((t) => t !== "Free Agent");
+    },
+    openSettings: {
+      get() {
+        return this.$store.state.nhl.openSettings
+      },
     },
     favoriteTeam: {
       get() {

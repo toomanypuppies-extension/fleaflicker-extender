@@ -77,7 +77,7 @@
     </div>
     <div class="settings-icon">
       <va-icon
-        @click="$emit('toggleSettings')"
+        @click="toggleSettings"
         :color="themeAccentColor"
         class="material-icons"
         size="medium"
@@ -143,6 +143,9 @@ export default {
     emitUpdate(key, val) {
       this.$emit("update", key, val);
     },
+    toggleSettings() {
+      this.$store.commit('toggleKeyValue', { key: 'nhl.openSettings' })
+    }
   },
 };
 </script>

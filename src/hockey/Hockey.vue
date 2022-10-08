@@ -5,10 +5,8 @@
     :themeAccentColor="themeAccentColor"
   />
   <Settings
-    :openSettings="openSettings"
     :themeAccentColor="themeAccentColor"
     :themeBaseColor="themeBaseColor"
-    @update="updateModel"
     @refreshPlayers="refreshPlayers"
   />
 
@@ -73,7 +71,6 @@ export default {
       excludeIfNoPoints: true,
       favoriteTeam: "Seattle Kraken",
       darkMode: true,
-      openSettings: false,
       // player card
       selectedPlayer: null,
       stateToStore: [
@@ -85,7 +82,6 @@ export default {
         "gameDaysSelections",
         "onlyFreeAgents",
         "excludeIfNoPoints",
-        "openSettings",
         "favoriteTeam",
         "darkMode",
         "selectedPlayer",
@@ -136,9 +132,6 @@ export default {
       } else {
         this.selectedPlayer = null;
       }
-    },
-    toggleSettings() {
-      this.openSettings = !this.openSettings;
     },
     refreshPlayers() {
       this.loadPlayers(true);
