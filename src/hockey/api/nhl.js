@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, HOCKEY_TEAM_NAME_TO_ABBR } from '../constants';
-import { getStore, setStore } from '../../utils/storage';
+import { getLocalStorage, setLocalStorage } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
 
 
@@ -12,8 +12,8 @@ const buildUrl = (segment) => {
 
 export const getGamesThisWeek = async (forceRefresh = false) => {
   const now = new Date();
-  const storedGames = getStore('gamesThisWeek');
-  const gamesStoreTime = getStore('gamesThisWeekFetchedAt');
+  const storedGames = getLocalStorage('gamesThisWeek');
+  const gamesStoreTime = getLocalStorage('gamesThisWeekFetchedAt');
   let storedThisWeek = false;
   if (gamesStoreTime) {
     const storeTime = parseInt(gamesStoreTime, 10);
@@ -37,8 +37,8 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
     })
     const games = convertGameObjects(response.data);
 
-    setStore('gamesThisWeek', games);
-    setStore('gamesThisWeekFetchedAt', new Date().getTime());
+    setLocalStorage('gamesThisWeek', games);
+    setLocalStorage('gamesThisWeekFetchedAt', new Date().getTime());
     return games;
   } catch (err) {
     console.error(err)

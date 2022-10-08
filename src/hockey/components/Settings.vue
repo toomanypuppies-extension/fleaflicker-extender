@@ -10,7 +10,6 @@
           :options="favoriteTeamOptions"
           :color="themeAccentColor"
           v-model="favoriteTeam"
-          @update:model-value="(val) => emitUpdate('favoriteTeam', val)"
           placeholder="Seattle Kraken"
           maxHeight="300px"
           bordered
@@ -29,7 +28,6 @@
       <div class="v-flex">
         <va-checkbox
           v-model="darkMode"
-          @update:model-value="(val) => emitUpdate('darkMode', val)"
           :color="themeAccentColor"
           label="Dark Mode"
         ></va-checkbox>
@@ -37,7 +35,6 @@
 
         <va-checkbox
           v-model="excludeIfNoPoints"
-          @update:model-value="(val) => emitUpdate('excludeIfNoPoints', val)"
           :color="themeAccentColor"
           label="Only show players that have points this year (refresh if changed)"
         >
@@ -93,48 +90,50 @@
 </template>
 
 <script>
+
 import { HOCKEY_TEAM_LIST } from "../constants";
-import { getStore, setStore } from "../../utils/storage";
 import { version } from "../../../package.json";
 
 export default {
   data() {
     return {
-      excludeIfNoPoints: true,
-      favoriteTeam: "Seattle Kraken",
-      darkMode: true,
-      stateToStore: ["excludeIfNoPoints", "favoriteTeam", "darkMode"],
       version: version,
     };
   },
-  created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getStore(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
-      }
 
-      // Setup watcher to store info
-      this.$watch(item, (val) => {
-        setStore(item, val);
-      });
-    });
-  },
   props: {
     openSettings: Boolean,
     themeAccentColor: String,
     themeBaseColor: String,
   },
-  methods: {
-    emitUpdate(key, val) {
-      this.$emit("update", key, val);
-    },
-  },
   computed: {
     favoriteTeamOptions() {
       return HOCKEY_TEAM_LIST.filter((t) => t !== "Free Agent");
     },
+    favoriteTeam: {
+      get() {
+        return this.$store.state.nhl.favoriteTeam
+      },
+      set(value) {
+        this.$store.commit('setFavoriteTeam', { sport: 'nhl', team: value })
+      }
+    },
+    excludeIfNoPoints: {
+      get() {
+        return this.$store.state.nhl.excludeIfNoPoints
+      },
+      set(value) {
+        this.$store.commit('setKeyValue', { key: 'nhl.excludeIfNoPoints', value })
+      }
+    },
+    darkMode: {
+      get() {
+        return this.$store.state.settings.darkMode
+      },
+      set(value) {
+        this.$store.commit('setDarkMode', value)
+      }
+    }
   },
 };
 </script>

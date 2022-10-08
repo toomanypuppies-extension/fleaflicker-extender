@@ -62,7 +62,7 @@ import {
 } from "./constants";
 import { getAllHockeyPlayers } from "../utils/flea";
 import { getGamesThisWeek } from "./api/nhl";
-import { getStore, setStore } from "../utils/storage";
+import { getLocalStorage, setLocalStorage } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
@@ -172,14 +172,14 @@ export default {
   created() {
     this.stateToStore.forEach((item) => {
       // load state from store
-      const val = getStore(item);
+      const val = getLocalStorage(item);
       if (val !== undefined && val !== null) {
         this[item] = val;
       }
 
       // Setup watcher to store info
       this.$watch(item, (val) => {
-        setStore(item, val);
+        setLocalStorage(item, val);
       });
     });
     this.leagueId = getLeagueId();

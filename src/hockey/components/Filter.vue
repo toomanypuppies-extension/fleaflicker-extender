@@ -94,7 +94,7 @@ import {
   HOCKEY_TEAM_ABBR_TO_NAME,
   HOCKEY_TEAM_LIST,
 } from "../constants";
-import { getStore, setStore } from "../../utils/storage";
+import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 
 export default {
   props: {
@@ -128,14 +128,14 @@ export default {
   created() {
     this.stateToStore.forEach((item) => {
       // load state from store
-      const val = getStore(item);
+      const val = getLocalStorage(item);
       if (val !== undefined && val !== null) {
         this[item] = val;
       }
 
       // Setup watcher to store info
       this.$watch(item, (val) => {
-        setStore(item, val);
+        setLocalStorage(item, val);
       });
     });
   },

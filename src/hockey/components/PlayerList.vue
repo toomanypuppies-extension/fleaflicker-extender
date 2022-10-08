@@ -78,7 +78,7 @@
 
 <script>
 import { SPORT_HOCKEY, HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
-import { getStore, setStore } from "../../utils/storage";
+import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { containsAll } from "../../utils/util";
 export default {
   data() {
@@ -358,7 +358,7 @@ export default {
   created() {
     this.stateToStore.forEach((item) => {
       // load state from store
-      const val = getStore(item);
+      const val = getLocalStorage(item);
       if (val !== undefined && val !== null) {
         this[item] = val;
       }
@@ -367,7 +367,7 @@ export default {
       this.$watch(
         item,
         (val) => {
-          setStore(item, val);
+          setLocalStorage(item, val);
         },
         {
           deep: true,

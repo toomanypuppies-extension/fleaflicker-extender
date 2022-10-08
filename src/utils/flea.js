@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
-import { setStore, getStore } from './storage';
+import { setLocalStorage, getLocalStorage } from './storage';
 import { convertPlayerObjects } from '../hockey/collections/players';
 
 
@@ -30,8 +30,8 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
 }
 
 export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
-  const storedPlayers = getStore('hockey_players');
-  const playersStoreTime = getStore('hockey_playersFetchedAt');
+  const storedPlayers = getLocalStorage('hockey_players');
+  const playersStoreTime = getLocalStorage('hockey_playersFetchedAt');
   let storedLessThanHourAgo = false;
   if (playersStoreTime) {
     storedLessThanHourAgo = (new Date().getTime() - parseInt(playersStoreTime, 10)) < (60 * 60 * 1000);
@@ -61,15 +61,15 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
   const players = playersList;
   // const players = convertPlayerObjects(playersList);
 
-  setStore('hockey_players', players);
-  setStore('hockey_playersFetchedAt', new Date().getTime());
+  setLocalStorage('hockey_players', players);
+  setLocalStorage('hockey_playersFetchedAt', new Date().getTime());
 
   return players;
 }
 
 export const getAllFootballPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
-  const storedPlayers = getStore('football_players');
-  const playersStoreTime = getStore('football_playersFetchedAt');
+  const storedPlayers = getLocalStorage('football_players');
+  const playersStoreTime = getLocalStorage('football_playersFetchedAt');
   let storedLessThanHourAgo = false;
   if (playersStoreTime) {
     storedLessThanHourAgo = (new Date().getTime() - parseInt(playersStoreTime, 10)) < (60 * 60 * 1000);
@@ -99,8 +99,8 @@ export const getAllFootballPlayers = async (leagueId, stopIfNoPoints = true, for
 
   const players = convertPlayerObjects(playersList);
 
-  setStore('football_players', players);
-  setStore('football_playersFetchedAt', new Date().getTime());
+  setLocalStorage('football_players', players);
+  setLocalStorage('football_playersFetchedAt', new Date().getTime());
 
   return players;
 }

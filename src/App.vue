@@ -4,7 +4,10 @@
     :class="{
       expanded: drawerExpanded,
       collapsed: !drawerExpanded,
+      lightTheme: !darkMode,
+      darkTheme: darkMode,
     }"
+    :style="bindCssVars"
   >
     <div class="mainContent">
       <Hockey v-if="sport === 'nhl'" />
@@ -38,7 +41,7 @@
 import { getLeagueId, getSport } from "./utils/util";
 import Hockey from "./hockey/Hockey.vue";
 import Football from "./football/Football.vue";
-import { mapState } from "vuex";
+import { mapGetters, mapState } from "vuex";
 import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from './hockey/constants';
 import { FOOTBALL_TEAM_NAME_TO_ABBR, FOOTBALL_TEAM_ABBR_TO_COLORS } from './football/constants';
 
@@ -56,37 +59,34 @@ export default {
       this.$store.commit('toggleDrawer');
     },
   },
-  computed: mapState({
-    sport: state => state.sport,
-    leagueId: state => state.leagueId,
-    drawerExpanded: state => state.drawerExpanded,
-    teamSecondaryColor(state) {
-      let color;
-      switch (state.sport) {
-        case 'nhl':
-          const abbr1 = HOCKEY_TEAM_NAME_TO_ABBR[state.nhl.favoriteTeam];
-          color = HOCKEY_TEAM_ABBR_TO_COLORS[abbr1].secondary;
-        case 'nfl':
-          const abbr2 = FOOTBALL_TEAM_NAME_TO_ABBR[state.nfl.favoriteTeam];
-          color = FOOTBALL_TEAM_ABBR_TO_COLORS[abbr2].secondary;
-        default:
-          break;
-      }
-      return color;
-    }
-  }),
+  computed: {
+    ...mapState({
+      sport: state => state.sport,
+      leagueId: state => state.leagueId,
+      drawerExpanded: state => state.drawerExpanded,
+      darkMode: state => state.settings.darkMode
+    }),
+    ...mapGetters([
+      'teamMainColor',
+      'teamSecondaryColor',
+      'themeBaseColor',
+      'themeAccentColor'
+    ]),
+    bindCssVars() {
+      return {
+        "--themeAccentColor": this.themeAccentColor,
+        "--themeBaseColor": this.themeBaseColor,
+        "--teamMainColor": this.teamMainColor,
+        "--teamSecondaryColor": this.teamSecondaryColor,
+        "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
+      };
+    },
+  }
 };
 </script>
 
 <style lang="scss">
 .fleaflicker-extender-drawer {
-  // Set defaults
-  --themeAccentColor: #333333;
-  --themeBaseColor: #e2e2e2;
-  --teamMainColor: #001628;
-  --teamSecondaryColor: #99d9d9;
-  --teamSecondaryColor30Opacity: #99d9d930;
-
   z-index: 100;
   position: fixed;
   bottom: 0;
