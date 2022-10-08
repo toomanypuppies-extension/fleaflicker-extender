@@ -90,7 +90,6 @@
 </template>
 
 <script>
-
 import { HOCKEY_TEAM_LIST } from "../constants";
 import { version } from "../../../package.json";
 

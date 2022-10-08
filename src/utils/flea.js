@@ -58,8 +58,7 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     }
   }
 
-  const players = playersList;
-  // const players = convertPlayerObjects(playersList);
+  const players = convertPlayerObjects(playersList);
 
   setLocalStorage('hockey_players', players);
   setLocalStorage('hockey_playersFetchedAt', new Date().getTime());

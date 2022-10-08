@@ -2,8 +2,6 @@ export const FLEA_API_BASE = 'https://www.fleaflicker.com/api';
 export const NHL_API_BASE = 'https://statsapi.web.nhl.com/api/v1';
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
 
-export const SPORT_HOCKEY = 'hockey';
-
 export const DAYS_ARRAY = [
   'Mo',
   'Tu',

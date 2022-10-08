@@ -77,14 +77,15 @@
 </template>
 
 <script>
-import { SPORT_HOCKEY, HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
+import { HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
 import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 import { containsAll } from "../../utils/util";
+import { mapState, mapGetters } from 'vuex';
 export default {
   data() {
     return {
       tableColumns: {
-        hockey: [
+        nhl: [
           {
             key: "name",
             name: "Name",
@@ -184,13 +185,27 @@ export default {
     positionSelections: Array,
     excludeIfNoPoints: Boolean,
     filter: String,
-    teamSecondaryColor: String,
   },
   computed: {
+    // ...mapState({
+    //   excludeIfNoPoints: state => state.nhl.excludeIfNoPoints,
+    //   filter: state => state.nhl.filter,
+    //   positionSelections: state => state.nhl.positionSelections,
+    //   injurySelections: state => state.nhl.injurySelections,
+    //   teamSelections: state => state.nhl.teamSelections,
+    //   gameDaysSelections: state => state.nhl.gameDaysSelections,
+    //   onlyFreeAgents: state => state.nhl.onlyFreeAgents,
+    //   sport: state => state.nhl.sport,
+
+
+    // }),
+    ...mapGetters([
+      'teamSecondaryColor'
+    ]),
     columns() {
       const sportColumns = this.tableColumns[this.sport];
 
-      if (this.sport === SPORT_HOCKEY) {
+      if (this.sport === 'nhl') {
         return sportColumns.filter((col) => {
           if (this.onlyFreeAgents && col.key === "owner") {
             return false;

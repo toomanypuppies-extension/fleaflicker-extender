@@ -42,8 +42,6 @@ import { getLeagueId, getSport } from "./utils/util";
 import Hockey from "./hockey/Hockey.vue";
 import Football from "./football/Football.vue";
 import { mapGetters, mapState } from "vuex";
-import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from './hockey/constants';
-import { FOOTBALL_TEAM_NAME_TO_ABBR, FOOTBALL_TEAM_ABBR_TO_COLORS } from './football/constants';
 
 export default {
   created() {

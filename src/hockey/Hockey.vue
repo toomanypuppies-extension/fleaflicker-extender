@@ -1,14 +1,4 @@
 <template>
-  <!-- <div
-    class="fleaflicker-extender-drawer"
-    :class="{
-      expanded: drawerExpanded,
-      collapsed: !drawerExpanded,
-      lightTheme: !darkMode,
-      darkTheme: darkMode,
-    }"
-    :style="bindCssVars"
-  > -->
   <Filter
     @update="updateFilterModel"
     @toggleSettings="toggleSettings"
@@ -24,7 +14,7 @@
 
   <PlayerList
     ref="PlayerList"
-    sport="hockey"
+    sport="nhl"
     :loading="loading"
     :players="players"
     :gamesByTeam="gamesByTeam"
@@ -45,13 +35,6 @@
     @fleaflickerNav="toggleDrawer"
     @clearSelectedPlayer="clearSelectedPlayer"
   />
-  <!--
-    <div @click="toggleDrawer" class="expandCollapse">
-      <va-icon class="material-icons" :color="teamSecondaryColor" size="large"
-        >sports_hockey</va-icon
-      >
-    </div> -->
-  <!-- </div> -->
 </template>
 
 <script>
