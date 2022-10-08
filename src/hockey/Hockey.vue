@@ -1,7 +1,6 @@
 <template>
   <Filter
     @update="updateFilterModel"
-    @toggleSettings="toggleSettings"
     :themeAccentColor="themeAccentColor"
   />
   <Settings
