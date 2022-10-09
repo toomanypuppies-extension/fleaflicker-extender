@@ -5,7 +5,7 @@
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "si:serve": "cross-env STANDALONE=true parcel serve --target=site",
-    "si:build": "parcel build --target=site",
+    "si:build": "cross-env STANDALONE=true parcel build --target=site",
     "ex:watch": "parcel watch --no-hmr --target=extension",
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",

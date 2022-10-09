@@ -1,6 +1,7 @@
 
-export const FLEA_API_BASE = process.env.STANDALONE ? 'http://127.0.0.1:3000/proxy/flea' : 'https://www.fleaflicker.com/api';
-export const NHL_API_BASE = process.env.STANDALONE ? 'http://127.0.0.1:3000/proxy/nhl' : 'https://statsapi.web.nhl.com/api/v1';
+const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:3000' : 'https://winter-inkwell-365019.uc.r.appspot.com'
+export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
+export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
 
 export const DAYS_ARRAY = [

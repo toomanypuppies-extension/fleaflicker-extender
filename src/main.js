@@ -1,13 +1,17 @@
 import './styles/main.css'
-import { createApp } from 'vue/dist/vue.esm-bundler';
+import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router'
 import { VuesticPlugin } from 'vuestic-ui';
 import 'vuestic-ui/dist/vuestic-ui.css'
 import Main from './shared/components/Main.vue';
 import Extension from './Extension.vue';
 import Site from './Site.vue';
+import Router from './Router.vue'
 import { store } from './store';
 let { STANDALONE } = process.env;
+
+globalThis.__VUE_OPTIONS_API__ = true;
+globalThis.__VUE_PROD_DEVTOOLS__ = false;
 
 if (!STANDALONE) {
   /**
@@ -26,7 +30,7 @@ if (!STANDALONE) {
   /**
    * Standalone site initialization
    */
-  const app = createApp({});
+  const app = createApp(Router);
   app.use(store);
   app.use(VuesticPlugin);
 
