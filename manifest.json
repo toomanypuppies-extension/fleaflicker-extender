@@ -15,10 +15,10 @@
       ],
       "run_at": "document_idle",
       "js": [
-        "dist/main.js"
+        "dist/extension/main.js"
       ],
       "css": [
-        "dist/main.css"
+        "dist/extension/main.css"
       ]
     }
   ]

@@ -1,67 +1,45 @@
 <template>
   <div
-    class="fleaflicker-extender-drawer"
+    class="mainContent"
+    :style="bindCssVars"
     :class="{
-      expanded: drawerExpanded,
-      collapsed: !drawerExpanded,
       lightTheme: !darkMode,
       darkTheme: darkMode,
     }"
-    :style="bindCssVars"
   >
-    <div class="mainContent">
-      <Hockey v-if="sport === 'nhl'" />
-      <Football
-        v-if="sport === 'nfl'"
-        :leagueId="leagueId"
-      />
-    </div>
-
-    <div
-      @click="toggleDrawer"
-      class="expandCollapse"
-    >
-      <va-icon
-        v-if="sport === 'nhl'"
-        class="material-icons"
-        :color="teamSecondaryColor"
-        size="large"
-      >sports_hockey</va-icon>
-      <va-icon
-        v-if="sport === 'nfl'"
-        class="material-icons"
-        :color="teamSecondaryColor"
-        size="large"
-      >sports_football</va-icon>
-    </div>
+    <Hockey v-if="sport === 'nhl'" />
+    <Football
+      v-if="sport === 'nfl'"
+      :leagueId="leagueId"
+    />
   </div>
 </template>
 
 <script>
-import { getLeagueId, getSport } from "./utils/util";
-import Hockey from "./hockey/Hockey.vue";
-import Football from "./football/Football.vue";
+import { getLeagueId, getSport } from "../../utils/util";
+import Hockey from "../../hockey/Hockey.vue";
+import Football from "../../football/Football.vue";
 import { mapGetters, mapState } from "vuex";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
+  name: 'Main',
   created() {
     this.$store.commit('setSport', getSport());
     this.$store.commit('setLeagueId', getLeagueId());
+    this.$store.commit('loadFromLocalStorage');
   },
   components: {
     Hockey,
     Football,
   },
   methods: {
-    toggleDrawer() {
-      this.$store.commit('toggleDrawer');
-    },
+
   },
   computed: {
     ...mapState({
       sport: state => state.sport,
       leagueId: state => state.leagueId,
-      drawerExpanded: state => state.drawerExpanded,
       darkMode: state => state.settings.darkMode
     }),
     ...mapGetters([
@@ -80,56 +58,10 @@ export default {
       };
     },
   }
-};
+});
 </script>
 
 <style lang="scss">
-.fleaflicker-extender-drawer {
-  z-index: 100;
-  position: fixed;
-  bottom: 0;
-  transition: all 350ms;
-  height: 100vh;
-  width: calc(100vw - 100px);
-  color: var(--themeAccentColor);
-}
-
-.fleaflicker-extender-drawer {
-  &.collapsed {
-    right: calc(-100vw + 100px);
-  }
-
-  &.expanded {
-    right: 0;
-  }
-
-  /**
-  * Fleaflicker overrides
-  */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    text-shadow: unset !important;
-  }
-}
-
-.expandCollapse {
-  position: absolute;
-  left: -48px;
-  bottom: 48px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 48px;
-  width: 48px;
-  box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
-  background-color: var(--teamMainColor);
-}
-
 .mainContent {
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
   display: flex;
@@ -138,6 +70,7 @@ export default {
   width: 100%;
   padding: 1em;
   background-color: var(--teamMainColor);
+  color: var(--themeAccentColor);
 }
 
 .containerColor {

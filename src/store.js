@@ -3,8 +3,6 @@ import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors } from './utils/util';
 
-const localStorageState = getLocalStorage('vuex-state');
-
 export const store = createStore({
   state() {
     const defaultState = {
@@ -32,7 +30,7 @@ export const store = createStore({
         excludeIfNoPoints: false,
       },
     };
-    return merge(defaultState, localStorageState)
+    return defaultState;
   },
   mutations: {
     toggleDrawer(state) {
@@ -55,6 +53,10 @@ export const store = createStore({
     },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))
+    },
+    loadFromLocalStorage(state) {
+      const localStorageState = getLocalStorage('vuex-state', state.leagueId);
+      return merge(state, localStorageState)
     }
   },
   getters: {
@@ -65,16 +67,16 @@ export const store = createStore({
       return state.settings.darkMode ? "#e2e2e2" : "#333333";
     },
     teamMainColor(state) {
-      return getColors(state).primary;
+      return getColors(state)?.primary;
     },
     teamSecondaryColor(state) {
-      return getColors(state).secondary;
+      return getColors(state)?.secondary;
     }
   }
 })
 
 const localStoreSubscriber = debounce((mutation, state) => {
-  setLocalStorage('vuex-state', state);
+  setLocalStorage('vuex-state', state, state.leagueId);
 }, 250);
 
 store.subscribe(localStoreSubscriber)
