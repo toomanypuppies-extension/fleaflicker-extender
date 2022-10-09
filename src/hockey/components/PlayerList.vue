@@ -15,7 +15,6 @@
               v-for="column in columns"
               :key="column.key"
               @click="() => handledSortSingleClick(column)"
-              @touch="() => handledSortSingleClick(column)"
               @dblclick="() => handledSortDoubleClick(column)"
               class="headerStyles"
               :class="{ cursor: column.sortable }"

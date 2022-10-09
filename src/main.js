@@ -1,6 +1,6 @@
 import './styles/main.css'
 import { createApp } from 'vue';
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import { VuesticPlugin } from 'vuestic-ui';
 import 'vuestic-ui/dist/vuestic-ui.css'
 import Main from './shared/components/Main.vue';
@@ -44,7 +44,7 @@ if (!STANDALONE) {
   ]
 
   const router = createRouter({
-    history: createWebHistory(),
+    history: createWebHashHistory(),
     routes, // short for `routes: routes`
   })
 

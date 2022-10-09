@@ -22,6 +22,8 @@
     "site": {
       "context": "browser",
       "outputFormat": "global",
+      "scopeHoist": false,
+      "sourceMap": false,
       "source": "src/index.html"
     }
   },

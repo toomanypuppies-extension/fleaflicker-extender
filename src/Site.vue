@@ -62,7 +62,7 @@ export default defineComponent({
 
   computed: {
     url() {
-      return `/${this.sport}/leagues/${this.leagueId}`
+      return `/#/${this.sport}/leagues/${this.leagueId}`
     }
   }
 })

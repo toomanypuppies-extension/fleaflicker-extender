@@ -1,5 +1,5 @@
 
-const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:3000' : 'https://winter-inkwell-365019.uc.r.appspot.com'
+const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
 export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
 export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
