@@ -4,10 +4,26 @@
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "watch": "parcel watch --no-source-maps --no-hmr",
-    "build": "parcel build --no-scope-hoist",
-    "build:chrome": "rm -rf extension-build-chrome/dist && parcel build --no-scope-hoist --dist-dir=extension-build-chrome/dist --no-source-maps",
-    "build:firefox": "rm -rf extension-build-firefox/dist && parcel build --no-scope-hoist --dist-dir=extension-build-firefox/dist --no-source-maps"
+    "si:serve": "cross-env STANDALONE=true parcel serve --target=site",
+    "si:build": "parcel build --target=site",
+    "ex:watch": "parcel watch --no-hmr --target=extension",
+    "ex:build": "parcel build --target=extension",
+    "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
+    "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist"
+  },
+  "targets": {
+    "extension": {
+      "context": "browser",
+      "outputFormat": "global",
+      "scopeHoist": false,
+      "sourceMap": false,
+      "source": "src/main.js"
+    },
+    "site": {
+      "context": "browser",
+      "outputFormat": "global",
+      "source": "src/index.html"
+    }
   },
   "alias": {
     "process": false
@@ -15,6 +31,7 @@
   "devDependencies": {
     "@parcel/transformer-sass": "2.3.1",
     "@parcel/transformer-vue": "^2.3.1",
+    "cross-env": "^7.0.3",
     "parcel": "^2.3.1",
     "sass": "^1.49.8"
   },

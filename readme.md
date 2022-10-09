@@ -28,6 +28,11 @@ A chrome/firefox extension to extend the capabilities of the fleaflicker site.
 6. Click "Load Unpacked"
 7. Navigate to fleaflicker site to see extension load in
 
+## Local Dev for standalone site
+Using https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf/related?hl=en extension for CORS. Will need a proxy setup for prod.
+
+Need to use https://github.com/chimurai/http-proxy-middleware and setup an express server. That server will handle the proxies and also be the one that hosts the static files for the site
+
 >
 > Any changes to the extension require that you hit the refresh button on the extensions page for the unpacked extension. Hot module reloading does not work.
 >

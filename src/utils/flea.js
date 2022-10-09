@@ -21,7 +21,7 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
         'filter.free_agent_only': freeAgent,
         sort: SORT_OPTIONS.total,
         result_offset: offset
-      }
+      },
     });
     return response.data;
   } catch (err) {
