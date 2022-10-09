@@ -58,6 +58,8 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     }
   }
 
+  console.log('no more players', morePlayersLeft)
+
   const players = convertPlayerObjects(playersList);
 
   setLocalStorage('hockey_players', players);

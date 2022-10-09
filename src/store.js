@@ -27,7 +27,7 @@ export const store = createStore({
         positionSelections: [],
         gameDaysSelections: [],
         onlyFreeAgents: true,
-        excludeIfNoPoints: false,
+        excludeIfNoPoints: true,
       },
     };
     return defaultState;

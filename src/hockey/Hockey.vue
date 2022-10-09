@@ -67,7 +67,6 @@ export default {
       gameDaysSelections: [],
       onlyFreeAgents: true,
       // settings
-      excludeIfNoPoints: true,
       favoriteTeam: "Seattle Kraken",
       darkMode: true,
       // player card
@@ -80,7 +79,6 @@ export default {
         "positionSelections",
         "gameDaysSelections",
         "onlyFreeAgents",
-        "excludeIfNoPoints",
         "favoriteTeam",
         "darkMode",
         "selectedPlayer",
@@ -186,6 +184,11 @@ export default {
     },
     themeAccentColor() {
       return this.darkMode ? "#e2e2e2" : "#333333";
+    },
+    excludeIfNoPoints: {
+      get() {
+        return this.$store.state.nhl.excludeIfNoPoints
+      }
     },
   },
 };

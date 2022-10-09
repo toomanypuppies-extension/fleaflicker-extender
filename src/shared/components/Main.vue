@@ -67,6 +67,7 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   height: 100%;
+  max-height: 100vh;
   width: 100%;
   padding: 1em;
   background-color: var(--teamMainColor);
