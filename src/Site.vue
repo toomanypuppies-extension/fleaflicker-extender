@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="site-container">
     <va-card
       color="background"
       style="padding: 0.75em; margin-bottom: 1em;"
@@ -69,9 +69,10 @@ export default defineComponent({
 </script>
 
 <style scoped>
-.container {
+.site-container {
   padding: 1em;
-  height: 100vh;
+  position: fixed;
+  height: 100%;
   width: 100vw;
   color: #e2e2e2 !important;
   background: #333333 !important;

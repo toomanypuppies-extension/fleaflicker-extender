@@ -163,5 +163,6 @@ export default {
 
 .tall-checkbox {
   height: 38px;
+  display: flex;
 }
 </style>

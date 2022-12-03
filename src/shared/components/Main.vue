@@ -66,8 +66,8 @@ export default defineComponent({
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
+  position: fixed;
   height: 100%;
-  max-height: 100vh;
   width: 100%;
   padding: 1em;
   background-color: var(--teamMainColor);
