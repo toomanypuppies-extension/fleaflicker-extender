@@ -4,9 +4,10 @@
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "si:serve": "cross-env STANDALONE=true parcel serve --target=site",
-    "si:build": "cross-env STANDALONE=true parcel build --target=site",
-    "ex:watch": "parcel watch --no-hmr --target=extension",
+    "si:dev": "cross-env STANDALONE=true parcel serve --target=site",
+    "si:build": "rm -rf dist/site && cross-env STANDALONE=true parcel build --target=site",
+    "si:serveprod": "yarn si:build && serve -s -p 1234 dist/site/",
+    "ex:dev": "parcel watch --no-hmr --target=extension",
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
     "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist"
@@ -35,7 +36,8 @@
     "@parcel/transformer-vue": "^2.3.1",
     "cross-env": "^7.0.3",
     "parcel": "^2.3.1",
-    "sass": "^1.49.8"
+    "sass": "^1.49.8",
+    "serve": "^14.1.2"
   },
   "dependencies": {
     "@vueuse/core": "^7.6.2",

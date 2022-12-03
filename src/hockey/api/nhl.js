@@ -4,6 +4,7 @@ import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, HOCKEY_TEAM_NAME_TO_ABBR } from '../constants';
 import { getLocalStorage, setLocalStorage } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
+import { changeTimeZone } from '../../utils/util';
 
 
 const buildUrl = (segment) => {
@@ -11,14 +12,15 @@ const buildUrl = (segment) => {
 }
 
 export const getGamesThisWeek = async (forceRefresh = false) => {
-  const now = new Date();
+  // Always use EST time for this as thats what flea tracks weeks by
+  const now = changeTimeZone(new Date(), 'America/New_York');
   const storedGames = getLocalStorage('gamesThisWeek');
   const gamesStoreTime = getLocalStorage('gamesThisWeekFetchedAt');
   let storedThisWeek = false;
+
   if (gamesStoreTime) {
-    const storeTime = parseInt(gamesStoreTime, 10);
-    const storeDate = new Date(storeTime);
-    if (isSameWeek(storeDate, now, 1)) {
+    const storeDate = new Date(gamesStoreTime);
+    if (isSameWeek(storeDate, now, { weekStartsOn: 1 })) {
       storedThisWeek = true;
     }
   }
@@ -36,9 +38,8 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
       }
     })
     const games = convertGameObjects(response.data);
-
     setLocalStorage('gamesThisWeek', games);
-    setLocalStorage('gamesThisWeekFetchedAt', new Date().getTime());
+    setLocalStorage('gamesThisWeekFetchedAt', now.toLocaleString('en-US'));
     return games;
   } catch (err) {
     console.error(err)
@@ -48,6 +49,7 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
 const convertGameObjects = (gamesResponse) => {
   const gamesByDate = gamesResponse.dates;
   const gamesByTeam = {};
+
   gamesByDate.forEach((day, index) => {
     day.games.forEach(game => {
       const awayTeam = HOCKEY_TEAM_NAME_TO_ABBR[game.teams.away.team.name];

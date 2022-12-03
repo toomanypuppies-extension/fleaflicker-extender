@@ -36,3 +36,19 @@ export const getColors = (state) => {
     return FOOTBALL_TEAM_ABBR_TO_COLORS[abbr];
   }
 }
+
+export const changeTimeZone = (date, timeZone) => {
+  if (typeof date === 'string') {
+    return new Date(
+      new Date(date).toLocaleString('en-US', {
+        timeZone,
+      }),
+    );
+  }
+
+  return new Date(
+    date.toLocaleString('en-US', {
+      timeZone,
+    }),
+  );
+}
