@@ -52,3 +52,16 @@ export const changeTimeZone = (date, timeZone) => {
     }),
   );
 }
+
+// Returns key=val1&key=val2@key=val3
+export const mapToQueryArrayString = (array, key) => {
+  let queryString = '';
+  array.forEach((item, index) => {
+    if (index !== (array.length - 1)) {
+      queryString = queryString.concat(`${key}=${item}&`)
+    } else {
+      queryString = queryString.concat(`${key}=${item}`)
+    }
+  })
+  return queryString;
+}

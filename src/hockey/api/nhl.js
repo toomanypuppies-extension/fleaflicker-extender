@@ -1,4 +1,8 @@
-// Ex: https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
+// Schedule example
+// https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
+
+// Player stats example
+// https://statsapi.web.nhl.com/api/v1/people/8475193/stats?stats=statsSingleSeason&season=20222023
 
 import axios from 'axios';
 import { NHL_API_BASE, DATE_MAP, HOCKEY_TEAM_NAME_TO_ABBR } from '../constants';

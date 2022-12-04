@@ -40,7 +40,6 @@ import {
   HOCKEY_TEAM_ABBR_TO_COLORS,
   HOCKEY_TEAM_ABBR_TO_NAME,
 } from "./constants";
-import { getAllHockeyPlayers } from "../utils/flea";
 import { getGamesThisWeek } from "./api/nhl";
 import { getLocalStorage, setLocalStorage } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
@@ -48,6 +47,7 @@ import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
 import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
+import { loadHockeyPlayers } from "./collections/players";
 
 export default {
   data() {
@@ -100,7 +100,7 @@ export default {
     async loadPlayers(forceRefresh) {
       this.players = [];
       this.loading = true;
-      const result = await getAllHockeyPlayers(
+      const result = await loadHockeyPlayers(
         this.leagueId,
         this.excludeIfNoPoints,
         forceRefresh
