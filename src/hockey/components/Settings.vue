@@ -1,5 +1,8 @@
 <template>
-  <div v-if="openSettings" class="settingsContainer containerColor">
+  <div
+    v-if="openSettings"
+    class="settingsContainer containerColor"
+  >
     <div class="h-flex">
       <div class="v-flex">
         <va-select
@@ -7,7 +10,6 @@
           :options="favoriteTeamOptions"
           :color="themeAccentColor"
           v-model="favoriteTeam"
-          @update:model-value="(val) => emitUpdate('favoriteTeam', val)"
           placeholder="Seattle Kraken"
           maxHeight="300px"
           bordered
@@ -21,13 +23,11 @@
           @click="$emit('refreshPlayers')"
           :color="themeAccentColor"
           :text-color="themeBaseColor"
-          >Refresh Players</va-button
-        >
+        >Refresh Players</va-button>
       </div>
       <div class="v-flex">
         <va-checkbox
           v-model="darkMode"
-          @update:model-value="(val) => emitUpdate('darkMode', val)"
           :color="themeAccentColor"
           label="Dark Mode"
         ></va-checkbox>
@@ -35,7 +35,6 @@
 
         <va-checkbox
           v-model="excludeIfNoPoints"
-          @update:model-value="(val) => emitUpdate('excludeIfNoPoints', val)"
           :color="themeAccentColor"
           label="Only show players that have points this year (refresh if changed)"
         >
@@ -49,10 +48,19 @@
       <ul class="tipsList">
         <li>
           You can sort up to two columns at a time.
-          <va-icon class="material-icons" size="1em">expand_more</va-icon> will
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon> will
           be shown on the primary sort column, and
-          <va-icon class="material-icons" size="1em">expand_more</va-icon
-          ><va-icon class="material-icons" size="1em">expand_more</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon>
           will be shown on the secondary sort column.
         </li>
         <li>
@@ -62,7 +70,10 @@
         </li>
         <li>
           Click the
-          <va-icon class="material-icons" size="1em">sports_hockey</va-icon>
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >sports_hockey</va-icon>
           icon in the lower left to open/close the extension.
         </li>
         <li>
@@ -79,48 +90,53 @@
 </template>
 
 <script>
-import { TEAM_LIST } from "../contants";
-import { getStore, setStore } from "../utils/storage";
-import { version } from "../../package.json";
+import { HOCKEY_TEAM_LIST } from "../constants";
+import { version } from "../../../package.json";
+import { mapGetters } from "vuex";
 
 export default {
   data() {
     return {
-      excludeIfNoPoints: true,
-      favoriteTeam: "Seattle Kraken",
-      darkMode: true,
-      stateToStore: ["excludeIfNoPoints", "favoriteTeam", "darkMode"],
       version: version,
     };
   },
-  created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getStore(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
-      }
-
-      // Setup watcher to store info
-      this.$watch(item, (val) => {
-        setStore(item, val);
-      });
-    });
-  },
-  props: {
-    openSettings: Boolean,
-    themeAccentColor: String,
-    themeBaseColor: String,
-  },
-  methods: {
-    emitUpdate(key, val) {
-      this.$emit("update", key, val);
-    },
-  },
   computed: {
+    ...mapGetters([
+      'themeBaseColor',
+      'themeAccentColor'
+    ]),
     favoriteTeamOptions() {
-      return TEAM_LIST.filter((t) => t !== "Free Agent");
+      return HOCKEY_TEAM_LIST.filter((t) => t !== "Free Agent");
     },
+    openSettings: {
+      get() {
+        return this.$store.state.nhl.openSettings
+      },
+    },
+    favoriteTeam: {
+      get() {
+        return this.$store.state.nhl.favoriteTeam
+      },
+      set(value) {
+        this.$store.commit('setFavoriteTeam', { sport: 'nhl', team: value })
+      }
+    },
+    excludeIfNoPoints: {
+      get() {
+        return this.$store.state.nhl.excludeIfNoPoints
+      },
+      set(value) {
+        this.$store.commit('setKeyValue', { key: 'nhl.excludeIfNoPoints', value })
+      }
+    },
+    darkMode: {
+      get() {
+        return this.$store.state.settings.darkMode
+      },
+      set(value) {
+        this.$store.commit('setDarkMode', value)
+      }
+    }
   },
 };
 </script>
@@ -131,18 +147,22 @@ export default {
   padding: 1em;
   margin: 1em;
 }
+
 .tipsHeader {
   font-size: 1.25em;
   padding-bottom: 0.5em;
 }
+
 .tipsList {
   list-style: square;
   padding-left: 2em;
 }
+
 .settingsContainer {
   position: relative;
   margin-bottom: 1em;
 }
+
 .version {
   position: absolute;
   top: 0;

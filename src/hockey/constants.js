@@ -1,9 +1,8 @@
-export const FLEA_API_BASE = 'https://www.fleaflicker.com/api';
-export const NHL_API_BASE = 'https://statsapi.web.nhl.com/api/v1';
 
+const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
+export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
+export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
 export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
-
-export const SPORT_HOCKEY = 'hockey';
 
 export const DAYS_ARRAY = [
   'Mo',
@@ -29,7 +28,7 @@ export const SORT_OPTIONS = {
   total: 'SORT_SEASON_TOTAL',
 }
 
-export const POSITION_OPTIONS = [
+export const HOCKEY_POSITION_OPTIONS = [
   'G',
   'C',
   'LW',
@@ -39,7 +38,7 @@ export const POSITION_OPTIONS = [
   'D',
 ]
 
-export const INJURY_LIST = [
+export const HOCKEY_INJURY_LIST = [
   'HEALTHY',
   'DTD',
   'OUT',
@@ -47,7 +46,7 @@ export const INJURY_LIST = [
   'IR',
 ]
 
-export const TEAM_LIST = [
+export const HOCKEY_TEAM_LIST = [
   "Anaheim Ducks",
   "Arizona Coyotes",
   "Boston Bruins",
@@ -83,7 +82,7 @@ export const TEAM_LIST = [
   "Free Agent"
 ]
 
-export const TEAM_NAME_TO_ABBR = {
+export const HOCKEY_TEAM_NAME_TO_ABBR = {
   "Anaheim Ducks": "ANA",
   "Arizona Coyotes": "ARI",
   "Boston Bruins": "BOS",
@@ -121,7 +120,7 @@ export const TEAM_NAME_TO_ABBR = {
   "Free Agent": "FA"
 }
 
-export const TEAM_ABBR_TO_NAME = {
+export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "ANA": "Anaheim Ducks",
   "ARI": "Arizona Coyotes",
   "BOS": "Boston Bruins",
@@ -157,7 +156,7 @@ export const TEAM_ABBR_TO_NAME = {
   "FA": "Free Agent"
 }
 
-export const TEAM_ABBR_TO_COLORS = {
+export const HOCKEY_TEAM_ABBR_TO_COLORS = {
   "ANA": {
     primary: '#B9975B',
     secondary: '#F47A38',

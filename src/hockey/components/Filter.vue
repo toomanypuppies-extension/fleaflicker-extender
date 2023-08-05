@@ -77,12 +77,11 @@
     </div>
     <div class="settings-icon">
       <va-icon
-        @click="$emit('toggleSettings')"
+        @click="toggleSettings"
         :color="themeAccentColor"
         class="material-icons"
         size="medium"
-        >settings</va-icon
-      >
+      >settings</va-icon>
     </div>
   </div>
 </template>
@@ -90,12 +89,12 @@
 <script>
 import {
   DAYS_ARRAY,
-  INJURY_LIST,
-  POSITION_OPTIONS,
-  TEAM_ABBR_TO_NAME,
-  TEAM_LIST,
-} from "../contants";
-import { getStore, setStore } from "../utils/storage";
+  HOCKEY_INJURY_LIST,
+  HOCKEY_POSITION_OPTIONS,
+  HOCKEY_TEAM_ABBR_TO_NAME,
+  HOCKEY_TEAM_LIST,
+} from "../constants";
+import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 
 export default {
   props: {
@@ -103,10 +102,10 @@ export default {
   },
   data() {
     return {
-      teamOptions: TEAM_LIST,
-      teamAbbrToName: TEAM_ABBR_TO_NAME,
-      injuryOptions: INJURY_LIST,
-      positionOptions: POSITION_OPTIONS,
+      teamOptions: HOCKEY_TEAM_LIST,
+      teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
+      injuryOptions: HOCKEY_INJURY_LIST,
+      positionOptions: HOCKEY_POSITION_OPTIONS,
       daysOptions: DAYS_ARRAY,
       filter: "",
       teamSelections: [],
@@ -129,14 +128,14 @@ export default {
   created() {
     this.stateToStore.forEach((item) => {
       // load state from store
-      const val = getStore(item);
+      const val = getLocalStorage(item);
       if (val !== undefined && val !== null) {
         this[item] = val;
       }
 
       // Setup watcher to store info
       this.$watch(item, (val) => {
-        setStore(item, val);
+        setLocalStorage(item, val);
       });
     });
   },
@@ -144,6 +143,9 @@ export default {
     emitUpdate(key, val) {
       this.$emit("update", key, val);
     },
+    toggleSettings() {
+      this.$store.commit('toggleKeyValue', { key: 'nhl.openSettings' })
+    }
   },
 };
 </script>
@@ -153,11 +155,14 @@ export default {
   display: flex;
   margin-bottom: 1em;
 }
+
 .settings-icon {
   flex-shrink: 1;
   padding: 0.5em;
 }
+
 .tall-checkbox {
   height: 38px;
+  display: flex;
 }
 </style>
