@@ -48,7 +48,6 @@ export const HOCKEY_INJURY_LIST = [
 
 export const HOCKEY_TEAM_LIST = [
   "Anaheim Ducks",
-  "Arizona Coyotes",
   "Boston Bruins",
   "Buffalo Sabres",
   "Calgary Flames",
@@ -75,6 +74,7 @@ export const HOCKEY_TEAM_LIST = [
   "St. Louis Blues",
   "Tampa Bay Lightning",
   "Toronto Maple Leafs",
+  "Utah Hockey Club",
   "Vancouver Canucks",
   "Vegas Golden Knights",
   "Washington Capitals",
@@ -113,6 +113,7 @@ export const HOCKEY_TEAM_NAME_TO_ABBR = {
   "St. Louis Blues": "STL",
   "Tampa Bay Lightning": "TB",
   "Toronto Maple Leafs": "TOR",
+  "Utah Hockey Club": "UTA",
   "Vancouver Canucks": "VAN",
   "Vegas Golden Knights": "VGK",
   "Washington Capitals": "WSH",
@@ -122,7 +123,6 @@ export const HOCKEY_TEAM_NAME_TO_ABBR = {
 
 export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "ANA": "Anaheim Ducks",
-  "ARI": "Arizona Coyotes",
   "BOS": "Boston Bruins",
   "BUF": "Buffalo Sabres",
   "CGY": "Calgary Flames",
@@ -149,6 +149,7 @@ export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "STL": "St. Louis Blues",
   "TB": "Tampa Bay Lightning",
   "TOR": "Toronto Maple Leafs",
+  "UTA": "Utah Hockey Club",
   "VAN": "Vancouver Canucks",
   "VGK": "Vegas Golden Knights",
   "WSH": "Washington Capitals",
@@ -160,10 +161,6 @@ export const HOCKEY_TEAM_ABBR_TO_COLORS = {
   "ANA": {
     primary: '#B9975B',
     secondary: '#F47A38',
-  },
-  "ARI": {
-    primary: '#8C2633',
-    secondary: '#E2D6B5',
   },
   "BOS": {
     primary: '#000000',
@@ -268,6 +265,10 @@ export const HOCKEY_TEAM_ABBR_TO_COLORS = {
   "TOR": {
     primary: '#00205B',
     secondary: '#FFFFFF',
+  },
+  "UTA": {
+    primary: '#7ab2e1',
+    secondary: '#000000',
   },
   "VAN": {
     primary: '#00205B',
