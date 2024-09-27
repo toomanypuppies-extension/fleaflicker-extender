@@ -6,7 +6,7 @@
         @update:model-value="(val) => emitUpdate('filter', val)"
         :color="themeAccentColor"
         label="Search"
-        placeholder="Johnny Hockey"
+        placeholder="Nils Hoglander"
         bordered
       />
       <span class="spacer"></span>
