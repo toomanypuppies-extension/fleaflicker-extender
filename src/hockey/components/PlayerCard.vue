@@ -66,7 +66,7 @@
           v-if="selectedPlayerFleaflickerLink"
           @click="$emit('fleaflickerNav')"
           style="color: var(--themeAccentColor)"
-        >Fleaflicker player page
+        >Fleaflicker
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
@@ -78,7 +78,19 @@
           v-if="selectedPlayerDobberLink"
           target="_blank"
           style="color: var(--themeAccentColor)"
-        >Dobber player page
+        >Dobber
+          <va-icon
+            class="material-icons"
+            style="color: var(--themeAccentColor)"
+            size="small"
+          >link</va-icon>
+        </a>
+        <a
+          :href="selectedPlayerPuckpediaLink"
+          v-if="selectedPlayerPuckpediaLink"
+          target="_blank"
+          style="color: var(--themeAccentColor)"
+        >PuckPedia
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
@@ -90,7 +102,7 @@
           v-if="selectedPlayerDailyFaceoffTeamLink"
           target="_blank"
           style="color: var(--themeAccentColor)"
-        >{{ teamAbbrToName[selectedPlayer.team] }} daily faceoff lineup page
+        >{{ teamAbbrToName[selectedPlayer.team] }} Daily Faceoff
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
@@ -146,6 +158,16 @@ export default {
           ?.join("-")
           ?.replaceAll(".", "");
         return `https://frozenpool.dobbersports.com/players/${kebabName.toLowerCase()}`;
+      }
+      return null;
+    },
+    selectedPlayerPuckpediaLink() {
+      if (this.selectedPlayer?.name) {
+        const kebabName = this.selectedPlayer.name
+          ?.split(" ")
+          ?.join("-")
+          ?.replaceAll(".", "");
+        return `https://puckpedia.com/player/${kebabName.toLowerCase()}`;
       }
       return null;
     },
