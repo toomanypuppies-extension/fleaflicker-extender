@@ -1,13 +1,15 @@
 <template>
-  <div v-if="selectedPlayer" class="playerContainer containerColor">
+  <div
+    v-if="selectedPlayer"
+    class="playerContainer containerColor"
+  >
     <div class="playerContainerLeft">
       <va-icon
         @click="$emit('clearSelectedPlayer')"
         class="material-icons playerClose"
         style="color: var(--themeAccentColor)"
         size="medium"
-        >close</va-icon
-      >
+      >close</va-icon>
       <div class="v-flex">
         <h2>
           {{ selectedPlayer.name }} -
@@ -64,40 +66,49 @@
           v-if="selectedPlayerFleaflickerLink"
           @click="$emit('fleaflickerNav')"
           style="color: var(--themeAccentColor)"
-          >Fleaflicker player page
+        >Fleaflicker
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
             size="small"
-            >link</va-icon
-          ></a
-        >
+          >link</va-icon>
+        </a>
         <a
           :href="selectedPlayerDobberLink"
           v-if="selectedPlayerDobberLink"
           target="_blank"
           style="color: var(--themeAccentColor)"
-          >Dobber player page
+        >Dobber
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
             size="small"
-            >link</va-icon
-          ></a
-        >
+          >link</va-icon>
+        </a>
+        <a
+          :href="selectedPlayerPuckpediaLink"
+          v-if="selectedPlayerPuckpediaLink"
+          target="_blank"
+          style="color: var(--themeAccentColor)"
+        >PuckPedia
+          <va-icon
+            class="material-icons"
+            style="color: var(--themeAccentColor)"
+            size="small"
+          >link</va-icon>
+        </a>
         <a
           :href="selectedPlayerDailyFaceoffTeamLink"
           v-if="selectedPlayerDailyFaceoffTeamLink"
           target="_blank"
           style="color: var(--themeAccentColor)"
-          >{{ teamAbbrToName[selectedPlayer.team] }} daily faceoff lineup page
+        >{{ teamAbbrToName[selectedPlayer.team] }} Daily Faceoff
           <va-icon
             class="material-icons"
             style="color: var(--themeAccentColor)"
             size="small"
-            >link</va-icon
-          ></a
-        >
+          >link</va-icon>
+        </a>
       </div>
       <div class="playerNews">
         <h2>
@@ -114,14 +125,18 @@
 </template>
 
 <script>
-import { TEAM_ABBR_TO_NAME } from "../contants";
+import { HOCKEY_TEAM_ABBR_TO_NAME } from "../constants";
+import { mapState } from 'vuex';
+
 export default {
   props: {
-    selectedPlayer: Object,
     leagueId: String,
     teamAbbrToName: Object,
   },
   computed: {
+    ...mapState({
+      selectedPlayer: state => state.selectedPlayer,
+    }),
     selectedPlayerNewsTime() {
       const epoch = this.selectedPlayer.expandedData?.news?.timeEpochMilli;
       if (epoch) {
@@ -146,13 +161,23 @@ export default {
       }
       return null;
     },
+    selectedPlayerPuckpediaLink() {
+      if (this.selectedPlayer?.name) {
+        const kebabName = this.selectedPlayer.name
+          ?.split(" ")
+          ?.join("-")
+          ?.replaceAll(".", "");
+        return `https://puckpedia.com/player/${kebabName.toLowerCase()}`;
+      }
+      return null;
+    },
     selectedPlayerDailyFaceoffTeamLink() {
       if (
         this.selectedPlayer?.team &&
         this.selectedPlayer.team !== "FA" &&
-        TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
+        HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
       ) {
-        const kebabTeam = TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
+        const kebabTeam = HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
           ?.split(" ")
           ?.join("-");
         return `https://www.dailyfaceoff.com/teams/${kebabTeam.toLowerCase()}/line-combinations/`;
@@ -165,9 +190,8 @@ export default {
           ?.split(" ")
           ?.join("-")
           ?.replaceAll(".", "");
-        return ` https://www.fleaflicker.com/nhl/leagues/${
-          this.leagueId
-        }/players/${kebabName.toLowerCase()}-${this.selectedPlayer.id}`;
+        return ` https://www.fleaflicker.com/nhl/leagues/${this.leagueId
+          }/players/${kebabName.toLowerCase()}-${this.selectedPlayer.id}`;
       }
       return null;
     },
@@ -184,20 +208,25 @@ export default {
   grid-template-columns: repeat(3, 1fr);
   gap: 1em;
 }
+
 .playerContainerLeft {
   grid-column: 1;
 }
+
 .playerContainerRight {
   grid-column: 2 / span 2;
 }
+
 .playerNews {
   background: rgba(0, 0, 0, 0.1);
   padding: 0.5em;
 }
+
 .playerImage {
   height: 200px;
   width: 200px;
 }
+
 .playerStats {
   display: flex;
   width: 100%;
@@ -205,6 +234,7 @@ export default {
   justify-content: space-between;
   margin-left: 1em;
 }
+
 .playerClose {
   position: absolute;
   top: 0;

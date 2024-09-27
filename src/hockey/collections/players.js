@@ -1,4 +1,7 @@
-import { convertEpochToTimeString } from "../utils/util";
+import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
+import { convertEpochToTimeString } from "../../utils/util";
+import { differenceInDays, differenceInMinutes } from 'date-fns'
+import { getActivityToTimeEpochMilli, getAllHockeyPlayers, getAllSelectPlayers } from "../../utils/flea";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;
@@ -57,4 +60,40 @@ export const convertPlayerObjects = (players) => {
       }
     }
   })
+}
+
+export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
+  // Fetch all players
+  // If cache was populated <60min ago, then don't fetch
+
+  if (forceRefresh) {
+    clearLocalStorage('hockey_players');
+    clearLocalStorage('hockey_playersFetchedAt');
+  }
+
+  const storedPlayers = getLocalStorage('hockey_players');
+  const playersStoreTime = getLocalStorage('hockey_playersFetchedAt');
+
+  let finalPlayers;
+
+  let storedLessThanHourAgo = false;
+
+  if (playersStoreTime) {
+    const playersStoreTimeEpochMilli = parseInt(playersStoreTime, 10);
+    const storedDateObject = new Date(playersStoreTimeEpochMilli);
+    const minutesAgo = differenceInMinutes(storedDateObject, new Date());
+    storedLessThanHourAgo = minutesAgo < 60;
+  }
+
+  if (storedLessThanHourAgo && !forceRefresh) {
+    return storedPlayers;
+  }
+
+  const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints, forceRefresh);
+  finalPlayers = convertPlayerObjects(players);
+
+  setLocalStorage('hockey_players', finalPlayers);
+  setLocalStorage('hockey_playersFetchedAt', new Date().getTime());
+
+  return finalPlayers;
 }

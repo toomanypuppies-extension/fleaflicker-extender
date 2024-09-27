@@ -1,24 +1,35 @@
-// Ex: https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
+// Schedule example
+// https://statsapi.web.nhl.com/api/v1/schedule?startDate=2022-02-21&endDate=2022-02-27
+
+// Player stats example
+// https://statsapi.web.nhl.com/api/v1/people/8475193/stats?stats=statsSingleSeason&season=20222023
 
 import axios from 'axios';
-import { NHL_API_BASE, DATE_MAP, TEAM_NAME_TO_ABBR } from '../contants';
-import { getStore, setStore } from '../utils/storage';
+import { NHL_API_BASE, DATE_MAP, HOCKEY_TEAM_NAME_TO_ABBR } from '../constants';
+import { getLocalStorage, setLocalStorage } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
+import { changeTimeZone } from '../../utils/util';
 
-
+/**
+ * @deprecated
+ */
 const buildUrl = (segment) => {
   return `${NHL_API_BASE}/${segment}`;
 }
 
+/**
+ * @deprecated
+ */
 export const getGamesThisWeek = async (forceRefresh = false) => {
-  const now = new Date();
-  const storedGames = getStore('gamesThisWeek');
-  const gamesStoreTime = getStore('gamesThisWeekFetchedAt');
+  // Always use EST time for this as thats what flea tracks weeks by
+  const now = changeTimeZone(new Date(), 'America/New_York');
+  const storedGames = getLocalStorage('gamesThisWeek');
+  const gamesStoreTime = getLocalStorage('gamesThisWeekFetchedAt');
   let storedThisWeek = false;
+
   if (gamesStoreTime) {
-    const storeTime = parseInt(gamesStoreTime, 10);
-    const storeDate = new Date(storeTime);
-    if (isSameWeek(storeDate, now, 1)) {
+    const storeDate = new Date(gamesStoreTime);
+    if (isSameWeek(storeDate, now, { weekStartsOn: 1 })) {
       storedThisWeek = true;
     }
   }
@@ -36,22 +47,25 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
       }
     })
     const games = convertGameObjects(response.data);
-
-    setStore('gamesThisWeek', games);
-    setStore('gamesThisWeekFetchedAt', new Date().getTime());
+    setLocalStorage('gamesThisWeek', games);
+    setLocalStorage('gamesThisWeekFetchedAt', now.toLocaleString('en-US'));
     return games;
   } catch (err) {
     console.error(err)
   }
 }
 
+/**
+ * @deprecated
+ */
 const convertGameObjects = (gamesResponse) => {
   const gamesByDate = gamesResponse.dates;
   const gamesByTeam = {};
+
   gamesByDate.forEach((day, index) => {
     day.games.forEach(game => {
-      const awayTeam = TEAM_NAME_TO_ABBR[game.teams.away.team.name];
-      const homeTeam = TEAM_NAME_TO_ABBR[game.teams.home.team.name];
+      const awayTeam = HOCKEY_TEAM_NAME_TO_ABBR[game.teams.away.team.name];
+      const homeTeam = HOCKEY_TEAM_NAME_TO_ABBR[game.teams.home.team.name];
 
       if (gamesByTeam[awayTeam]) {
         gamesByTeam[awayTeam].push(DATE_MAP[index]);

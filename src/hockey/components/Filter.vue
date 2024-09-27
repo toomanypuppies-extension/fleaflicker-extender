@@ -6,7 +6,7 @@
         @update:model-value="(val) => emitUpdate('filter', val)"
         :color="themeAccentColor"
         label="Search"
-        placeholder="Johnny Hockey"
+        placeholder="Nils Hoglander"
         bordered
       />
       <span class="spacer"></span>
@@ -77,74 +77,72 @@
     </div>
     <div class="settings-icon">
       <va-icon
-        @click="$emit('toggleSettings')"
+        @click="clearFilters"
         :color="themeAccentColor"
         class="material-icons"
         size="medium"
-        >settings</va-icon
-      >
+      >delete</va-icon>
+      <va-icon
+        @click="toggleSettings"
+        :color="themeAccentColor"
+        class="material-icons"
+        size="medium"
+      >settings</va-icon>
     </div>
   </div>
 </template>
 
 <script>
+import { mapGetters, mapState } from "vuex";
 import {
   DAYS_ARRAY,
-  INJURY_LIST,
-  POSITION_OPTIONS,
-  TEAM_ABBR_TO_NAME,
-  TEAM_LIST,
-} from "../contants";
-import { getStore, setStore } from "../utils/storage";
+  HOCKEY_INJURY_LIST,
+  HOCKEY_POSITION_OPTIONS,
+  HOCKEY_TEAM_ABBR_TO_NAME,
+  HOCKEY_TEAM_LIST,
+} from "../constants";
 
 export default {
-  props: {
-    themeAccentColor: String,
-  },
   data() {
     return {
-      teamOptions: TEAM_LIST,
-      teamAbbrToName: TEAM_ABBR_TO_NAME,
-      injuryOptions: INJURY_LIST,
-      positionOptions: POSITION_OPTIONS,
+      teamOptions: HOCKEY_TEAM_LIST,
+      teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
+      injuryOptions: HOCKEY_INJURY_LIST,
+      positionOptions: HOCKEY_POSITION_OPTIONS,
       daysOptions: DAYS_ARRAY,
-      filter: "",
-      teamSelections: [],
-      injurySelections: [],
-      positionSelections: [],
-      gameDaysSelections: [],
-      onlyFreeAgents: true,
-      stateToStore: [
-        // This may be redundant since it happens in above app area
-        // I should move to vuex :P
-        "filter",
-        "teamSelections",
-        "injurySelections",
-        "positionSelections",
-        "gameDaysSelections",
-        "onlyFreeAgents",
-      ],
     };
   },
-  created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getStore(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
-      }
-
-      // Setup watcher to store info
-      this.$watch(item, (val) => {
-        setStore(item, val);
-      });
-    });
-  },
   methods: {
+    clearFilters() {
+      this.$store.commit('clearFilters');
+      this.emitFilterHash();
+    },
     emitUpdate(key, val) {
-      this.$emit("update", key, val);
+      this.$store.commit('setKeyValue', {key, value: val})
+      this.emitFilterHash();
+      // this.$emit("update", key, val);
+    },
+    emitFilterHash() {
+      this.$store.commit('setKeyValue', { key: 'filterHash', value: performance.now() })
+    },
+    toggleSettings() {
+      this.$store.commit('toggleKeyValue', { key: 'openSettings' })
     },
   },
+  computed: {
+    ...mapGetters([
+      'themeBaseColor',
+      'themeAccentColor'
+    ]),
+    ...mapState({
+      filter: state => state.filter,
+      teamSelections: state => state.teamSelections,
+      injurySelections: state => state.injurySelections,
+      positionSelections: state => state.positionSelections,
+      gameDaysSelections: state => state.gameDaysSelections,
+      onlyFreeAgents: state => state.onlyFreeAgents,
+    })
+  }
 };
 </script>
 
@@ -153,11 +151,18 @@ export default {
   display: flex;
   margin-bottom: 1em;
 }
+
 .settings-icon {
+  display: flex;
   flex-shrink: 1;
   padding: 0.5em;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
+
 .tall-checkbox {
   height: 38px;
+  display: flex;
 }
 </style>

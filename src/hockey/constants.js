@@ -1,9 +1,8 @@
-export const FLEA_API_BASE = 'https://www.fleaflicker.com/api';
-export const NHL_API_BASE = 'https://statsapi.web.nhl.com/api/v1';
 
-export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
-
-export const SPORT_HOCKEY = 'hockey';
+const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
+export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
+export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
+export const NHL_API_BASEV2 = process.env.STANDALONE ? `${proxyBase}/proxy/nhlv2` : 'https://api-web.nhle.com/v1';
 
 export const DAYS_ARRAY = [
   'Mo',
@@ -12,7 +11,14 @@ export const DAYS_ARRAY = [
   'Th',
   'Fr',
   'Sa',
-  'Su'
+  'Su',
+  'Next - Mo',
+  'Next - Tu',
+  'Next - We',
+  'Next - Th',
+  'Next - Fr',
+  'Next - Sa',
+  'Next - Su'
 ]
 
 export const DATE_MAP = {
@@ -22,14 +28,21 @@ export const DATE_MAP = {
   3: 'Th',
   4: 'Fr',
   5: 'Sa',
-  6: 'Su'
+  6: 'Su',
+  7: 'Next - Mo',
+  8: 'Next - Tu',
+  9: 'Next - We',
+  10: 'Next - Th',
+  11: 'Next - Fr',
+  12: 'Next - Sa',
+  13: 'Next - Su'
 }
 
 export const SORT_OPTIONS = {
   total: 'SORT_SEASON_TOTAL',
 }
 
-export const POSITION_OPTIONS = [
+export const HOCKEY_POSITION_OPTIONS = [
   'G',
   'C',
   'LW',
@@ -39,7 +52,7 @@ export const POSITION_OPTIONS = [
   'D',
 ]
 
-export const INJURY_LIST = [
+export const HOCKEY_INJURY_LIST = [
   'HEALTHY',
   'DTD',
   'OUT',
@@ -47,9 +60,8 @@ export const INJURY_LIST = [
   'IR',
 ]
 
-export const TEAM_LIST = [
+export const HOCKEY_TEAM_LIST = [
   "Anaheim Ducks",
-  "Arizona Coyotes",
   "Boston Bruins",
   "Buffalo Sabres",
   "Calgary Flames",
@@ -76,6 +88,7 @@ export const TEAM_LIST = [
   "St. Louis Blues",
   "Tampa Bay Lightning",
   "Toronto Maple Leafs",
+  "Utah Hockey Club",
   "Vancouver Canucks",
   "Vegas Golden Knights",
   "Washington Capitals",
@@ -83,7 +96,7 @@ export const TEAM_LIST = [
   "Free Agent"
 ]
 
-export const TEAM_NAME_TO_ABBR = {
+export const HOCKEY_TEAM_NAME_TO_ABBR = {
   "Anaheim Ducks": "ANA",
   "Arizona Coyotes": "ARI",
   "Boston Bruins": "BOS",
@@ -114,6 +127,7 @@ export const TEAM_NAME_TO_ABBR = {
   "St. Louis Blues": "STL",
   "Tampa Bay Lightning": "TB",
   "Toronto Maple Leafs": "TOR",
+  "Utah Hockey Club": "UTA",
   "Vancouver Canucks": "VAN",
   "Vegas Golden Knights": "VGK",
   "Washington Capitals": "WSH",
@@ -121,9 +135,8 @@ export const TEAM_NAME_TO_ABBR = {
   "Free Agent": "FA"
 }
 
-export const TEAM_ABBR_TO_NAME = {
+export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "ANA": "Anaheim Ducks",
-  "ARI": "Arizona Coyotes",
   "BOS": "Boston Bruins",
   "BUF": "Buffalo Sabres",
   "CGY": "Calgary Flames",
@@ -150,6 +163,7 @@ export const TEAM_ABBR_TO_NAME = {
   "STL": "St. Louis Blues",
   "TB": "Tampa Bay Lightning",
   "TOR": "Toronto Maple Leafs",
+  "UTA": "Utah Hockey Club",
   "VAN": "Vancouver Canucks",
   "VGK": "Vegas Golden Knights",
   "WSH": "Washington Capitals",
@@ -157,14 +171,45 @@ export const TEAM_ABBR_TO_NAME = {
   "FA": "Free Agent"
 }
 
-export const TEAM_ABBR_TO_COLORS = {
+export const NHL_APIV2_ABBREV_TO_ABBR = {
+  "ANA": "ANA",
+  "BOS": "BOS",
+  "BUF": "BUF",
+  "CAR": "CAR",
+  "CBJ": "CBJ",
+  "CGY": "CGY",
+  "CHI": "CHI",
+  "COL": "COL",
+  "DAL": "DAL",
+  "DET": "DET",
+  "EDM": "EDM",
+  "FLA": "FLA",
+  "LAK": "LA",
+  "MIN": "MIN",
+  "MTL": "MTL",
+  "NJD": "NJ",
+  "NSH": "NSH",
+  "NYI": "NYI",
+  "NYR": "NYR",
+  "OTT": "OTT",
+  "PHI": "PHI",
+  "PIT": "PIT",
+  "SEA": "SEA",
+  "SJS": "SJ",
+  "STL": "STL",
+  "TBL": "TB",
+  "TOR": "TOR",
+  "UTA": "UTA",
+  "VAN": "VAN",
+  "VGK": "VGK",
+  "WPG": "WPG",
+  "WSH": "WSH",
+}
+
+export const HOCKEY_TEAM_ABBR_TO_COLORS = {
   "ANA": {
     primary: '#B9975B',
     secondary: '#F47A38',
-  },
-  "ARI": {
-    primary: '#8C2633',
-    secondary: '#E2D6B5',
   },
   "BOS": {
     primary: '#000000',
@@ -269,6 +314,10 @@ export const TEAM_ABBR_TO_COLORS = {
   "TOR": {
     primary: '#00205B',
     secondary: '#FFFFFF',
+  },
+  "UTA": {
+    primary: '#7ab2e1',
+    secondary: '#000000',
   },
   "VAN": {
     primary: '#00205B',

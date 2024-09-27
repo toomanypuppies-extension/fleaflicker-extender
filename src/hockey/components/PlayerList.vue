@@ -1,7 +1,14 @@
 <template>
   <div class="tableContainer containerColor">
-    <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-      <table class="va-table datatable" :class="{ tableLoading: loading }">
+    <va-inner-loading
+      :loading="loading"
+      :size="60"
+      :color="teamSecondaryColor"
+    >
+      <table
+        class="va-table datatable"
+        :class="{ tableLoading: loading }"
+      >
         <thead>
           <tr>
             <th
@@ -18,8 +25,7 @@
                   v-if="sortMap[column.key] === 'desc'"
                   class="material-icons"
                   size="1em"
-                  >expand_more</va-icon
-                >
+                >expand_more</va-icon>
                 <va-icon
                   v-if="
                     sortMap[column.key] === 'desc' &&
@@ -27,14 +33,12 @@
                   "
                   class="material-icons"
                   size="1em"
-                  >expand_more</va-icon
-                >
+                >expand_more</va-icon>
                 <va-icon
                   v-if="sortMap[column.key] === 'asc'"
                   class="material-icons"
                   size="1em"
-                  >expand_less</va-icon
-                >
+                >expand_less</va-icon>
                 <va-icon
                   v-if="
                     sortMap[column.key] === 'asc' &&
@@ -42,8 +46,7 @@
                   "
                   class="material-icons"
                   size="1em"
-                  >expand_less</va-icon
-                >
+                >expand_less</va-icon>
               </span>
             </th>
           </tr>
@@ -55,9 +58,13 @@
             @click="$emit('playerSelected', player)"
             class="hoverEffects"
           >
-            <td v-for="column in columns" :key="`${column.key}-${player.id}`">
+            <td
+              v-for="column in columns"
+              :key="`${column.key}-${player.id}`"
+            >
               <template v-if="column.key === 'gameDays'">
-                {{ gamesByTeam && gamesByTeam[player?.team]?.join(", ") }}
+                <!-- Only show this week days -->
+                {{ gamesByTeam && gamesByTeam[player?.team]?.filter((day) => ['Mo','Tu','We','Th','Fr','Sa','Su'].includes(day))?.join(", ") }}
               </template>
               <template v-else>
                 {{ player[column.key] }}
@@ -71,98 +78,94 @@
 </template>
 
 <script>
-import { SPORT_HOCKEY, TEAM_NAME_TO_ABBR } from "../contants";
-import { getStore, setStore } from "../utils/storage";
-import { containsAll } from "../utils/util";
+import { HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
+import { containsAll } from "../../utils/util";
+import { mapState, mapGetters } from 'vuex';
 export default {
   data() {
     return {
-      tableColumns: {
-        hockey: [
-          {
-            key: "name",
-            name: "Name",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "team",
-            name: "Team",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "owner",
-            name: "Owner",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "todaysGame",
-            name: "Todays Game",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "gamesThisWeek",
-            name: "Games Remaining",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-          {
-            key: "gameDays",
-            name: "Game Days",
-            sortable: false,
-          },
-          {
-            key: "position",
-            name: "Position",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "injury",
-            name: "Injury",
-            sortable: true,
-            sortingFn: this.stringSortFn,
-          },
-          {
-            key: "points",
-            name: "Points",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-          {
-            key: "avg",
-            name: "Avg",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-          {
-            key: "last1",
-            name: "Last 1",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-          {
-            key: "last5",
-            name: "Last 5",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-          {
-            key: "last10",
-            name: "Last 10",
-            sortable: true,
-            sortingFn: this.numSortFn,
-          },
-        ],
-      },
+      tableColumns: [
+        {
+          key: "name",
+          name: "Name",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        {
+          key: "team",
+          name: "Team",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        {
+          key: "owner",
+          name: "Owner",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        {
+          key: "todaysGame",
+          name: "Todays Game",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        // {
+        //   key: "gamesThisWeek",
+        //   name: "Games Remaining",
+        //   sortable: true,
+        //   sortingFn: this.numSortFn,
+        // },
+        {
+          key: "gameDays",
+          name: "Game Days",
+          sortable: false,
+        },
+        {
+          key: "position",
+          name: "Position",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        {
+          key: "injury",
+          name: "Injury",
+          sortable: true,
+          sortingFn: this.stringSortFn,
+        },
+        {
+          key: "points",
+          name: "Points",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
+        {
+          key: "avg",
+          name: "Avg",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
+        {
+          key: "last1",
+          name: "Last 1",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
+        {
+          key: "last5",
+          name: "Last 5",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
+        {
+          key: "last10",
+          name: "Last 10",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
+      ],
       filteredPlayers: [],
       sortMap: {},
       sortColumns: [],
-      stateToStore: ["sortMap", "sortColumns"],
-      isDblClick: false,
       dblClickTimer: null,
     };
   },
@@ -171,36 +174,35 @@ export default {
     players: Array,
     gamesByTeam: Object,
     sport: String,
-    onlyFreeAgents: Boolean,
-    gameDaysSelections: Array,
-    teamSelections: Array,
-    injurySelections: Array,
-    positionSelections: Array,
-    excludeIfNoPoints: Boolean,
-    filter: String,
-    teamSecondaryColor: String,
   },
   computed: {
+    ...mapState({
+      teamSelections: state => state.teamSelections,
+      excludeIfNoPoints: state => state.excludeIfNoPoints,
+      filter: state => state.filter,
+      positionSelections: state => state.positionSelections,
+      injurySelections: state => state.injurySelections,
+      gameDaysSelections: state => state.gameDaysSelections,
+      onlyFreeAgents: state => state.onlyFreeAgents,
+      filterHash: state => state.filterHash,
+    }),
+    ...mapGetters([
+      'teamSecondaryColor',
+    ]),
     columns() {
-      const sportColumns = this.tableColumns[this.sport];
-
-      if (this.sport === SPORT_HOCKEY) {
-        return sportColumns.filter((col) => {
-          if (this.onlyFreeAgents && col.key === "owner") {
-            return false;
-          }
-          if (
-            this.injurySelections.length === 1 &&
-            this.injurySelections.includes("HEALTHY") &&
-            col.key === "injury"
-          ) {
-            return false;
-          }
-          return true;
-        });
-      }
-
-      return sportColumns;
+      return this.tableColumns.filter((col) => {
+        if (this.onlyFreeAgents && col.key === "owner") {
+          return false;
+        }
+        if (
+          this.injurySelections.length === 1 &&
+          this.injurySelections.includes("HEALTHY") &&
+          col.key === "injury"
+        ) {
+          return false;
+        }
+        return true;
+      });
     },
     teamsMatchingGamesDaysSelection() {
       if (!this.gameDaysSelections || this.gameDaysSelections.length === 0)
@@ -219,7 +221,7 @@ export default {
   methods: {
     setFilteredPlayers() {
       const teamSelectionsAbbr = this.teamSelections.map(
-        (sel) => TEAM_NAME_TO_ABBR[sel]
+        (sel) => HOCKEY_TEAM_NAME_TO_ABBR[sel]
       );
 
       this.filteredPlayers = this.players.filter((player) => {
@@ -348,26 +350,11 @@ export default {
         this.setFilteredPlayers();
       }
     },
-  },
-  created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getStore(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
+    filterHash(newVal, oldVal) {
+      if (oldVal !== newVal) {
+        this.setFilteredPlayers();
       }
-
-      // Setup watcher to store info
-      this.$watch(
-        item,
-        (val) => {
-          setStore(item, val);
-        },
-        {
-          deep: true,
-        }
-      );
-    });
+    },
   },
 };
 </script>
@@ -377,6 +364,7 @@ export default {
   max-height: 100%;
   overflow-y: scroll;
 }
+
 .tableContainer .datatable {
   // Fix fleaflicker override here
   background-color: unset;
@@ -388,13 +376,16 @@ export default {
     top: 0;
   }
 }
+
 .tableLoading {
   height: 200px;
 }
+
 .hoverEffects:hover {
   cursor: pointer;
   background: var(--teamSecondaryColor30Opacity);
 }
+
 .headerStyles {
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
@@ -406,11 +397,13 @@ export default {
     color: var(--themeBaseColor);
   }
 }
+
 .cursor {
   &:hover {
     cursor: pointer;
   }
 }
+
 .colHeadContent {
   display: flex;
   font-size: 0.625rem;
