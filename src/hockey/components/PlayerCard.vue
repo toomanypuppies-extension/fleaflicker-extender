@@ -114,13 +114,17 @@
 
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME } from "../constants";
+import { mapState } from 'vuex';
+
 export default {
   props: {
-    selectedPlayer: Object,
     leagueId: String,
     teamAbbrToName: Object,
   },
   computed: {
+    ...mapState({
+      selectedPlayer: state => state.selectedPlayer,
+    }),
     selectedPlayerNewsTime() {
       const epoch = this.selectedPlayer.expandedData?.news?.timeEpochMilli;
       if (epoch) {

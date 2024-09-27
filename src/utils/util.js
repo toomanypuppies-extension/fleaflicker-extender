@@ -26,10 +26,8 @@ export const containsAll = (target, values) => {
 }
 
 export const getColors = (state) => {
-  if (state.sport === 'nhl') {
-    const abbr = HOCKEY_TEAM_NAME_TO_ABBR[state.nhl.favoriteTeam];
-    return HOCKEY_TEAM_ABBR_TO_COLORS[abbr];
-  }
+  const abbr = HOCKEY_TEAM_NAME_TO_ABBR[state.favoriteTeam];
+  return HOCKEY_TEAM_ABBR_TO_COLORS[abbr];
 }
 
 export const changeTimeZone = (date, timeZone) => {

@@ -11,3 +11,9 @@ export const getLocalStorage = (key, leagueId) => {
   const stringified = localStorage.getItem(`ff-extender-${id}-${key}`);
   return JSON.parse(stringified);
 }
+
+export const clearLocalStorage = (key, payload, leagueId) => {
+  const id = leagueId || getLeagueId()
+  const stringified = JSON.stringify(payload);
+  localStorage.removeItem(`ff-extender-${id}-${key}`);
+}

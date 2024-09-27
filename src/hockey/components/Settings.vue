@@ -36,7 +36,7 @@
         <va-checkbox
           v-model="excludeIfNoPoints"
           :color="themeAccentColor"
-          label="Only show players that have points this year (refresh if changed)"
+          label="Only show players that have points this year"
         >
         </va-checkbox>
       </div>
@@ -86,6 +86,15 @@
         </li>
       </ul>
     </div>
+    <div class="v-flex">
+      <va-button
+          :rounded="false"
+          bordered
+          @click="$emit('resetApp')"
+          :color="themeAccentColor"
+          :text-color="themeBaseColor"
+        >Reset App</va-button>
+    </div>
   </div>
 </template>
 
@@ -110,23 +119,24 @@ export default {
     },
     openSettings: {
       get() {
-        return this.$store.state.nhl.openSettings
+        return this.$store.state.openSettings
       },
     },
     favoriteTeam: {
       get() {
-        return this.$store.state.nhl.favoriteTeam
+        return this.$store.state.favoriteTeam
       },
       set(value) {
-        this.$store.commit('setFavoriteTeam', { sport: 'nhl', team: value })
+        this.$store.commit('setFavoriteTeam', value)
       }
     },
     excludeIfNoPoints: {
       get() {
-        return this.$store.state.nhl.excludeIfNoPoints
+        return this.$store.state.excludeIfNoPoints
       },
       set(value) {
-        this.$store.commit('setKeyValue', { key: 'nhl.excludeIfNoPoints', value })
+        this.$store.commit('setKeyValue', { key: 'excludeIfNoPoints', value })
+        this.$emit('refreshPlayers')
       }
     },
     darkMode: {

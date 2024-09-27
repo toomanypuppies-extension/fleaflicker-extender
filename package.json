@@ -1,6 +1,6 @@
 {
   "name": "my-library",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {

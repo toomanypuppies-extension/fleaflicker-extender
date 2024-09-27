@@ -77,6 +77,12 @@
     </div>
     <div class="settings-icon">
       <va-icon
+        @click="clearFilters"
+        :color="themeAccentColor"
+        class="material-icons"
+        size="medium"
+      >delete</va-icon>
+      <va-icon
         @click="toggleSettings"
         :color="themeAccentColor"
         class="material-icons"
@@ -87,6 +93,7 @@
 </template>
 
 <script>
+import { mapGetters, mapState } from "vuex";
 import {
   DAYS_ARRAY,
   HOCKEY_INJURY_LIST,
@@ -94,12 +101,8 @@ import {
   HOCKEY_TEAM_ABBR_TO_NAME,
   HOCKEY_TEAM_LIST,
 } from "../constants";
-import { getLocalStorage, setLocalStorage } from "../../utils/storage";
 
 export default {
-  props: {
-    themeAccentColor: String,
-  },
   data() {
     return {
       teamOptions: HOCKEY_TEAM_LIST,
@@ -107,46 +110,39 @@ export default {
       injuryOptions: HOCKEY_INJURY_LIST,
       positionOptions: HOCKEY_POSITION_OPTIONS,
       daysOptions: DAYS_ARRAY,
-      filter: "",
-      teamSelections: [],
-      injurySelections: [],
-      positionSelections: [],
-      gameDaysSelections: [],
-      onlyFreeAgents: true,
-      stateToStore: [
-        // This may be redundant since it happens in above app area
-        // I should move to vuex :P
-        "filter",
-        "teamSelections",
-        "injurySelections",
-        "positionSelections",
-        "gameDaysSelections",
-        "onlyFreeAgents",
-      ],
     };
   },
-  created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getLocalStorage(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
-      }
-
-      // Setup watcher to store info
-      this.$watch(item, (val) => {
-        setLocalStorage(item, val);
-      });
-    });
-  },
   methods: {
+    clearFilters() {
+      this.$store.commit('clearFilters');
+      this.emitFilterHash();
+    },
     emitUpdate(key, val) {
-      this.$emit("update", key, val);
+      this.$store.commit('setKeyValue', {key, value: val})
+      this.emitFilterHash();
+      // this.$emit("update", key, val);
+    },
+    emitFilterHash() {
+      this.$store.commit('setKeyValue', { key: 'filterHash', value: performance.now() })
     },
     toggleSettings() {
-      this.$store.commit('toggleKeyValue', { key: 'nhl.openSettings' })
-    }
+      this.$store.commit('toggleKeyValue', { key: 'openSettings' })
+    },
   },
+  computed: {
+    ...mapGetters([
+      'themeBaseColor',
+      'themeAccentColor'
+    ]),
+    ...mapState({
+      filter: state => state.filter,
+      teamSelections: state => state.teamSelections,
+      injurySelections: state => state.injurySelections,
+      positionSelections: state => state.positionSelections,
+      gameDaysSelections: state => state.gameDaysSelections,
+      onlyFreeAgents: state => state.onlyFreeAgents,
+    })
+  }
 };
 </script>
 
@@ -157,8 +153,12 @@ export default {
 }
 
 .settings-icon {
+  display: flex;
   flex-shrink: 1;
   padding: 0.5em;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
 }
 
 .tall-checkbox {

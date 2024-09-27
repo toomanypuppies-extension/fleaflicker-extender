@@ -1,40 +1,53 @@
 import { set, debounce, merge, get } from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
-import { getColors } from './utils/util';
+import { getColors, getLeagueId } from './utils/util';
+
+const initState = {
+  sport: 'nhl',
+  leagueId: null,
+  drawerExpanded: false,
+  loading: true,
+  settings: {
+    darkMode: true,
+  },
+  openSettings: false,
+  favoriteTeam: "Seattle Kraken",
+  excludeIfNoPoints: true,
+  selectedPlayer: null,
+  filter: "",
+  teamSelections: [],
+  injurySelections: [],
+  positionSelections: [],
+  gameDaysSelections: [],
+  onlyFreeAgents: true,
+}
+
+const createState = () => {
+  const defaultState = JSON.parse(JSON.stringify(initState));
+  defaultState.leagueId = getLeagueId();
+  return defaultState;
+}
 
 export const store = createStore({
   state() {
-    const defaultState = {
-      sport: null,
-      leagueId: null,
-      drawerExpanded: false,
-      loading: true,
-      settings: {
-        darkMode: true,
-      },
-      nfl: {
-        openSettings: false,
-        favoriteTeam: "Seattle Seahawks",
-      },
-      nhl: {
-        openSettings: false,
-        favoriteTeam: "Seattle Kraken",
-        selectedPlayer: null,
-        filter: "",
-        teamSelections: [],
-        injurySelections: [],
-        positionSelections: [],
-        gameDaysSelections: [],
-        onlyFreeAgents: true,
-        excludeIfNoPoints: true,
-      },
-    };
-    return defaultState;
+    return createState();
   },
   mutations: {
-    toggleDrawer(state) {
-      state.drawerExpanded = !state.drawerExpanded;
+    clearFilters(state) {
+      state.filter = "";
+      state.teamSelections = [];
+      state.injurySelections = [];
+      state.positionSelections = [];
+      state.gameDaysSelections = [];
+      state.onlyFreeAgents = true;
+    },
+    loadFromLocalStorage(state) {
+      const localStorageState = getLocalStorage('vuex-state', state.leagueId);
+      return merge(state, localStorageState)
+    },
+    resetStore(state) {
+      merge(state, createState());
     },
     setSport(state, payload) {
       state.sport = payload;
@@ -45,19 +58,18 @@ export const store = createStore({
     setDarkMode(state, payload) {
       state.settings.darkMode = payload;
     },
-    setFavoriteTeam(state, { sport, team }) {
-      state[sport].favoriteTeam = team;
+    setFavoriteTeam(state, payload) {
+      state.favoriteTeam = payload;
     },
     setKeyValue(state, { key, value }) {
       set(state, key, value)
     },
+    toggleDrawer(state) {
+      state.drawerExpanded = !state.drawerExpanded;
+    },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))
     },
-    loadFromLocalStorage(state) {
-      const localStorageState = getLocalStorage('vuex-state', state.leagueId);
-      return merge(state, localStorageState)
-    }
   },
   getters: {
     themeBaseColor(state) {

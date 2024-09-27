@@ -1,4 +1,4 @@
-import { getLocalStorage, setLocalStorage } from "../../utils/storage";
+import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { convertEpochToTimeString } from "../../utils/util";
 import { differenceInDays, differenceInMinutes } from 'date-fns'
 import { getActivityToTimeEpochMilli, getAllHockeyPlayers, getAllSelectPlayers } from "../../utils/flea";
@@ -66,6 +66,11 @@ export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRe
   // Fetch all players
   // If cache was populated <60min ago, then don't fetch
 
+  if (forceRefresh) {
+    clearLocalStorage('hockey_players');
+    clearLocalStorage('hockey_playersFetchedAt');
+  }
+
   const storedPlayers = getLocalStorage('hockey_players');
   const playersStoreTime = getLocalStorage('hockey_playersFetchedAt');
 
@@ -80,7 +85,7 @@ export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRe
     storedLessThanHourAgo = minutesAgo < 60;
   }
 
-  if (storedLessThanHourAgo) {
+  if (storedLessThanHourAgo && !forceRefresh) {
     return storedPlayers;
   }
 

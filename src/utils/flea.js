@@ -125,8 +125,10 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
       morePlayersLeft = false;
     }
 
-    const lastPlayer = playersList[playersList.length - 1];
-    if (stopIfNoPoints && !lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {
+    const lastPlayerOfSegment = response.players[response.players.length - 1];
+    const firstPlayerOfSegment = response.players[0];
+    // We stop if the first player has points and the last player has none. Check first so that we still return players at year start.
+    if (stopIfNoPoints && (firstPlayerOfSegment?.viewingActualPoints?.value > 0 && !lastPlayerOfSegment?.viewingActualPoints?.value || lastPlayerOfSegment?.viewingActualPoints?.value === 0)) {
       morePlayersLeft = false;
     }
 

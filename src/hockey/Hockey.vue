@@ -1,12 +1,8 @@
 <template>
-  <Filter
-    @update="updateFilterModel"
-    :themeAccentColor="themeAccentColor"
-  />
+  <Filter/>
   <Settings
-    :themeAccentColor="themeAccentColor"
-    :themeBaseColor="themeBaseColor"
     @refreshPlayers="refreshPlayers"
+    @resetApp="resetApp"
   />
 
   <PlayerList
@@ -15,18 +11,9 @@
     :loading="loading"
     :players="players"
     :gamesByTeam="gamesByTeam"
-    :onlyFreeAgents="onlyFreeAgents"
-    :injurySelections="injurySelections"
-    :teamSelections="teamSelections"
-    :gameDaysSelections="gameDaysSelections"
-    :positionSelections="positionSelections"
-    :excludeIfNoPoints="excludeIfNoPoints"
-    :filter="filter"
-    :teamSecondaryColor="teamSecondaryColor"
     @playerSelected="(player) => selectPlayer(player)"
   />
   <PlayerCard
-    :selectedPlayer="selectedPlayer"
     :leagueId="leagueId"
     :teamAbbrToName="teamAbbrToName"
     @fleaflickerNav="toggleDrawer"
@@ -41,13 +28,15 @@ import {
   HOCKEY_TEAM_ABBR_TO_NAME,
 } from "./constants";
 import { getGamesThisWeek } from "./api/nhl";
-import { getLocalStorage, setLocalStorage } from "../utils/storage";
+import { clearLocalStorage, getLocalStorage, setLocalStorage } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
 import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
 import { loadHockeyPlayers } from "./collections/players";
+import { mapGetters } from "vuex";
+import { mapState } from "vuex/dist/vuex.cjs.js";
 
 export default {
   data() {
@@ -57,32 +46,6 @@ export default {
       loading: true,
       players: [],
       gamesByTeam: {},
-      drawerExpanded: false,
-      filterBufferTimer: null,
-      // filter
-      filter: "",
-      teamSelections: [],
-      injurySelections: [],
-      positionSelections: [],
-      gameDaysSelections: [],
-      onlyFreeAgents: true,
-      // settings
-      favoriteTeam: "Seattle Kraken",
-      darkMode: true,
-      // player card
-      selectedPlayer: null,
-      stateToStore: [
-        "filter",
-        "drawerExpanded",
-        "teamSelections",
-        "injurySelections",
-        "positionSelections",
-        "gameDaysSelections",
-        "onlyFreeAgents",
-        "favoriteTeam",
-        "darkMode",
-        "selectedPlayer",
-      ],
     };
   },
   components: {
@@ -118,43 +81,28 @@ export default {
       }, 500);
     },
     toggleDrawer() {
-      this.drawerExpanded = !this.drawerExpanded;
+      this.$store.commit('toggleKeyValue', drawerExpanded)
     },
     clearSelectedPlayer() {
-      this.selectedPlayer = null;
+      this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: null})
     },
     selectPlayer(player) {
       if (this.selectedPlayer?.id !== player.id) {
-        this.selectedPlayer = player;
+        this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: player})
       } else {
-        this.selectedPlayer = null;
+        this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: null})
       }
     },
     refreshPlayers() {
       this.loadPlayers(true);
       this.loadGames(true);
     },
-    updateModel(key, val) {
-      this[key] = val;
-    },
-    updateFilterModel(key, val) {
-      this[key] = val;
-      this.debounceFiltering();
-    },
+    resetApp() {
+      localStorage.clear();
+      location.reload();
+    }
   },
   created() {
-    this.stateToStore.forEach((item) => {
-      // load state from store
-      const val = getLocalStorage(item);
-      if (val !== undefined && val !== null) {
-        this[item] = val;
-      }
-
-      // Setup watcher to store info
-      this.$watch(item, (val) => {
-        setLocalStorage(item, val);
-      });
-    });
     this.leagueId = getLeagueId();
   },
   mounted() {
@@ -162,6 +110,16 @@ export default {
     this.loadGames();
   },
   computed: {
+    ...mapState({
+      excludeIfNoPoints: state => state.excludeIfNoPoints,
+      drawerExpanded: state => state.drawerExpanded,
+    }),
+    ...mapGetters([
+      'themeBaseColor',
+      'themeAccentColor',
+      'teamMainColor',
+      'teamSecondaryColor'
+    ]),
     bindCssVars() {
       return {
         "--themeAccentColor": this.themeAccentColor,
@@ -170,25 +128,6 @@ export default {
         "--teamSecondaryColor": this.teamSecondaryColor,
         "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
       };
-    },
-    teamMainColor() {
-      const abbr = HOCKEY_TEAM_NAME_TO_ABBR[this.favoriteTeam];
-      return HOCKEY_TEAM_ABBR_TO_COLORS[abbr].primary;
-    },
-    teamSecondaryColor() {
-      const abbr = HOCKEY_TEAM_NAME_TO_ABBR[this.favoriteTeam];
-      return HOCKEY_TEAM_ABBR_TO_COLORS[abbr].secondary;
-    },
-    themeBaseColor() {
-      return this.darkMode ? "#333333" : "#e2e2e2";
-    },
-    themeAccentColor() {
-      return this.darkMode ? "#e2e2e2" : "#333333";
-    },
-    excludeIfNoPoints: {
-      get() {
-        return this.$store.state.nhl.excludeIfNoPoints
-      }
     },
   },
 };
