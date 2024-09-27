@@ -109,12 +109,12 @@ export default {
           sortable: true,
           sortingFn: this.stringSortFn,
         },
-        {
-          key: "gamesThisWeek",
-          name: "Games Remaining",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
+        // {
+        //   key: "gamesThisWeek",
+        //   name: "Games Remaining",
+        //   sortable: true,
+        //   sortingFn: this.numSortFn,
+        // },
         {
           key: "gameDays",
           name: "Game Days",

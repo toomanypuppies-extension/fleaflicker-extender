@@ -3,13 +3,13 @@ import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from '../hockey/
 export const getLeagueId = () => {
   const url = location.href;
   const matches = url.match(/leagues\/\d{1,8}/);
-  return matches[0].split("/")[1];
+  return matches && matches[0].split("/")[1];
 };
 
 export const getSport = () => {
   const url = location.href;
   const matches = url.match(/[a-z]+\/leagues\/\d{1,8}/);
-  return matches[0].split("/")[0];
+  return matches && matches[0].split("/")[0];
 }
 
 export const convertEpochToTimeString = (epoch) => {

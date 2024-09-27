@@ -25,7 +25,6 @@ const initState = {
 
 const createState = () => {
   const defaultState = JSON.parse(JSON.stringify(initState));
-  defaultState.leagueId = getLeagueId();
   return defaultState;
 }
 
