@@ -64,7 +64,7 @@
             >
               <template v-if="column.key === 'gameDays'">
                 <!-- Only show this week days -->
-                {{ gamesByTeam && gamesByTeam[player?.team].filter((day) => ['Mo','Tu','We','Th','Fr','Sa','Su'].includes(day))?.join(", ") }}
+                {{ gamesByTeam && gamesByTeam[player?.team]?.filter((day) => ['Mo','Tu','We','Th','Fr','Sa','Su'].includes(day))?.join(", ") }}
               </template>
               <template v-else>
                 {{ player[column.key] }}

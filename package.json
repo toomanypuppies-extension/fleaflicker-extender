@@ -16,6 +16,7 @@
     "extension": {
       "context": "browser",
       "outputFormat": "global",
+      "optimize": false,
       "scopeHoist": false,
       "sourceMap": false,
       "source": "src/main.js"
@@ -23,8 +24,9 @@
     "site": {
       "context": "browser",
       "outputFormat": "global",
+      "optimize": false,
       "scopeHoist": false,
-      "sourceMap": false,
+      "sourceMap": true,
       "source": "src/index.html"
     }
   },
