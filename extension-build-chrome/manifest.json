@@ -19,8 +19,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.fleaflicker.com/nhl/leagues/*",
-        "*://*.fleaflicker.com/nfl/leagues/*"
+        "*://*.fleaflicker.com/nhl/leagues/*"
       ],
       "run_at": "document_idle",
       "js": [
