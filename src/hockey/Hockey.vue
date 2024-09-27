@@ -4,7 +4,6 @@
     @refreshPlayers="refreshPlayers"
     @resetApp="resetApp"
   />
-
   <PlayerList
     ref="PlayerList"
     sport="nhl"
@@ -27,7 +26,6 @@ import {
   HOCKEY_TEAM_ABBR_TO_COLORS,
   HOCKEY_TEAM_ABBR_TO_NAME,
 } from "./constants";
-import { getGamesThisWeek } from "./api/nhl";
 import { clearLocalStorage, getLocalStorage, setLocalStorage } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
@@ -37,6 +35,7 @@ import Filter from "./components/Filter.vue";
 import { loadHockeyPlayers } from "./collections/players";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex/dist/vuex.cjs.js";
+import { getGamesThisWeek } from "./api/nhlv2";
 
 export default {
   data() {
@@ -57,8 +56,8 @@ export default {
   methods: {
     async loadGames(forceRefresh) {
       this.gamesByTeam = {};
-      // const result = await getGamesThisWeek(forceRefresh);
-      // this.gamesByTeam = result;
+      const result = await getGamesThisWeek(forceRefresh);
+      this.gamesByTeam = result;
     },
     async loadPlayers(forceRefresh) {
       this.players = [];

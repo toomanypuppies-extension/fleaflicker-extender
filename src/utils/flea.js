@@ -133,7 +133,7 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     }
 
     // exit early in dev
-    if (process.env.NODE_ENV === 'local' && offset > 50) {
+    if (process.env.NODE_ENV === 'development' && offset > 50) {
       console.log('local env, exiting getAllHockeyPlayers early')
       morePlayersLeft = false;
     }

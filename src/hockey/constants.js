@@ -2,7 +2,7 @@
 const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
 export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
 export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
-export const DOBBER_PLAYER_BASE = 'https://frozenpool.dobbersports.com/players/';
+export const NHL_API_BASEV2 = process.env.STANDALONE ? `${proxyBase}/proxy/nhlv2` : 'https://api-web.nhle.com/v1';
 
 export const DAYS_ARRAY = [
   'Mo',
@@ -11,7 +11,14 @@ export const DAYS_ARRAY = [
   'Th',
   'Fr',
   'Sa',
-  'Su'
+  'Su',
+  'Next - Mo',
+  'Next - Tu',
+  'Next - We',
+  'Next - Th',
+  'Next - Fr',
+  'Next - Sa',
+  'Next - Su'
 ]
 
 export const DATE_MAP = {
@@ -21,7 +28,14 @@ export const DATE_MAP = {
   3: 'Th',
   4: 'Fr',
   5: 'Sa',
-  6: 'Su'
+  6: 'Su',
+  7: 'Next - Mo',
+  8: 'Next - Tu',
+  9: 'Next - We',
+  10: 'Next - Th',
+  11: 'Next - Fr',
+  12: 'Next - Sa',
+  13: 'Next - Su'
 }
 
 export const SORT_OPTIONS = {
@@ -155,6 +169,41 @@ export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "WSH": "Washington Capitals",
   "WPG": "Winnipeg Jets",
   "FA": "Free Agent"
+}
+
+export const NHL_APIV2_ABBREV_TO_ABBR = {
+  "ANA": "ANA",
+  "BOS": "BOS",
+  "BUF": "BUF",
+  "CAR": "CAR",
+  "CBJ": "CBJ",
+  "CGY": "CGY",
+  "CHI": "CHI",
+  "COL": "COL",
+  "DAL": "DAL",
+  "DET": "DET",
+  "EDM": "EDM",
+  "FLA": "FLA",
+  "LAK": "LA",
+  "MIN": "MIN",
+  "MTL": "MTL",
+  "NJD": "NJ",
+  "NSH": "NSH",
+  "NYI": "NYI",
+  "NYR": "NYR",
+  "OTT": "OTT",
+  "PHI": "PHI",
+  "PIT": "PIT",
+  "SEA": "SEA",
+  "SJS": "SJ",
+  "STL": "STL",
+  "TBL": "TB",
+  "TOR": "TOR",
+  "UTA": "UTA",
+  "VAN": "VAN",
+  "VGK": "VGK",
+  "WPG": "WPG",
+  "WSH": "WSH",
 }
 
 export const HOCKEY_TEAM_ABBR_TO_COLORS = {

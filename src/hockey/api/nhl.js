@@ -10,11 +10,16 @@ import { getLocalStorage, setLocalStorage } from '../../utils/storage';
 import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO } from 'date-fns'
 import { changeTimeZone } from '../../utils/util';
 
-
+/**
+ * @deprecated
+ */
 const buildUrl = (segment) => {
   return `${NHL_API_BASE}/${segment}`;
 }
 
+/**
+ * @deprecated
+ */
 export const getGamesThisWeek = async (forceRefresh = false) => {
   // Always use EST time for this as thats what flea tracks weeks by
   const now = changeTimeZone(new Date(), 'America/New_York');
@@ -50,6 +55,9 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
   }
 }
 
+/**
+ * @deprecated
+ */
 const convertGameObjects = (gamesResponse) => {
   const gamesByDate = gamesResponse.dates;
   const gamesByTeam = {};
