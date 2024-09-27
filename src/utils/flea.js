@@ -129,47 +129,14 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     if (stopIfNoPoints && !lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {
       morePlayersLeft = false;
     }
+
+    // exit early in dev
+    if (process.env.NODE_ENV === 'local' && offset > 50) {
+      console.log('local env, exiting getAllHockeyPlayers early')
+      morePlayersLeft = false;
+    }
   }
 
   return playersList;
-}
-
-
-export const getAllFootballPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
-  const storedPlayers = getLocalStorage('football_players');
-  const playersStoreTime = getLocalStorage('football_playersFetchedAt');
-  let storedLessThanHourAgo = false;
-  if (playersStoreTime) {
-    storedLessThanHourAgo = (new Date().getTime() - parseInt(playersStoreTime, 10)) < (60 * 60 * 1000);
-  }
-  if (!forceRefresh && storedPlayers && storedLessThanHourAgo) {
-    return storedPlayers;
-  }
-
-  let playersList = [];
-  let offset = 0;
-  let morePlayersLeft = true;
-  // TODO remove offset < 45
-  while (morePlayersLeft && offset < 45) {
-    const response = await getPlayers('NFL', leagueId, freeAgent, offset);
-    playersList = playersList.concat(response.players);
-    offset = response.resultOffsetNext;
-
-    if (offset >= response.resultTotal) {
-      morePlayersLeft = false;
-    }
-
-    const lastPlayer = playersList[playersList.length - 1];
-    if (stopIfNoPoints && !lastPlayer?.viewingActualPoints?.value || lastPlayer?.viewingActualPoints?.value === 0) {
-      morePlayersLeft = false;
-    }
-  }
-
-  const players = convertPlayerObjects(playersList);
-
-  setLocalStorage('football_players', players);
-  setLocalStorage('football_playersFetchedAt', new Date().getTime());
-
-  return players;
 }
 

@@ -18,15 +18,6 @@
     >
 
       <div class="row">
-
-        <va-select
-          label="Sport"
-          :options="sports"
-          v-model="sport"
-          required
-          bordered
-        >
-        </va-select>
         <va-input
           label="League ID"
           v-model="leagueId"
@@ -52,10 +43,6 @@ export default defineComponent({
   data() {
     return {
       sport: 'nhl',
-      sports: [
-        'nhl',
-        'nfl'
-      ],
       leagueId: null,
     }
   },

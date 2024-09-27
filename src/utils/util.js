@@ -1,5 +1,4 @@
 import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from '../hockey/constants';
-import { FOOTBALL_TEAM_NAME_TO_ABBR, FOOTBALL_TEAM_ABBR_TO_COLORS } from '../football/constants';
 
 export const getLeagueId = () => {
   const url = location.href;
@@ -30,10 +29,6 @@ export const getColors = (state) => {
   if (state.sport === 'nhl') {
     const abbr = HOCKEY_TEAM_NAME_TO_ABBR[state.nhl.favoriteTeam];
     return HOCKEY_TEAM_ABBR_TO_COLORS[abbr];
-  }
-  if (state.sport === 'nfl') {
-    const abbr = FOOTBALL_TEAM_NAME_TO_ABBR[state.nfl.favoriteTeam];
-    return FOOTBALL_TEAM_ABBR_TO_COLORS[abbr];
   }
 }
 

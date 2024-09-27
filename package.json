@@ -4,10 +4,10 @@
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
-    "si:dev": "cross-env STANDALONE=true parcel serve --target=site",
+    "si:dev": "cross-env NODE_ENV='local' STANDALONE=true parcel serve --target=site",
     "si:build": "rm -rf dist/site && cross-env STANDALONE=true parcel build --target=site",
     "si:serveprod": "yarn si:build && serve -s -p 1234 dist/site/",
-    "ex:dev": "parcel watch --no-hmr --target=extension",
+    "ex:dev": " NODE_ENV='local' parcel watch --no-hmr --target=extension",
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
     "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist"

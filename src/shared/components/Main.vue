@@ -8,17 +8,12 @@
     }"
   >
     <Hockey v-if="sport === 'nhl'" />
-    <Football
-      v-if="sport === 'nfl'"
-      :leagueId="leagueId"
-    />
   </div>
 </template>
 
 <script>
 import { getLeagueId, getSport } from "../../utils/util";
 import Hockey from "../../hockey/Hockey.vue";
-import Football from "../../football/Football.vue";
 import { mapGetters, mapState } from "vuex";
 import { defineComponent } from "vue";
 
@@ -31,7 +26,6 @@ export default defineComponent({
   },
   components: {
     Hockey,
-    Football,
   },
   methods: {
 

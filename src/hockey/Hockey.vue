@@ -94,8 +94,8 @@ export default {
   methods: {
     async loadGames(forceRefresh) {
       this.gamesByTeam = {};
-      const result = await getGamesThisWeek(forceRefresh);
-      this.gamesByTeam = result;
+      // const result = await getGamesThisWeek(forceRefresh);
+      // this.gamesByTeam = result;
     },
     async loadPlayers(forceRefresh) {
       this.players = [];

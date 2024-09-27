@@ -19,26 +19,18 @@
         :color="teamSecondaryColor"
         size="large"
       >sports_hockey</va-icon>
-      <va-icon
-        v-if="sport === 'nfl'"
-        class="material-icons"
-        :color="teamSecondaryColor"
-        size="large"
-      >sports_football</va-icon>
     </div>
   </div>
 </template>
 
 <script>
 import Hockey from "./hockey/Hockey.vue";
-import Football from "./football/Football.vue";
 import Main from "./shared/components/Main.vue";
 import { mapGetters, mapState } from "vuex";
 
 export default {
   components: {
     Hockey,
-    Football,
     Main,
   },
   methods: {
