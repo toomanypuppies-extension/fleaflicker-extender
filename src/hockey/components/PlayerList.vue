@@ -1,70 +1,36 @@
 <template>
   <div class="tableContainer containerColor">
-    <va-inner-loading
-      :loading="loading"
-      :size="60"
-      :color="teamSecondaryColor"
-    >
-      <table
-        class="va-table datatable"
-        :class="{ tableLoading: loading }"
-      >
+    <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
+      <table class="va-table datatable" :class="{ tableLoading: loading }">
         <thead>
           <tr>
-            <th
-              v-for="column in columns"
-              :key="column.key"
-              @click="() => handledSortSingleClick(column)"
-              @dblclick="() => handledSortDoubleClick(column)"
-              class="headerStyles"
-              :class="{ cursor: column.sortable }"
-            >
+            <th v-for="column in columns" :key="column.key" @click="() => handledSortSingleClick(column)"
+              @dblclick="() => handledSortDoubleClick(column)" class="headerStyles"
+              :class="{ cursor: column.sortable }">
               <span class="colHeadContent">
                 {{ column.name }}
-                <va-icon
-                  v-if="sortMap[column.key] === 'desc'"
-                  class="material-icons"
-                  size="1em"
-                >expand_more</va-icon>
-                <va-icon
-                  v-if="
-                    sortMap[column.key] === 'desc' &&
-                    sortColumns[1] === column.key
-                  "
-                  class="material-icons"
-                  size="1em"
-                >expand_more</va-icon>
-                <va-icon
-                  v-if="sortMap[column.key] === 'asc'"
-                  class="material-icons"
-                  size="1em"
-                >expand_less</va-icon>
-                <va-icon
-                  v-if="
-                    sortMap[column.key] === 'asc' &&
-                    sortColumns[1] === column.key
-                  "
-                  class="material-icons"
-                  size="1em"
-                >expand_less</va-icon>
+                <va-icon v-if="sortMap[column.key] === 'desc'" class="material-icons" size="1em">expand_more</va-icon>
+                <va-icon v-if="
+                  sortMap[column.key] === 'desc' &&
+                  sortColumns[1] === column.key
+                " class="material-icons" size="1em">expand_more</va-icon>
+                <va-icon v-if="sortMap[column.key] === 'asc'" class="material-icons" size="1em">expand_less</va-icon>
+                <va-icon v-if="
+                  sortMap[column.key] === 'asc' &&
+                  sortColumns[1] === column.key
+                " class="material-icons" size="1em">expand_less</va-icon>
               </span>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="player in filteredPlayers"
-            :key="player.id"
-            @click="$emit('playerSelected', player)"
-            class="hoverEffects"
-          >
-            <td
-              v-for="column in columns"
-              :key="`${column.key}-${player.id}`"
-            >
+          <tr v-for="player in filteredPlayers" :key="player.id" @click="$emit('playerSelected', player)"
+            class="hoverEffects">
+            <td v-for="column in columns" :key="`${column.key}-${player.id}`">
               <template v-if="column.key === 'gameDays'">
                 <!-- Only show this week days -->
-                {{ gamesByTeam && gamesByTeam[player?.team]?.filter((day) => ['Mo','Tu','We','Th','Fr','Sa','Su'].includes(day))?.join(", ") }}
+                {{ gamesByTeam && gamesByTeam[player?.team]?.filter((day) =>
+                  ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].includes(day))?.join(", ") }}
               </template>
               <template v-else>
                 {{ player[column.key] }}
@@ -109,12 +75,12 @@ export default {
           sortable: true,
           sortingFn: this.stringSortFn,
         },
-        // {
-        //   key: "gamesThisWeek",
-        //   name: "Games Remaining",
-        //   sortable: true,
-        //   sortingFn: this.numSortFn,
-        // },
+        {
+          key: "gamesThisWeek",
+          name: "Games Remaining",
+          sortable: true,
+          sortingFn: this.numSortFn,
+        },
         {
           key: "gameDays",
           name: "Game Days",
@@ -225,14 +191,14 @@ export default {
       );
 
       this.filteredPlayers = this.players.filter((player) => {
-        if(this.ownership  === "Free Agent" && player.owner) {
+        if (this.ownership === "Free Agent" && player.owner) {
           return false
         } else if (this.ownership === "Owned" && !player.owner) {
           return false
         } else if (this.ownership !== "" && !OWNERSHIP_OPTIONS.includes(this.ownership) && player.owner !== this.ownership) {
           return false
         }
-        
+
         if (this.gameDaysSelections && this.gameDaysSelections.length > 0) {
           if (!this.teamsMatchingGamesDaysSelection.includes(player.team)) {
             return false;
