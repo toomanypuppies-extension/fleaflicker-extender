@@ -1,31 +1,17 @@
 <template>
-  <div
-    v-if="selectedPlayer"
-    class="playerContainer containerColor"
-  >
+  <div v-if="selectedPlayer" class="playerContainer containerColor">
     <div class="playerContainerLeft">
-      <va-icon
-        @click="$emit('clearSelectedPlayer')"
-        class="material-icons playerClose"
-        style="color: var(--themeAccentColor)"
-        size="medium"
-      >close</va-icon>
+      <va-icon @click="$emit('clearSelectedPlayer')" class="material-icons playerClose"
+        style="color: var(--themeAccentColor)" size="medium">close</va-icon>
       <div class="v-flex">
         <h2>
           {{ selectedPlayer.name }} -
           {{ teamAbbrToName[selectedPlayer.team] }}
         </h2>
         <div class="h-flex">
-          <img
-            class="playerImage"
-            :src="selectedPlayer.expandedData.image"
-            alt="Player Image"
-            v-if="selectedPlayer.expandedData.image"
-          />
-          <div
-            class="playerImage playerImageDefault"
-            v-if="!selectedPlayer.expandedData.image"
-          ></div>
+          <img class="playerImage" :src="selectedPlayer.expandedData.image" alt="Player Image"
+            v-if="selectedPlayer.expandedData.image" />
+          <div class="playerImage playerImageDefault" v-if="!selectedPlayer.expandedData.image"></div>
           <div class="playerStats">
             <div class="flex-spaceBetween">
               <p>Position</p>
@@ -61,53 +47,21 @@
     </div>
     <div class="playerContainerRight">
       <div class="h-flex">
-        <a
-          :href="selectedPlayerFleaflickerLink"
-          v-if="selectedPlayerFleaflickerLink"
-          @click="$emit('fleaflickerNav')"
-          style="color: var(--themeAccentColor)"
-        >Fleaflicker
-          <va-icon
-            class="material-icons"
-            style="color: var(--themeAccentColor)"
-            size="small"
-          >link</va-icon>
+        <a :href="selectedPlayerFleaflickerLink" v-if="selectedPlayerFleaflickerLink" @click="$emit('fleaflickerNav')"
+          style="color: var(--themeAccentColor)">Fleaflicker
+          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
         </a>
-        <a
-          :href="selectedPlayerDobberLink"
-          v-if="selectedPlayerDobberLink"
-          target="_blank"
-          style="color: var(--themeAccentColor)"
-        >Dobber
-          <va-icon
-            class="material-icons"
-            style="color: var(--themeAccentColor)"
-            size="small"
-          >link</va-icon>
+        <a :href="selectedPlayerDobberLink" v-if="selectedPlayerDobberLink" target="_blank"
+          style="color: var(--themeAccentColor)">Dobber
+          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
         </a>
-        <a
-          :href="selectedPlayerPuckpediaLink"
-          v-if="selectedPlayerPuckpediaLink"
-          target="_blank"
-          style="color: var(--themeAccentColor)"
-        >PuckPedia
-          <va-icon
-            class="material-icons"
-            style="color: var(--themeAccentColor)"
-            size="small"
-          >link</va-icon>
+        <a :href="selectedPlayerPuckpediaLink" v-if="selectedPlayerPuckpediaLink" target="_blank"
+          style="color: var(--themeAccentColor)">PuckPedia
+          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
         </a>
-        <a
-          :href="selectedPlayerDailyFaceoffTeamLink"
-          v-if="selectedPlayerDailyFaceoffTeamLink"
-          target="_blank"
-          style="color: var(--themeAccentColor)"
-        >{{ teamAbbrToName[selectedPlayer.team] }} Daily Faceoff
-          <va-icon
-            class="material-icons"
-            style="color: var(--themeAccentColor)"
-            size="small"
-          >link</va-icon>
+        <a :href="selectedPlayerDailyFaceoffTeamLink" v-if="selectedPlayerDailyFaceoffTeamLink" target="_blank"
+          style="color: var(--themeAccentColor)">{{ teamAbbrToName[selectedPlayer.team] }} Daily Faceoff
+          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
         </a>
       </div>
       <div class="playerNews">
@@ -121,14 +75,22 @@
         <p>{{ selectedPlayer.expandedData?.news?.analysis }}</p>
       </div>
     </div>
-    <div class="upcomingGames">
-      <h3>Upcoming games:</h3>
+    <div v-if="gamesByMatchup && weekStartDates" class="upcomingGames">
+      <h2>Upcoming games</h2>
+      <hr />
+      <div class="gameGrid">
+        <GameWeek :week="gameWeekForTeam['0']" :startDate="weekStartDates[0]" />
+        <GameWeek :week="gameWeekForTeam['1']" :startDate="weekStartDates[1]" />
+        <GameWeek :week="gameWeekForTeam['2']" :startDate="weekStartDates[2]" />
+        <GameWeek :week="gameWeekForTeam['3']" :startDate="weekStartDates[3]" />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME } from "../constants";
+import GameWeek from "./GameWeek.vue";
 import { mapState } from 'vuex';
 
 export default {
@@ -136,10 +98,26 @@ export default {
     leagueId: String,
     teamAbbrToName: Object,
   },
+  components: {
+    GameWeek
+  },
   computed: {
     ...mapState({
       selectedPlayer: state => state.selectedPlayer,
+      gamesByMatchup: state => state.gamesByMatchup,
+      weekStartDates: state => state.weekStartDates
     }),
+    gameWeekForTeam() {
+      if (
+        this.selectedPlayer?.team &&
+        this.selectedPlayer.team !== "FA"
+      ) {
+        const teamAbbr = this.selectedPlayer.team;
+        return this.gamesByMatchup[teamAbbr];
+      } else {
+        return {};
+      }
+    },
     selectedPlayerNewsTime() {
       const epoch = this.selectedPlayer.expandedData?.news?.timeEpochMilli;
       if (epoch) {
@@ -212,12 +190,29 @@ export default {
   gap: 1em;
 }
 
+@media (max-width: 800px) {
+  .playerContainer {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .playerContainerLeft {
   grid-column: 1;
 }
 
 .playerContainerRight {
   grid-column: 2 / span 2;
+}
+
+.upcomingGames {
+  grid-column: 1 / span 3;
+
+  .gameGrid {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
 }
 
 .playerNews {

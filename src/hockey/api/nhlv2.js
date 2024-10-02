@@ -48,10 +48,17 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
       weekThreeResponse.data.gameWeek,
       weekFourResponse.data.gameWeek
     ])
+    const weekStartDates = [
+      mondayDate,
+      nextMondayDate1,
+      nextMondayDate2,
+      nextMondayDate3
+    ]
 
     const games = {
       gamesByTeam,
-      gamesByMatchup
+      gamesByMatchup,
+      weekStartDates
     }
 
     setLocalStorage('gamesThisWeek', games);

@@ -1,23 +1,10 @@
 <template>
-  <Filter/>
-  <Settings
-    @refreshPlayers="refreshPlayers"
-    @resetApp="resetApp"
-  />
-  <PlayerList
-    ref="PlayerList"
-    sport="nhl"
-    :loading="loading"
-    :players="players"
-    :gamesByTeam="gamesByTeam"
-    @playerSelected="(player) => selectPlayer(player)"
-  />
-  <PlayerCard
-    :leagueId="leagueId"
-    :teamAbbrToName="teamAbbrToName"
-    @fleaflickerNav="toggleDrawer"
-    @clearSelectedPlayer="clearSelectedPlayer"
-  />
+  <Filter />
+  <Settings @refreshPlayers="refreshPlayers" @resetApp="resetApp" />
+  <PlayerList ref="PlayerList" sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
+    @playerSelected="(player) => selectPlayer(player)" />
+  <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
+    @clearSelectedPlayer="clearSelectedPlayer" />
 </template>
 
 <script>
@@ -45,6 +32,7 @@ export default {
       loading: true,
       players: [],
       gamesByTeam: {},
+      gameWeek: {},
     };
   },
   components: {
@@ -58,6 +46,8 @@ export default {
       this.gamesByTeam = {};
       const result = await getGamesThisWeek(forceRefresh);
       this.gamesByTeam = result.gamesByTeam;
+      this.$store.commit('setKeyValue', { key: 'gamesByMatchup', value: result.gamesByMatchup })
+      this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },
     async loadPlayers(forceRefresh) {
       this.players = [];
@@ -72,7 +62,7 @@ export default {
     },
     async loadOwners() {
       const owners = await getLeagueOwners(this.leagueId)
-      this.$store.commit('setKeyValue', {key: 'owners', value: owners})
+      this.$store.commit('setKeyValue', { key: 'owners', value: owners })
     },
     debounceFiltering() {
       if (this.filterBufferTimer) {
@@ -87,13 +77,13 @@ export default {
       this.$store.commit('toggleKeyValue', drawerExpanded)
     },
     clearSelectedPlayer() {
-      this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: null})
+      this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })
     },
     selectPlayer(player) {
       if (this.selectedPlayer?.id !== player.id) {
-        this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: player})
+        this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: player })
       } else {
-        this.$store.commit('setKeyValue', {key: 'selectedPlayer', value: null})
+        this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })
       }
     },
     refreshPlayers() {
@@ -137,6 +127,4 @@ export default {
 };
 </script>
 
-<style lang="scss">
-
-</style>
+<style lang="scss"></style>

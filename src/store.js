@@ -22,6 +22,8 @@ const initState = {
   gameDaysSelections: [],
   owners: [],
   ownership: "",
+  gamesByMatchup: null,
+  weekStartDates: null,
 }
 
 const createState = () => {
