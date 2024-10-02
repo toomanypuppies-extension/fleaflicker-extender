@@ -56,7 +56,7 @@ export default {
   display: flex;
 
   .gameDay:last-child {
-    border-right: 4px solid var(--themeAccentColor);
+    border-right: 4px solid var(--teamMainColor);
   }
 }
 
@@ -68,13 +68,13 @@ export default {
   height: 2.5em;
   width: 2.5em;
   line-height: 1em;
-  color: var(--themeAccentColor);
-  border: 4px solid var(--themeAccentColor);
+  color: var(--teamMainColor);
+  border: 4px solid var(--teamMainColor);
   border-right: 0px;
 }
 
 .hasGame {
-  background-color: var(--teamMainColor);
+  background-color: var(--teamSecondaryColor);
 }
 
 .startDate {

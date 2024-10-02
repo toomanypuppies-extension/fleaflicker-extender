@@ -214,7 +214,7 @@ export const NHL_APIV2_ABBREV_TO_ABBR = {
 
 export const HOCKEY_TEAM_ABBR_TO_COLORS = {
   "ANA": {
-    primary: '#B9975B',
+    primary: '#000000',
     secondary: '#F47A38',
   },
   "BOS": {
