@@ -142,3 +142,29 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
   return playersList;
 }
 
+export const getLeagueStandings = async (leagueId) => {
+  try {
+    if (!leagueId) {
+      console.error('No league id provided. Failing call');
+      return;
+    }
+    const response = await axios.get(buildUrl('FetchLeagueStandings'), {
+      params: {
+        sport: 'NHL',
+        league_id: leagueId,
+      },
+    });
+    return response.data;
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export const getLeagueOwners = async (leagueId) => {
+  const standings = await getLeagueStandings(leagueId);
+
+  const teams = standings?.divisions?.[0]?.teams;
+  if (!teams) return [];
+
+  return teams.map(team => team.name);
+}

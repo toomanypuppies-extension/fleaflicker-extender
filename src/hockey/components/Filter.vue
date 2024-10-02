@@ -67,13 +67,18 @@
 
       <span class="spacer"></span>
 
-      <va-checkbox
-        class="tall-checkbox"
-        v-model="onlyFreeAgents"
-        @update:model-value="(val) => emitUpdate('onlyFreeAgents', val)"
+      <va-select
+        v-model="ownership"
+        @update:model-value="(val) => emitUpdate('ownership', val)"
+        :options="ownershipOptions"
         :color="themeAccentColor"
-        label="Only Free Agents"
+        label="Ownership"
+        placeholder="All"
+        maxHeight="300px"
+        bordered
+        clearable
       />
+
     </div>
     <div class="settings-icon">
       <va-icon
@@ -100,6 +105,7 @@ import {
   HOCKEY_POSITION_OPTIONS,
   HOCKEY_TEAM_ABBR_TO_NAME,
   HOCKEY_TEAM_LIST,
+  OWNERSHIP_OPTIONS,
 } from "../constants";
 
 export default {
@@ -140,8 +146,12 @@ export default {
       injurySelections: state => state.injurySelections,
       positionSelections: state => state.positionSelections,
       gameDaysSelections: state => state.gameDaysSelections,
-      onlyFreeAgents: state => state.onlyFreeAgents,
-    })
+      owners: state => state.owners,
+      ownership: state => state.ownership,
+    }),
+    ownershipOptions() {
+      return [...OWNERSHIP_OPTIONS, ...this.owners]
+    }
   }
 };
 </script>

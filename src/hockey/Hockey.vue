@@ -26,7 +26,6 @@ import {
   HOCKEY_TEAM_ABBR_TO_COLORS,
   HOCKEY_TEAM_ABBR_TO_NAME,
 } from "./constants";
-import { clearLocalStorage, getLocalStorage, setLocalStorage } from "../utils/storage";
 import { getLeagueId } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
@@ -36,6 +35,7 @@ import { loadHockeyPlayers } from "./collections/players";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex/dist/vuex.cjs.js";
 import { getGamesThisWeek } from "./api/nhlv2";
+import { getLeagueOwners } from "../utils/flea";
 
 export default {
   data() {
@@ -69,6 +69,11 @@ export default {
       );
       this.players = result;
       this.loading = false;
+    },
+    async loadOwners() {
+      const owners = await getLeagueOwners(this.leagueId)
+      console.log(owners)
+      this.$store.commit('setKeyValue', {key: 'owners', value: owners})
     },
     debounceFiltering() {
       if (this.filterBufferTimer) {
@@ -107,6 +112,7 @@ export default {
   mounted() {
     this.loadPlayers();
     this.loadGames();
+    this.loadOwners();
   },
   computed: {
     ...mapState({

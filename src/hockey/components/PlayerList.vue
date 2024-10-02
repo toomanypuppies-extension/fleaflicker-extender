@@ -78,7 +78,7 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_NAME_TO_ABBR } from "../constants";
+import { HOCKEY_TEAM_NAME_TO_ABBR, OWNERSHIP_OPTIONS } from "../constants";
 import { containsAll } from "../../utils/util";
 import { mapState, mapGetters } from 'vuex';
 export default {
@@ -183,15 +183,15 @@ export default {
       positionSelections: state => state.positionSelections,
       injurySelections: state => state.injurySelections,
       gameDaysSelections: state => state.gameDaysSelections,
-      onlyFreeAgents: state => state.onlyFreeAgents,
       filterHash: state => state.filterHash,
+      ownership: state => state.ownership,
     }),
     ...mapGetters([
       'teamSecondaryColor',
     ]),
     columns() {
       return this.tableColumns.filter((col) => {
-        if (this.onlyFreeAgents && col.key === "owner") {
+        if (this.ownership === "Free Agent" && col.key === "owner") {
           return false;
         }
         if (
@@ -225,10 +225,14 @@ export default {
       );
 
       this.filteredPlayers = this.players.filter((player) => {
-        if (this.onlyFreeAgents && player.owner) {
-          return false;
+        if(this.ownership  === "Free Agent" && player.owner) {
+          return false
+        } else if (this.ownership === "Owned" && !player.owner) {
+          return false
+        } else if (this.ownership !== "" && !OWNERSHIP_OPTIONS.includes(this.ownership) && player.owner !== this.ownership) {
+          return false
         }
-
+        
         if (this.gameDaysSelections && this.gameDaysSelections.length > 0) {
           if (!this.teamsMatchingGamesDaysSelection.includes(player.team)) {
             return false;

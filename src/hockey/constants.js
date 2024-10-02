@@ -52,6 +52,12 @@ export const HOCKEY_POSITION_OPTIONS = [
   'D',
 ]
 
+export const OWNERSHIP_OPTIONS = [
+  "Free Agent",
+  "Owned",
+  "All"
+]
+
 export const HOCKEY_INJURY_LIST = [
   'HEALTHY',
   'DTD',

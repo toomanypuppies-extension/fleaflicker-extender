@@ -20,7 +20,8 @@ const initState = {
   injurySelections: [],
   positionSelections: [],
   gameDaysSelections: [],
-  onlyFreeAgents: true,
+  owners: [],
+  ownership: "",
 }
 
 const createState = () => {
@@ -39,7 +40,7 @@ export const store = createStore({
       state.injurySelections = [];
       state.positionSelections = [];
       state.gameDaysSelections = [];
-      state.onlyFreeAgents = true;
+      state.ownership = "";
     },
     loadFromLocalStorage(state) {
       const localStorageState = getLocalStorage('vuex-state', state.leagueId);
