@@ -34,10 +34,25 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
     const mondayDate = format(monday, "yyyy-MM-dd");
 
     const weekOneResponse = await axios.get(buildUrl(`schedule/${mondayDate}`));
-    const nextMondayDate = weekOneResponse.data.nextStartDate;
-    const weekTwoResponse = await axios.get(buildUrl(`schedule/${nextMondayDate}`));
+    const nextMondayDate1 = weekOneResponse.data.nextStartDate;
+    const weekTwoResponse = await axios.get(buildUrl(`schedule/${nextMondayDate1}`));
+    const nextMondayDate2 = weekTwoResponse.data.nextStartDate;
+    const weekThreeResponse = await axios.get(buildUrl(`schedule/${nextMondayDate2}`));
+    const nextMondayDate3 = weekThreeResponse.data.nextStartDate;
+    const weekFourResponse = await axios.get(buildUrl(`schedule/${nextMondayDate3}`));
 
-    const games = convertGameObjects(weekOneResponse.data, weekTwoResponse.data);
+    const gamesByTeam = convertGameObjectsToGamesByTeam(weekOneResponse.data, weekTwoResponse.data);
+    const gamesByMatchup = convertGameObjectsToMatchups([
+      weekOneResponse.data.gameWeek,
+      weekTwoResponse.data.gameWeek,
+      weekThreeResponse.data.gameWeek,
+      weekFourResponse.data.gameWeek
+    ])
+
+    const games = {
+      gamesByTeam,
+      gamesByMatchup
+    }
 
     setLocalStorage('gamesThisWeek', games);
     setLocalStorage('gamesThisWeekFetchedAt', now.toLocaleString('en-US'));
@@ -48,7 +63,7 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
   }
 }
 
-const convertGameObjects = (weekOne, weekTwo) => {
+const convertGameObjectsToGamesByTeam = (weekOne, weekTwo) => {
   // { ABR: ['Mo', 'We', 'Next - Mo'] }
   const gamesByTeam = {};
   const convertWeek = (week, indexOffset = 0) => {
@@ -78,4 +93,43 @@ const convertGameObjects = (weekOne, weekTwo) => {
   convertWeek(weekTwo.gameWeek, 7);
 
   return gamesByTeam;
+}
+
+const convertGameObjectsToMatchups = (weeks) => {
+  const sampleWeek = {
+    'MON': '',
+    'TUE': '',
+    'WED': '',
+    'THU': '',
+    'FRI': '',
+    'SAT': '',
+    'SUN': ''
+  }
+
+  const matchupsByTeam = {};
+  const convertWeek = (week, weekIndex) => {
+    week.forEach((day, index) => {
+      day.games.forEach(game => {
+        const awayTeam = NHL_APIV2_ABBREV_TO_ABBR[game.awayTeam.abbrev];
+        const homeTeam = NHL_APIV2_ABBREV_TO_ABBR[game.homeTeam.abbrev];
+
+
+        if (!!awayTeam && !!homeTeam) {
+          if (!matchupsByTeam[awayTeam]) { matchupsByTeam[awayTeam] = {} }
+          if (!matchupsByTeam[homeTeam]) { matchupsByTeam[homeTeam] = {} }
+          if (!matchupsByTeam[awayTeam][weekIndex]) { matchupsByTeam[awayTeam][weekIndex] = Object.assign({}, sampleWeek) }
+          if (!matchupsByTeam[homeTeam][weekIndex]) { matchupsByTeam[homeTeam][weekIndex] = Object.assign({}, sampleWeek) }
+
+          matchupsByTeam[awayTeam][weekIndex][day.dayAbbrev] = homeTeam;
+          matchupsByTeam[homeTeam][weekIndex][day.dayAbbrev] = awayTeam;
+        }
+      })
+    })
+  };
+
+  weeks.forEach((week, index) => {
+    convertWeek(week, index);
+  })
+
+  return matchupsByTeam;
 }

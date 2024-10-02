@@ -121,6 +121,9 @@
         <p>{{ selectedPlayer.expandedData?.news?.analysis }}</p>
       </div>
     </div>
+    <div class="upcomingGames">
+      <h3>Upcoming games:</h3>
+    </div>
   </div>
 </template>
 

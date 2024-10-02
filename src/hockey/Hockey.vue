@@ -57,7 +57,7 @@ export default {
     async loadGames(forceRefresh) {
       this.gamesByTeam = {};
       const result = await getGamesThisWeek(forceRefresh);
-      this.gamesByTeam = result;
+      this.gamesByTeam = result.gamesByTeam;
     },
     async loadPlayers(forceRefresh) {
       this.players = [];
@@ -72,7 +72,6 @@ export default {
     },
     async loadOwners() {
       const owners = await getLeagueOwners(this.leagueId)
-      console.log(owners)
       this.$store.commit('setKeyValue', {key: 'owners', value: owners})
     },
     debounceFiltering() {
