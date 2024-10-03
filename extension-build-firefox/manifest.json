@@ -19,6 +19,11 @@
     "384": "icons/icon-384x384.png",
     "512": "icons/icon-512x512.png"
   },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{4a975edb-e455-40d6-bbbf-6ae23dbab404}"
+    }
+  },
   "content_scripts": [
     {
       "matches": [
