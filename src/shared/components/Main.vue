@@ -20,7 +20,6 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: 'Main',
   created() {
-    this.$store.commit('loadFromLocalStorage');
     this.$store.commit('setLeagueId', getLeagueId())
   },
   components: {

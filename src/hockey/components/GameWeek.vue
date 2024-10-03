@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div class="gameWeekOuterContainer">
     <h3 class="startDate">{{ startDate }} - {{ endDate }}</h3>
     <div class="gameWeekContainer" :style="bindCssVars">
       <div class="gameDay" :class="{ hasGame: week.MON !== '' }"><span>{{ week.MON }}</span></div>
@@ -47,7 +47,7 @@ export default {
 </script>
 
 <style lang="scss">
-.container {
+.gameWeekOuterContainer {
   display: flex;
   flex-direction: column;
 }

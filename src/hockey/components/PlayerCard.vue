@@ -48,7 +48,7 @@
     <div class="playerContainerRight">
       <div class="h-flex">
         <a :href="selectedPlayerFleaflickerLink" v-if="selectedPlayerFleaflickerLink" @click="$emit('fleaflickerNav')"
-          style="color: var(--themeAccentColor)">Fleaflicker
+          style="color: var(--themeAccentColor)" :target="fleaTarget">Fleaflicker
           <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
         </a>
         <a :href="selectedPlayerDobberLink" v-if="selectedPlayerDobberLink" target="_blank"
@@ -107,6 +107,9 @@ export default {
       gamesByMatchup: state => state.gamesByMatchup,
       weekStartDates: state => state.weekStartDates
     }),
+    fleaTarget() {
+      return process.env.STANDALONE ? '_blank' : '_self';
+    },
     gameWeekForTeam() {
       if (
         this.selectedPlayer?.team &&

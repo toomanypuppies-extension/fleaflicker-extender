@@ -2,9 +2,9 @@
 // https://api-web.nhle.com/v1/schedule/2024-10-26
 
 import axios from 'axios';
-import { DATE_MAP, HOCKEY_TEAM_ABBR_TO_NAME, HOCKEY_TEAM_NAME_TO_ABBR, NHL_API_BASEV2, NHL_APIV2_ABBREV_TO_ABBR } from '../constants';
+import { DATE_MAP, NHL_API_BASEV2, NHL_APIV2_ABBREV_TO_ABBR } from '../constants';
 import { getLocalStorage, setLocalStorage } from '../../utils/storage';
-import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO, format } from 'date-fns'
+import { previousMonday, isSameWeek, isMonday, format } from 'date-fns'
 import { changeTimeZone } from '../../utils/util';
 
 const buildUrl = (segment) => {

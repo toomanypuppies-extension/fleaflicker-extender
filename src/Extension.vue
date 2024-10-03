@@ -72,6 +72,10 @@ export default {
   height: 100vh;
   width: calc(100vw - 100px);
   color: var(--themeAccentColor);
+
+  .mainContent {
+    position: relative;
+  }
 }
 
 .fleaflicker-extender-drawer {

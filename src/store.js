@@ -27,7 +27,11 @@ const initState = {
 }
 
 const createState = () => {
-  const defaultState = JSON.parse(JSON.stringify(initState));
+  let initialState = initState;
+  if (!!getLeagueId()) {
+    initialState = getLocalStorage('vuex-state', getLeagueId());
+  }
+  const defaultState = JSON.parse(JSON.stringify(initialState));
   return defaultState;
 }
 
@@ -68,6 +72,8 @@ export const store = createStore({
     },
     toggleDrawer(state) {
       state.drawerExpanded = !state.drawerExpanded;
+      // We set this immediately since it happens on nav. Otherwise the debounce would prevent the set
+      setLocalStorage('vuex-state', state, state.leagueId);
     },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))

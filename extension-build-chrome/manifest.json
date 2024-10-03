@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "version": "0.1.2",
+  "version": "0.3.0",
   "name": "Fleaflicker Extender",
-  "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.  ",
+  "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.",
   "permissions": [
     "https://statsapi.web.nhl.com/api/*",
     "https://www.fleaflicker.com/api/*"
@@ -23,10 +23,10 @@
       ],
       "run_at": "document_idle",
       "js": [
-        "dist/main.js"
+        "dist/extension/main.js"
       ],
       "css": [
-        "dist/main.css"
+        "dist/extension/main.css"
       ]
     }
   ]

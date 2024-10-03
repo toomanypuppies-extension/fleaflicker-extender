@@ -74,7 +74,7 @@ export default {
       }, 500);
     },
     toggleDrawer() {
-      this.$store.commit('toggleKeyValue', drawerExpanded)
+      this.$store.commit('toggleDrawer')
     },
     clearSelectedPlayer() {
       this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })
