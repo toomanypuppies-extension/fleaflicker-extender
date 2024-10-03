@@ -29,7 +29,10 @@ const initState = {
 const createState = () => {
   let initialState = initState;
   if (!!getLeagueId()) {
-    initialState = getLocalStorage('vuex-state', getLeagueId());
+    const localstoreState = getLocalStorage('vuex-state', getLeagueId());
+    if (localstoreState) {
+      initialState = merge(initState, localstoreState);
+    }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
   return defaultState;
