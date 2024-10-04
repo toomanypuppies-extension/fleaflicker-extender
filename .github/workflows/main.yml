@@ -10,7 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Run a multi-line script
-      run: |
-        echo test the checkout action,
-        ls -a
+    - uses: actions/setup-node@v4.0.4
+      with: 
+        node_version: '18'
+    - name: Run install
+      uses: borales/actions-yarn@v4
+      with:
+        cmd: install
+    - name: Build site
+      uses: borales/actions-yarn@v4
+      with:
+        cmd: si:build
