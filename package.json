@@ -7,6 +7,7 @@
     "si:dev": "cross-env NODE_ENV='development' STANDALONE=true parcel serve --target=site",
     "si:build": "rm -rf dist/site && cross-env STANDALONE=true parcel build --target=site",
     "si:serveprod": "yarn si:build && serve -s -p 1234 dist/site/",
+    "si:publish": "yarn si:build && mv ./dist/site/* ./docs/",
     "ex:dev": " NODE_ENV='development' parcel watch --no-hmr --target=extension",
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
