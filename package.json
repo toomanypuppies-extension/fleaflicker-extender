@@ -1,5 +1,5 @@
 {
-  "name": "my-library",
+  "name": "fleaflicker-extender",
   "version": "0.3.0",
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
