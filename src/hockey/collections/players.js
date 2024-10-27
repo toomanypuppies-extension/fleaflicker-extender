@@ -1,6 +1,5 @@
 import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { convertEpochToTimeString } from "../../utils/util";
-import { differenceInMinutes } from 'date-fns'
 import { getAllHockeyPlayers } from "../../utils/flea";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
@@ -76,16 +75,16 @@ export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRe
 
   let finalPlayers;
 
-  let storedLessThanHourAgo = false;
+  let storedLessThan30mAgo = false;
 
   if (playersStoreTime) {
     const playersStoreTimeEpochMilli = parseInt(playersStoreTime, 10);
     const storedDateObject = new Date(playersStoreTimeEpochMilli);
-    const minutesAgo = differenceInMinutes(storedDateObject, new Date());
-    storedLessThanHourAgo = minutesAgo < 60;
+    const msAgo = new Date() - storedDateObject;
+    storedLessThan30mAgo = msAgo < 1800000;
   }
 
-  if (storedLessThanHourAgo && !forceRefresh) {
+  if (storedLessThan30mAgo && !forceRefresh) {
     return storedPlayers;
   }
 
