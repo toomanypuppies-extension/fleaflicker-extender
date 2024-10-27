@@ -15,7 +15,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { previousMonday, nextSunday, isSameWeek, isMonday, isSunday, formatISO, format } from 'date-fns'
+import { nextSunday, format } from 'date-fns'
 
 export default {
   props: {

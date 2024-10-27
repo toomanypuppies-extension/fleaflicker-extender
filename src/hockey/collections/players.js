@@ -1,7 +1,7 @@
 import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { convertEpochToTimeString } from "../../utils/util";
-import { differenceInDays, differenceInMinutes } from 'date-fns'
-import { getActivityToTimeEpochMilli, getAllHockeyPlayers, getAllSelectPlayers } from "../../utils/flea";
+import { differenceInMinutes } from 'date-fns'
+import { getAllHockeyPlayers } from "../../utils/flea";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;
