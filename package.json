@@ -1,6 +1,6 @@
 {
   "name": "fleaflicker-extender",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "source": "src/main.js",
   "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
