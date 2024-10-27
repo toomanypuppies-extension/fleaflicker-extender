@@ -11,7 +11,7 @@
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
     "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist",
-    "gh-mv-docs": "mv dist/site docs"
+    "gh-mv-docs": "mv dist/site docs && cp CNAME docs/CNAME"
   },
   "targets": {
     "extension": {
