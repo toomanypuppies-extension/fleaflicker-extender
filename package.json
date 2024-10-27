@@ -10,7 +10,8 @@
     "ex:dev": " NODE_ENV='development' parcel watch --no-hmr --target=extension",
     "ex:build": "parcel build --target=extension",
     "ex:build:chrome": "rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
-    "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist"
+    "ex:build:firefox": "rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist",
+    "gh-mv-docs": "mv dist/site docs"
   },
   "targets": {
     "extension": {
