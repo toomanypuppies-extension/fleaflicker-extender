@@ -194,7 +194,7 @@ export default {
   gap: 1em;
 }
 
-@media (max-width: 800px) {
+@media only screen and (hover: none) and (pointer: coarse) {
   .playerContainer {
     display: flex;
     flex-direction: column;

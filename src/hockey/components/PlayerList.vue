@@ -338,7 +338,7 @@ export default {
 .tableContainer .datatable {
   // Fix fleaflicker override here
   background-color: unset;
-  width: 100%;
+  min-width: 100%;
   position: relative;
 
   th {
