@@ -163,7 +163,8 @@ export default {
       ) {
         const kebabTeam = HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
           ?.split(" ")
-          ?.join("-");
+          ?.join("-")
+          ?.replaceAll('.', '')
         return `https://www.dailyfaceoff.com/teams/${kebabTeam.toLowerCase()}/line-combinations/`;
       }
       return null;
