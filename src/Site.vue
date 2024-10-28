@@ -52,6 +52,9 @@ export default defineComponent({
         { id: 12100, name: 'Chelios' },
         { id: 12101, name: 'Pronger' },
         { id: 12095, name: 'Bourque' },
+        { id: 14206, name: 'Keeper - Choccy' },
+        { id: 9559, name: 'Keeper - OG' },
+        { id: 9899, name: 'Keeper - Koala' },
       ]
     }
   },
