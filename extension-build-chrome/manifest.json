@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.3.0",
+  "version": "0.3.6",
   "name": "Fleaflicker Extender",
   "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.",
   "host_permissions": [
