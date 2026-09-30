@@ -121,7 +121,7 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     playersList = playersList.concat(response.players);
     offset = response.resultOffsetNext;
 
-    if (offset >= response.resultTotal) {
+    if (!offset || offset >= response.resultTotal) {
       morePlayersLeft = false;
     }
 
