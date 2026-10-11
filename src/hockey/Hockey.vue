@@ -1,6 +1,6 @@
 <template>
   <Filter />
-  <Settings @refreshPlayers="refreshPlayers" @resetApp="resetApp" />
+  <Settings @refreshPlayers="refreshPlayers" @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
   <div v-if="loadMessage" class="loadMessage containerColor">{{ loadMessage }}</div>
   <PlayerList ref="PlayerList" sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
     @playerSelected="(player) => selectPlayer(player)" />
@@ -35,6 +35,7 @@ export default {
       players: [],
       playersSavedAt: null,
       loadError: null,
+      latestLoadId: 0,
       gamesByTeam: {},
       gameWeek: {},
     };
@@ -57,6 +58,8 @@ export default {
       this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },
     async loadPlayers(forceRefresh) {
+      // Only show the result of the most recent load, e.g. after toggling a setting twice
+      const loadId = ++this.latestLoadId;
       this.players = [];
       this.loading = true;
       const result = await loadHockeyPlayers(
@@ -64,6 +67,9 @@ export default {
         this.excludeIfNoPoints,
         forceRefresh
       );
+      if (loadId !== this.latestLoadId) {
+        return;
+      }
       this.players = result.players || [];
       this.playersSavedAt = result.savedAt;
       this.loadError = result.error;

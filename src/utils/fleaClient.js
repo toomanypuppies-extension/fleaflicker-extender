@@ -35,7 +35,9 @@ const retryDelay = (error, attempt) => {
   return RETRY_DELAYS[attempt] + Math.random() * 1000;
 }
 
-export const fleaClient = axios.create();
+// Player loads run one at a time, so a request that never finishes would block every later load.
+// The proxy holds queued requests for up to 45s.
+export const fleaClient = axios.create({ timeout: 60 * 1000 });
 
 fleaClient.interceptors.request.use(async (config) => {
   await waitForSlot();

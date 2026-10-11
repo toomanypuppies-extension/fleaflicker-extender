@@ -165,11 +165,22 @@ export const LOAD_ERRORS = {
   unavailable: 'unavailable',
 };
 
+// Loads run one at a time. Otherwise a slower, older load can overwrite the stored players
+// with older data, and a load started during a full fetch would start a second full fetch
+// instead of using what the first one stores.
+let previousLoad = Promise.resolve();
+
 /**
  * @returns {Promise<{ players: Array, savedAt?: number, error?: string }>}
  *   savedAt is when the players' stats were fetched, error is one of LOAD_ERRORS
  */
-export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
+export const loadHockeyPlayers = (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
+  const load = previousLoad.then(() => loadHockeyPlayersNow(leagueId, stopIfNoPoints, forceRefresh));
+  previousLoad = load.catch(() => {});
+  return load;
+}
+
+const loadHockeyPlayersNow = async (leagueId, stopIfNoPoints, forceRefresh) => {
   // Keep a snapshot of all players and only update what could have changed:
   // - stats, only when NHL games have been played since the last fetch (full fetch)
   // - ownership, from the league activity feed (usually a single call)

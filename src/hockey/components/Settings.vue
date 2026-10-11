@@ -137,7 +137,8 @@ export default {
       },
       set(value) {
         this.$store.commit('setKeyValue', { key: 'excludeIfNoPoints', value })
-        this.$emit('refreshPlayers')
+        // Only the players depend on this, the NHL schedule doesn't need refetching
+        this.$emit('reloadPlayers')
       }
     },
     darkMode: {
