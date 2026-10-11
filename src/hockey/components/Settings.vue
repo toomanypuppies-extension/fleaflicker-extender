@@ -47,26 +47,17 @@
       <h3 class="tipsHeader">Tips</h3>
       <ul class="tipsList">
         <li>
-          You can sort up to two columns at a time.
-          <va-icon
-            class="material-icons"
-            size="1em"
-          >expand_more</va-icon> will
-          be shown on the primary sort column, and
-          <va-icon
-            class="material-icons"
-            size="1em"
-          >expand_more</va-icon>
-          <va-icon
-            class="material-icons"
-            size="1em"
-          >expand_more</va-icon>
-          will be shown on the secondary sort column.
+          Click a column header to sort by it. Clicking it again reverses the
+          sort, and a third click removes it.
         </li>
         <li>
-          Clicking once will toggle sort direction, and double clicking will
-          remove the sort. If you already have two columns sorted, then remove
-          the sort on one of them to sort a new column.
+          Shift-click a second column to sort by it as well. When two columns
+          are sorted, the numbers next to the
+          <va-icon
+            class="material-icons"
+            size="1em"
+          >expand_more</va-icon>
+          show which sort comes first.
         </li>
         <li>
           Click the

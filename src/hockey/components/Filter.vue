@@ -2,8 +2,8 @@
   <div class="formContainer containerColor">
     <div class="v-flex">
       <va-input
-        v-model="filter"
-        @update:model-value="(val) => emitUpdate('filter', val)"
+        v-model="search"
+        @update:model-value="debounceSearch"
         :color="themeAccentColor"
         label="Search"
         placeholder="Nils Hoglander"
@@ -11,7 +11,7 @@
       />
       <span class="spacer"></span>
       <va-select
-        v-model="injurySelections"
+        :model-value="injurySelections"
         @update:model-value="(val) => emitUpdate('injurySelections', val)"
         :options="injuryOptions"
         :color="themeAccentColor"
@@ -25,7 +25,7 @@
     </div>
     <div class="v-flex">
       <va-select
-        v-model="teamSelections"
+        :model-value="teamSelections"
         @update:model-value="(val) => emitUpdate('teamSelections', val)"
         :options="teamOptions"
         :color="themeAccentColor"
@@ -39,7 +39,7 @@
       <span class="spacer"></span>
 
       <va-select
-        v-model="positionSelections"
+        :model-value="positionSelections"
         @update:model-value="(val) => emitUpdate('positionSelections', val)"
         :options="positionOptions"
         :color="themeAccentColor"
@@ -53,7 +53,7 @@
     </div>
     <div class="v-flex">
       <va-select
-        v-model="gameDaysSelections"
+        :model-value="gameDaysSelections"
         @update:model-value="(val) => emitUpdate('gameDaysSelections', val)"
         :options="daysOptions"
         :color="themeAccentColor"
@@ -68,7 +68,7 @@
       <span class="spacer"></span>
 
       <va-select
-        v-model="ownership"
+        :model-value="ownership"
         @update:model-value="(val) => emitUpdate('ownership', val)"
         :options="ownershipOptions"
         :color="themeAccentColor"
@@ -108,6 +108,8 @@ import {
   OWNERSHIP_OPTIONS,
 } from "../constants";
 
+const SEARCH_DELAY = 250;
+
 export default {
   data() {
     return {
@@ -116,24 +118,30 @@ export default {
       injuryOptions: HOCKEY_INJURY_LIST,
       positionOptions: HOCKEY_POSITION_OPTIONS,
       daysOptions: DAYS_ARRAY,
+      // Typed text, the store's filter catches up once typing pauses
+      search: this.$store.state.filter,
+      searchTimer: null,
     };
   },
   methods: {
     clearFilters() {
+      clearTimeout(this.searchTimer);
       this.$store.commit('clearFilters');
-      this.emitFilterHash();
+      this.search = "";
     },
     emitUpdate(key, val) {
-      this.$store.commit('setKeyValue', {key, value: val})
-      this.emitFilterHash();
-      // this.$emit("update", key, val);
+      this.$store.commit('setKeyValue', { key, value: val })
     },
-    emitFilterHash() {
-      this.$store.commit('setKeyValue', { key: 'filterHash', value: performance.now() })
+    debounceSearch(val) {
+      clearTimeout(this.searchTimer);
+      this.searchTimer = setTimeout(() => this.emitUpdate('filter', val), SEARCH_DELAY);
     },
     toggleSettings() {
       this.$store.commit('toggleKeyValue', { key: 'openSettings' })
     },
+  },
+  beforeUnmount() {
+    clearTimeout(this.searchTimer);
   },
   computed: {
     ...mapGetters([
@@ -141,7 +149,6 @@ export default {
       'themeAccentColor'
     ]),
     ...mapState({
-      filter: state => state.filter,
       teamSelections: state => state.teamSelections,
       injurySelections: state => state.injurySelections,
       positionSelections: state => state.positionSelections,

@@ -80,12 +80,6 @@ export default defineComponent({
 </script>
 
 <style>
-@media only screen and (hover: none) and (pointer: coarse) {
-  #app {
-    font-size: 1.5em !important;
-  }
-}
-
 .site-container {
   padding: 1em;
   position: fixed;

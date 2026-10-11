@@ -4,27 +4,22 @@
       <table class="va-table datatable" :class="{ tableLoading: loading }">
         <thead>
           <tr>
-            <th v-for="column in columns" :key="column.key" @click="() => handledSortSingleClick(column)"
-              @dblclick="() => handledSortDoubleClick(column)" class="headerStyles"
-              :class="{ cursor: column.sortable }">
+            <th v-for="column in columns" :key="column.key" @click="(event) => onHeaderClick(column, event)"
+              class="headerStyles" :class="{ cursor: column.sortType }" :aria-sort="ariaSort(column)">
               <span class="colHeadContent">
                 {{ column.name }}
-                <va-icon v-if="sortMap[column.key] === 'desc'" class="material-icons" size="1em">expand_more</va-icon>
-                <va-icon v-if="
-                  sortMap[column.key] === 'desc' &&
-                  sortColumns[1] === column.key
-                " class="material-icons" size="1em">expand_more</va-icon>
-                <va-icon v-if="sortMap[column.key] === 'asc'" class="material-icons" size="1em">expand_less</va-icon>
-                <va-icon v-if="
-                  sortMap[column.key] === 'asc' &&
-                  sortColumns[1] === column.key
-                " class="material-icons" size="1em">expand_less</va-icon>
+                <template v-if="sortIndex(column) >= 0">
+                  <va-icon class="material-icons" size="1em">{{
+                    sorts[sortIndex(column)].direction === 'desc' ? 'expand_more' : 'expand_less'
+                  }}</va-icon>
+                  <span v-if="sorts.length > 1" class="sortOrder">{{ sortIndex(column) + 1 }}</span>
+                </template>
               </span>
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="player in filteredPlayers" :key="player.id" @click="$emit('playerSelected', player)"
+          <tr v-for="player in visiblePlayers" :key="player.id" @click="$emit('playerSelected', player)"
             class="hoverEffects">
             <td v-for="column in columns" :key="`${column.key}-${player.id}`">
               <template v-if="column.key === 'gameDays'">
@@ -44,95 +39,32 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_NAME_TO_ABBR, OWNERSHIP_OPTIONS } from "../constants";
-import { containsAll } from "../../utils/util";
 import { mapState, mapGetters } from 'vuex';
+import { filterPlayers } from "../collections/filtering";
+import { sortPlayers, toggleSort } from "../collections/sorting";
+
+const TABLE_COLUMNS = [
+  { key: "name", name: "Name", sortType: "string" },
+  { key: "team", name: "Team", sortType: "string" },
+  { key: "owner", name: "Owner", sortType: "string" },
+  { key: "todaysGame", name: "Today's Game", sortType: "string" },
+  { key: "gamesThisWeek", name: "Games Remaining", sortType: "number" },
+  { key: "gameDays", name: "Game Days" },
+  { key: "position", name: "Position", sortType: "string" },
+  { key: "injury", name: "Injury", sortType: "string" },
+  { key: "points", name: "Points", sortType: "number" },
+  { key: "avg", name: "Avg", sortType: "number" },
+  { key: "last1", name: "Last 1", sortType: "number" },
+  { key: "last5", name: "Last 5", sortType: "number" },
+  { key: "last10", name: "Last 10", sortType: "number" },
+];
+
+const SORT_TYPES = Object.fromEntries(TABLE_COLUMNS.map(column => [column.key, column.sortType]));
+
 export default {
   data() {
     return {
-      tableColumns: [
-        {
-          key: "name",
-          name: "Name",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "team",
-          name: "Team",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "owner",
-          name: "Owner",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "todaysGame",
-          name: "Todays Game",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "gamesThisWeek",
-          name: "Games Remaining",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "gameDays",
-          name: "Game Days",
-          sortable: false,
-        },
-        {
-          key: "position",
-          name: "Position",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "injury",
-          name: "Injury",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "points",
-          name: "Points",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "avg",
-          name: "Avg",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last1",
-          name: "Last 1",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last5",
-          name: "Last 5",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last10",
-          name: "Last 10",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-      ],
-      filteredPlayers: [],
-      sortMap: {},
-      sortColumns: [],
-      dblClickTimer: null,
+      sorts: [],
     };
   },
   props: {
@@ -144,19 +76,17 @@ export default {
   computed: {
     ...mapState({
       teamSelections: state => state.teamSelections,
-      excludeIfNoPoints: state => state.excludeIfNoPoints,
       filter: state => state.filter,
       positionSelections: state => state.positionSelections,
       injurySelections: state => state.injurySelections,
       gameDaysSelections: state => state.gameDaysSelections,
-      filterHash: state => state.filterHash,
       ownership: state => state.ownership,
     }),
     ...mapGetters([
       'teamSecondaryColor',
     ]),
     columns() {
-      return this.tableColumns.filter((col) => {
+      return TABLE_COLUMNS.filter((col) => {
         if (this.ownership === "Free Agent" && col.key === "owner") {
           return false;
         }
@@ -170,160 +100,39 @@ export default {
         return true;
       });
     },
-    teamsMatchingGamesDaysSelection() {
-      if (!this.gameDaysSelections || this.gameDaysSelections.length === 0)
-        return [];
-      const matchedTeams = [];
-
-      for (const [teamAbbr, teamGames] of Object.entries(this.gamesByTeam)) {
-        if (containsAll(teamGames, this.gameDaysSelections)) {
-          matchedTeams.push(teamAbbr);
-        }
-      }
-
-      return matchedTeams;
+    filteredPlayers() {
+      return filterPlayers(this.players, {
+        filter: this.filter,
+        teamSelections: this.teamSelections,
+        injurySelections: this.injurySelections,
+        positionSelections: this.positionSelections,
+        gameDaysSelections: this.gameDaysSelections,
+        ownership: this.ownership,
+      }, this.gamesByTeam);
+    },
+    visiblePlayers() {
+      // Hidden columns have the same value for every player, so sorting on them does nothing
+      const visibleKeys = this.columns.map(column => column.key);
+      const sorts = this.sorts.filter(sort => visibleKeys.includes(sort.key));
+      return sortPlayers(this.filteredPlayers, sorts, SORT_TYPES);
     },
   },
   methods: {
-    setFilteredPlayers() {
-      const teamSelectionsAbbr = this.teamSelections.map(
-        (sel) => HOCKEY_TEAM_NAME_TO_ABBR[sel]
-      );
-
-      this.filteredPlayers = this.players.filter((player) => {
-        if (this.ownership === "Free Agent" && player.owner) {
-          return false
-        } else if (this.ownership === "Owned" && !player.owner) {
-          return false
-        } else if (this.ownership !== "" && !OWNERSHIP_OPTIONS.includes(this.ownership) && player.owner !== this.ownership) {
-          return false
-        }
-
-        if (this.gameDaysSelections && this.gameDaysSelections.length > 0) {
-          if (!this.teamsMatchingGamesDaysSelection.includes(player.team)) {
-            return false;
-          }
-        }
-
-        if (
-          this.teamSelections.length > 0 &&
-          !teamSelectionsAbbr.includes(player.team)
-        ) {
-          return false;
-        }
-
-        if (this.injurySelections.length > 0) {
-          if (!player.injury && this.injurySelections.includes("HEALTHY")) {
-            // no-op
-          } else if (!this.injurySelections.includes(player.injury)) {
-            return false;
-          }
-        }
-
-        if (this.positionSelections.length > 0) {
-          const intersection = this.positionSelections.filter((pos) =>
-            player.positions.includes(pos)
-          );
-          if (intersection.length === 0) {
-            return false;
-          }
-        }
-
-        if (
-          this.filter !== "" &&
-          !player.name.toLowerCase().includes(this.filter.toLowerCase())
-        ) {
-          return false;
-        }
-
-        return true;
-      });
-
-      // Re-apply sort after filtering
-      if (this.sortColumns.length > 0) {
-        this.sortPlayerList();
+    sortIndex(column) {
+      return this.sorts.findIndex(sort => sort.key === column.key);
+    },
+    ariaSort(column) {
+      const sort = this.sorts.find(sort => sort.key === column.key);
+      if (!sort) {
+        return column.sortType ? "none" : null;
       }
+      // "desc" is A to Z for text columns
+      const descending = (sort.direction === "desc") === (column.sortType === "number");
+      return descending ? "descending" : "ascending";
     },
-    numSortFn(a, b) {
-      const aA = a || 0;
-      const bB = b || 0;
-      return bB - aA;
-    },
-    stringSortFn(a, b) {
-      const aA = a || "";
-      const bB = b || "";
-      return aA.localeCompare(bB);
-    },
-    handledSortSingleClick(column) {
-      if (!column.sortable) return;
-
-      if (this.dblClickTimer) {
-        clearTimeout(this.dblClickTimer);
-      }
-      this.dblClickTimer = setTimeout(() => {
-        this.configureSortColumn(column);
-      }, 300);
-    },
-    handledSortDoubleClick(column) {
-      if (!column.sortable) return;
-
-      if (this.dblClickTimer) {
-        clearTimeout(this.dblClickTimer);
-      }
-      this.removeSortColumn(column);
-    },
-    configureSortColumn(column) {
-      if (
-        this.sortColumns.length >= 2 &&
-        !this.sortColumns.includes(column.key)
-      ) {
-        return;
-      }
-
-      if (!this.sortColumns.includes(column.key)) {
-        this.sortColumns.push(column.key);
-      }
-
-      if (!this.sortMap[column.key]) {
-        this.sortMap[column.key] = "desc";
-      } else if (this.sortMap[column.key] === "desc") {
-        this.sortMap[column.key] = "asc";
-      } else {
-        this.removeSortColumn(column);
-      }
-
-      this.sortPlayerList();
-    },
-    removeSortColumn(column) {
-      this.sortMap[column.key] = null;
-      this.sortColumns = this.sortColumns.filter((col) => col !== column.key);
-    },
-    sortPlayerList() {
-      this.sortColumns
-        .slice()
-        .reverse()
-        .forEach((col) => {
-          const column = this.columns.find((c) => c.key === col);
-
-          this.filteredPlayers = this.filteredPlayers.sort((a, b) => {
-            aVal = this.sortMap[col] === "desc" ? a[col] : b[col];
-            bVal = this.sortMap[col] === "desc" ? b[col] : a[col];
-
-            return column.sortingFn(aVal, bVal);
-          });
-        });
-    },
-  },
-  watch: {
-    players(newPlayers, oldPlayers) {
-      if (oldPlayers !== newPlayers) {
-        this.setFilteredPlayers();
-      }
-    },
-    filterHash(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        this.setFilteredPlayers();
-      }
+    onHeaderClick(column, event) {
+      if (!column.sortType) return;
+      this.sorts = toggleSort(this.sorts, column.key, event.shiftKey);
     },
   },
 };
@@ -361,6 +170,8 @@ export default {
   background: var(--themeBaseColor);
   box-shadow: inset 0 -2px 0 var(--themeAccentColor);
   border-bottom: unset;
+  // Shift-click adds a sort, without this it also selects the header text
+  user-select: none;
 
   &:hover {
     background: var(--themeAccentColor);
@@ -376,6 +187,11 @@ export default {
 
 .colHeadContent {
   display: flex;
+  align-items: center;
   font-size: 0.625rem;
+}
+
+.sortOrder {
+  font-size: 0.75em;
 }
 </style>

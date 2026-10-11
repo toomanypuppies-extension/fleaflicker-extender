@@ -2,7 +2,7 @@
   <Filter />
   <Settings @refreshPlayers="refreshPlayers" @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
   <div v-if="loadMessage" class="loadMessage containerColor">{{ loadMessage }}</div>
-  <PlayerList ref="PlayerList" sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
+  <PlayerList sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
     @playerSelected="(player) => selectPlayer(player)" />
   <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
     @clearSelectedPlayer="clearSelectedPlayer" />
@@ -21,8 +21,7 @@ import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
 import { loadHockeyPlayers, LOAD_ERRORS } from "./collections/players";
 import { clearAllLocalStorage } from "../utils/storage";
-import { mapGetters } from "vuex";
-import { mapState } from "vuex/dist/vuex.cjs.js";
+import { mapGetters, mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
 import { loadLeagueOwners } from "./collections/owners";
 
@@ -79,15 +78,6 @@ export default {
       const owners = await loadLeagueOwners(this.leagueId)
       this.$store.commit('setKeyValue', { key: 'owners', value: owners })
     },
-    debounceFiltering() {
-      if (this.filterBufferTimer) {
-        clearTimeout(this.filterBufferTimer);
-      }
-
-      this.filterBufferTimer = setTimeout(() => {
-        this.$refs.PlayerList.setFilteredPlayers();
-      }, 500);
-    },
     toggleDrawer() {
       this.$store.commit('toggleDrawer')
     },
@@ -106,6 +96,12 @@ export default {
       this.loadGames(true);
     },
     resetApp() {
+      const confirmed = window.confirm(
+        "Reset the app? This clears your filters and settings and fetches all players again, which can take a minute."
+      );
+      if (!confirmed) {
+        return;
+      }
       clearAllLocalStorage();
       location.reload();
     }
