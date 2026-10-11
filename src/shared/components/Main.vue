@@ -104,27 +104,9 @@ export default defineComponent({
 /*
   * VUESTIC OVERRIDES
   */
-.va-select-option-list {
-  color: rgb(52, 73, 94);
-}
-
-.lightTheme .va-input--bordered.va-input__container,
-.darkTheme .va-input--bordered .va-input__container {
-  background: unset;
-}
-
-.darkTheme .va-input__content__input {
-  color: #e2e2e2 !important;
-}
-
-.lightTheme .va-input__icons i {
-  background: unset !important;
-  color: #333333 !important;
-}
-
-.darkTheme .va-input__icons i {
-  color: #e2e2e2 !important;
-  background: unset !important;
+/* Vuestic's default light grey border disappears on the light theme */
+.mainContent .va-input-wrapper {
+  --va-input-wrapper-border-color: color-mix(in srgb, var(--themeAccentColor) 50%, transparent);
 }
 
 .darkTheme .va-checkbox__square {
@@ -133,9 +115,8 @@ export default defineComponent({
   border-color: #e2e2e2;
 }
 
-.va-select-option-list__option,
-.va-select-option-list__option i {
-  color: #333333 !important;
-  background: #e2e2e2 !important;
+/* Vuestic colors the check to contrast with the light checkbox color, which hides it on the dark square */
+.darkTheme .va-checkbox__icon {
+  color: #e2e2e2 !important;
 }
 </style>

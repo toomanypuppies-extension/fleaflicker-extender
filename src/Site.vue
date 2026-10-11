@@ -1,6 +1,6 @@
 <template>
   <div class="site-container">
-    <va-card color="background" style="padding: 0.75em; margin-bottom: 1em;">
+    <va-card color="backgroundPrimary" style="padding: 0.75em; margin-bottom: 1em;">
       <h3>Fleaflicker Extender</h3>
       <p>Welcome to the fleaflicker extended.
       </p>
@@ -9,14 +9,14 @@
       <p>Ex:
         'https://www.fleaflicker.com/nhl/leagues/<b>12089</b>'</p>
     </va-card>
-    <va-card color="background" style="padding: 0.75em; margin-bottom: 1em;">
+    <va-card color="backgroundPrimary" style="padding: 0.75em; margin-bottom: 1em;">
       <div class="row">
         <va-input label="League ID" v-model="leagueId" required bordered>
         </va-input>
         <va-button :rounded="false" bordered :href="url">Go!</va-button>
       </div>
     </va-card>
-    <va-card color="background" style="padding: 0.75em;">
+    <va-card color="backgroundPrimary" style="padding: 0.75em;">
       <h3>OTH Leagues</h3>
       <ul>
         <li v-for="league in leagues" :key="league.id">

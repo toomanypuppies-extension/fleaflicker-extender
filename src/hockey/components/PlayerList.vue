@@ -1,7 +1,7 @@
 <template>
   <div class="tableContainer containerColor">
     <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-      <table class="va-table datatable" :class="{ tableLoading: loading }">
+      <table class="datatable" :class="{ tableLoading: loading }">
         <thead>
           <tr>
             <th v-for="column in columns" :key="column.key" @click="(event) => onHeaderClick(column, event)"
@@ -150,9 +150,24 @@ export default {
   min-width: 100%;
   position: relative;
 
+  th,
+  td {
+    text-align: left;
+    padding: 0.625em;
+  }
+
   th {
     position: sticky;
     top: 0;
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  td {
+    vertical-align: top;
   }
 }
 
@@ -188,7 +203,6 @@ export default {
 .colHeadContent {
   display: flex;
   align-items: center;
-  font-size: 0.625rem;
 }
 
 .sortOrder {
