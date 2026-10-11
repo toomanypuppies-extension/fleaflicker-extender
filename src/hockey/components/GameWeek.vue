@@ -2,13 +2,13 @@
   <div class="gameWeekOuterContainer">
     <h3 class="startDate">{{ startDate }} - {{ endDate }}</h3>
     <div class="gameWeekContainer" :style="bindCssVars">
-      <div class="gameDay" :class="{ hasGame: week.MON !== '' }"><span>{{ week.MON }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.TUE !== '' }"><span>{{ week.TUE }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.WED !== '' }"><span>{{ week.WED }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.THU !== '' }"><span>{{ week.THU }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.FRI !== '' }"><span>{{ week.FRI }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.SAT !== '' }"><span>{{ week.SAT }}</span></div>
-      <div class="gameDay" :class="{ hasGame: week.SUN !== '' }"><span>{{ week.SUN }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.MON }"><span>{{ week.MON }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.TUE }"><span>{{ week.TUE }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.WED }"><span>{{ week.WED }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.THU }"><span>{{ week.THU }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.FRI }"><span>{{ week.FRI }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.SAT }"><span>{{ week.SAT }}</span></div>
+      <div class="gameDay" :class="{ hasGame: !!week.SUN }"><span>{{ week.SUN }}</span></div>
     </div>
   </div>
 </template>
@@ -19,7 +19,8 @@ import { nextSunday, format } from 'date-fns'
 
 export default {
   props: {
-    week: Object,
+    // Missing for weeks the team has no games
+    week: { type: Object, default: () => ({}) },
     startDate: String
   },
   computed: {

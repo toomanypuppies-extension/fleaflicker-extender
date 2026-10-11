@@ -77,10 +77,11 @@
           icon in the lower left to open/close the extension.
         </li>
         <li>
-          Players are fetched once every hour if the extension is being used.
-          Once fetched they are stored locally so that things perform faster on
-          the page. The "Refresh Players" button will let you force a refresh of
-          local data from fleaflicker. It is recommended to only show players
+          Players are stored locally so that things perform faster on the page.
+          Stats are re-fetched once a day and while NHL games are being played,
+          and ownership changes are picked up from league activity. The
+          "Refresh Players" button checks fleaflicker for changes right away.
+          "Reset App" clears all data saved by this app and fetches all players again. It is recommended to only show players
           who have points this year as that excludes about half the players
           which makes the search functions perform better.
         </li>
@@ -136,7 +137,8 @@ export default {
       },
       set(value) {
         this.$store.commit('setKeyValue', { key: 'excludeIfNoPoints', value })
-        this.$emit('refreshPlayers')
+        // Only the players depend on this, the NHL schedule doesn't need refetching
+        this.$emit('reloadPlayers')
       }
     },
     darkMode: {

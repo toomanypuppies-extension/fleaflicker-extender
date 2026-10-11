@@ -1,7 +1,6 @@
 
 const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
 export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
-export const NHL_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/nhl` : 'https://statsapi.web.nhl.com/api/v1';
 export const NHL_API_BASEV2 = `${proxyBase}/proxy/nhlv2`;
 
 export const DAYS_ARRAY = [
@@ -94,7 +93,7 @@ export const HOCKEY_TEAM_LIST = [
   "St. Louis Blues",
   "Tampa Bay Lightning",
   "Toronto Maple Leafs",
-  "Utah Hockey Club",
+  "Utah Mammoth",
   "Vancouver Canucks",
   "Vegas Golden Knights",
   "Washington Capitals",
@@ -133,6 +132,8 @@ export const HOCKEY_TEAM_NAME_TO_ABBR = {
   "St. Louis Blues": "STL",
   "Tampa Bay Lightning": "TB",
   "Toronto Maple Leafs": "TOR",
+  "Utah Mammoth": "UTA",
+  // Renamed in 2025, may still be saved as a favorite team or filter
   "Utah Hockey Club": "UTA",
   "Vancouver Canucks": "VAN",
   "Vegas Golden Knights": "VGK",
@@ -169,7 +170,7 @@ export const HOCKEY_TEAM_ABBR_TO_NAME = {
   "STL": "St. Louis Blues",
   "TB": "Tampa Bay Lightning",
   "TOR": "Toronto Maple Leafs",
-  "UTA": "Utah Hockey Club",
+  "UTA": "Utah Mammoth",
   "VAN": "Vancouver Canucks",
   "VGK": "Vegas Golden Knights",
   "WSH": "Washington Capitals",

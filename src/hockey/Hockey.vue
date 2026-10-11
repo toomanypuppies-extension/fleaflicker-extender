@@ -1,6 +1,7 @@
 <template>
   <Filter />
-  <Settings @refreshPlayers="refreshPlayers" @resetApp="resetApp" />
+  <Settings @refreshPlayers="refreshPlayers" @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
+  <div v-if="loadMessage" class="loadMessage containerColor">{{ loadMessage }}</div>
   <PlayerList ref="PlayerList" sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
     @playerSelected="(player) => selectPlayer(player)" />
   <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
@@ -18,11 +19,12 @@ import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
 import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
-import { loadHockeyPlayers } from "./collections/players";
+import { loadHockeyPlayers, LOAD_ERRORS } from "./collections/players";
+import { clearAllLocalStorage } from "../utils/storage";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex/dist/vuex.cjs.js";
 import { getGamesThisWeek } from "./api/nhlv2";
-import { getLeagueOwners } from "../utils/flea";
+import { loadLeagueOwners } from "./collections/owners";
 
 export default {
   data() {
@@ -31,6 +33,9 @@ export default {
       leagueId: null,
       loading: true,
       players: [],
+      playersSavedAt: null,
+      loadError: null,
+      latestLoadId: 0,
       gamesByTeam: {},
       gameWeek: {},
     };
@@ -45,11 +50,16 @@ export default {
     async loadGames(forceRefresh) {
       this.gamesByTeam = {};
       const result = await getGamesThisWeek(forceRefresh);
+      if (!result) {
+        return;
+      }
       this.gamesByTeam = result.gamesByTeam;
       this.$store.commit('setKeyValue', { key: 'gamesByMatchup', value: result.gamesByMatchup })
       this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },
     async loadPlayers(forceRefresh) {
+      // Only show the result of the most recent load, e.g. after toggling a setting twice
+      const loadId = ++this.latestLoadId;
       this.players = [];
       this.loading = true;
       const result = await loadHockeyPlayers(
@@ -57,11 +67,16 @@ export default {
         this.excludeIfNoPoints,
         forceRefresh
       );
-      this.players = result;
+      if (loadId !== this.latestLoadId) {
+        return;
+      }
+      this.players = result.players || [];
+      this.playersSavedAt = result.savedAt;
+      this.loadError = result.error;
       this.loading = false;
     },
     async loadOwners() {
-      const owners = await getLeagueOwners(this.leagueId)
+      const owners = await loadLeagueOwners(this.leagueId)
       this.$store.commit('setKeyValue', { key: 'owners', value: owners })
     },
     debounceFiltering() {
@@ -91,7 +106,7 @@ export default {
       this.loadGames(true);
     },
     resetApp() {
-      localStorage.clear();
+      clearAllLocalStorage();
       location.reload();
     }
   },
@@ -104,6 +119,26 @@ export default {
     this.loadOwners();
   },
   computed: {
+    loadMessage() {
+      if (this.loading || !this.loadError) {
+        return null;
+      }
+      if (this.loadError === LOAD_ERRORS.noLeague) {
+        return "There's no league ID in the URL. Go back and enter your league ID.";
+      }
+      if (this.loadError === LOAD_ERRORS.leagueNotFound) {
+        return `League ${this.leagueId} wasn't found on Fleaflicker. Check the league ID in the URL.`;
+      }
+      if (this.players.length && this.playersSavedAt) {
+        const savedAt = new Date(this.playersSavedAt).toLocaleString([], {
+          weekday: "short",
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        return `Couldn't reach Fleaflicker, showing players saved ${savedAt}. Use Refresh Players to try again.`;
+      }
+      return "Couldn't reach Fleaflicker. Use Refresh Players to try again in a minute.";
+    },
     ...mapState({
       excludeIfNoPoints: state => state.excludeIfNoPoints,
       drawerExpanded: state => state.drawerExpanded,
@@ -127,4 +162,9 @@ export default {
 };
 </script>
 
-<style lang="scss"></style>
+<style lang="scss">
+.loadMessage {
+  padding: 0.5em;
+  margin-bottom: 0.5em;
+}
+</style>
