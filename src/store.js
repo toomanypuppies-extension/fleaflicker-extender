@@ -35,6 +35,12 @@ const createState = () => {
     }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
+
+  // Team renamed in 2025
+  const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;
+  defaultState.favoriteTeam = renameTeam(defaultState.favoriteTeam);
+  defaultState.teamSelections = defaultState.teamSelections.map(renameTeam);
+
   return defaultState;
 }
 
