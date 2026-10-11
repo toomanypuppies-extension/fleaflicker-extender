@@ -16,6 +16,17 @@
         </p>
       </div>
 
+      <div class="pickBar" role="status">
+        <span v-if="pickedTeams.size">
+          {{ pickedTeams.size }} {{ pickedTeams.size === 1 ? 'team' : 'teams' }} picked for the Players tab's Teams filter
+        </span>
+        <span v-else class="pickHint">Check teams to filter the Players tab by them.</span>
+        <button v-if="pickedTeams.size" type="button" class="weekButton active" @click="showPickedTeams">
+          Show their players
+        </button>
+        <button v-if="pickedTeams.size" type="button" class="weekButton" @click="clearPickedTeams">Clear</button>
+      </div>
+
       <div class="gridScroller">
         <table class="scheduleGrid">
           <thead>
@@ -38,11 +49,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in sortedTeams" :key="row.team">
+            <tr v-for="row in sortedTeams" :key="row.team" :class="{ picked: pickedTeams.has(row.team) }">
               <th scope="row" class="teamColumn">
-                <button type="button" class="teamButton" :title="`Show ${teamName(row.team)} players`" @click="showTeam(row.team)">
+                <label class="teamPick" :title="teamName(row.team)">
+                  <input type="checkbox" :checked="pickedTeams.has(row.team)" @change="togglePickedTeam(row.team)" />
                   {{ row.team }}
-                </button>
+                </label>
               </th>
               <td v-for="(cell, dayIndex) in row.cells" :key="dayIndex"
                 :class="{ light: grid.days[dayIndex].light, past: grid.days[dayIndex].past, hasGame: !!cell }"
@@ -61,7 +73,7 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_ABBR_TO_NAME, DATE_MAP } from "../constants";
+import { HOCKEY_TEAM_ABBR_TO_NAME, HOCKEY_TEAM_NAME_TO_ABBR, DATE_MAP } from "../constants";
 import { weekGrid, LIGHT_NIGHT_MAX_GAMES } from "../collections/schedule";
 
 const MINUTE = 60 * 1000;
@@ -87,6 +99,10 @@ export default {
     };
   },
   computed: {
+    // Teams checked here are the Players tab's Teams filter, by abbreviation
+    pickedTeams() {
+      return new Set(this.$store.state.teamSelections.map(name => HOCKEY_TEAM_NAME_TO_ABBR[name]).filter(Boolean));
+    },
     grid() {
       return weekGrid(this.schedule?.[this.weekIndex], { now: this.now });
     },
@@ -132,8 +148,16 @@ export default {
       if (this.sort.key !== key) return 'none';
       return this.sort.desc ? 'descending' : 'ascending';
     },
-    showTeam(team) {
-      this.$store.commit('setKeyValue', { key: 'teamSelections', value: [this.teamName(team)] });
+    togglePickedTeam(team) {
+      const name = this.teamName(team);
+      const selections = this.$store.state.teamSelections;
+      const value = selections.includes(name) ? selections.filter(selected => selected !== name) : [...selections, name];
+      this.$store.commit('setKeyValue', { key: 'teamSelections', value });
+    },
+    clearPickedTeams() {
+      this.$store.commit('setKeyValue', { key: 'teamSelections', value: [] });
+    },
+    showPickedTeams() {
       this.$store.commit('setKeyValue', { key: 'activeTab', value: 'players' });
     },
     showDay(dayIndex) {
@@ -270,7 +294,12 @@ export default {
     background: color-mix(in srgb, var(--teamSecondaryColor) 30%, var(--themeBaseColor));
   }
 
-  .past {
+  td.past {
+    opacity: 0.45;
+  }
+
+  // Not the header cell itself, its background has to cover rows scrolling under it
+  thead th.past > span {
     opacity: 0.45;
   }
 
@@ -303,19 +332,40 @@ export default {
   opacity: 0.85;
 }
 
-.teamButton {
-  font: inherit;
-  font-weight: 700;
-  color: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
+.pickBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  min-height: 36px;
+}
 
-  &:focus-visible {
-    outline: 2px solid var(--teamSecondaryColor);
+.pickHint {
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+
+.scheduleGrid tr.picked td,
+.scheduleGrid tr.picked th {
+  background-image: linear-gradient(var(--teamSecondaryColor30Opacity), var(--teamSecondaryColor30Opacity));
+}
+
+.teamPick {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  font-weight: 700;
+  margin: 0;
+  cursor: pointer;
+  min-height: 32px;
+
+  input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--teamSecondaryColor);
   }
 }
+
 </style>
