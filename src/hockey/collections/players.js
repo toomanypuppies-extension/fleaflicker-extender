@@ -1,7 +1,8 @@
 import { getLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { getStored, setStoredEntries } from "../../utils/db";
 import { convertEpochToTimeString } from "../../utils/util";
-import { getAllHockeyPlayers, getActivityToTimeEpochMilli } from "../../utils/flea";
+import { getAllHockeyPlayers } from "../../utils/flea";
+import { syncActivity, ACTIVITY_KINDS } from "./activity";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;
@@ -162,32 +163,33 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
 // Applies league activity since the last check to the stored players.
 // Returns false if the changes can't be applied incrementally and a full fetch is needed.
 const applyOwnershipChanges = async (leagueId, players, meta, now) => {
-  const items = await getActivityToTimeEpochMilli('NHL', leagueId, meta.activityEpoch, MAX_ACTIVITY_PAGES);
-  if (!items) {
+  const log = await syncActivity(leagueId, { since: meta.activityEpoch, maxPages: MAX_ACTIVITY_PAGES, now });
+  if (!log) {
     return false;
   }
 
-  // Trade and commissioner items don't list the players that moved
-  if (items.some(item => item.trade || item.commishPowers)) {
+  // Oldest first
+  const items = log.items.filter(item => item.time > meta.activityEpoch).reverse();
+
+  if (items.some(item => item.unknownOwnership)) {
     return false;
   }
 
-  if (items.some(item => item.membership)) {
+  if (items.some(item => item.kind === ACTIVITY_KINDS.membership)) {
     clearLocalStorage('hockey_owners');
   }
 
+  // Each item has its player's owner from when the item was fetched. Applied oldest first, every
+  // player ends up with the owner from their newest item, which was fetched after their last move.
   const playersById = new Map(players.map(player => [player.id, player]));
   items.forEach(item => {
-    // transaction.player.owner is the player's current owner, not the owner at the time
-    // of the transaction, so the order the items are applied in doesn't matter
-    const leaguePlayer = item.transaction?.player;
-    const player = playersById.get(leaguePlayer?.proPlayer?.id);
+    const player = playersById.get(item.playerId);
     if (player) {
-      player.owner = leaguePlayer.owner?.name;
+      player.owner = item.owner;
     }
   });
 
-  const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => parseInt(item.timeEpochMilli, 10)));
+  const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => item.time));
   await setStoredEntries({
     hockey_players: players,
     hockey_playersMeta: {
