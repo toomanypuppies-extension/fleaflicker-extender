@@ -16,7 +16,7 @@
     <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
       @clearSelectedPlayer="clearSelectedPlayer" />
   </template>
-  <ScheduleView v-else-if="activeTab === 'schedule'" />
+  <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" />
   <LeagueView v-else-if="activeTab === 'league'" />
 
   <SettingsModal @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
@@ -61,6 +61,8 @@ export default {
       gamesByTeam: {},
       gameWeek: {},
       league: null,
+      // The NHL's next four weeks, see convertSchedule
+      schedule: null,
       activityItems: [],
       // Last season's stats by player id, loaded when a last season column is shown
       lastSeasonById: null,
@@ -86,6 +88,7 @@ export default {
         return;
       }
       this.gamesByTeam = result.gamesByTeam;
+      this.schedule = result.schedule;
       this.$store.commit('setKeyValue', { key: 'gamesByMatchup', value: result.gamesByMatchup })
       this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },
