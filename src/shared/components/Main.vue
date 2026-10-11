@@ -20,7 +20,10 @@ import { defineComponent } from "vue";
 export default defineComponent({
   name: 'Main',
   created() {
-    this.$store.commit('setLeagueId', getLeagueId())
+    if (this.$store.state.leagueId !== getLeagueId()) {
+      // Opened from the home page, or another league, so the store has some other league's state
+      this.$store.commit('loadLeagueState');
+    }
   },
   components: {
     Hockey,

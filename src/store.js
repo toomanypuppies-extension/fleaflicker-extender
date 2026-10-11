@@ -1,7 +1,10 @@
-import { set, debounce, merge, get } from 'lodash';
+import lodash from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
+
+// lodash is CommonJS, which node (tests) can't import names from
+const { set, debounce, merge, get, cloneDeep } = lodash;
 
 const initState = {
   sport: 'nhl',
@@ -40,20 +43,23 @@ const initState = {
   weekStartDates: null,
 }
 
-// Open dialogs aren't saved, so a reload doesn't reopen them
-const TRANSIENT_KEYS = ['openSettings', 'openHelp'];
+// Open dialogs and the open player card aren't saved, so a reload doesn't reopen them
+const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null };
+const TRANSIENT_KEYS = Object.keys(TRANSIENT_DEFAULTS);
 
+// The state for the league in the URL: its saved state over the defaults
 const createState = () => {
-  let initialState = initState;
+  // A copy, so one league's saved state doesn't become the next league's defaults
+  let initialState = cloneDeep(initState);
   if (!!getLeagueId()) {
     const localstoreState = getLocalStorage('vuex-state', getLeagueId());
     if (localstoreState) {
-      initialState = merge(initState, localstoreState);
+      initialState = merge(initialState, localstoreState);
     }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
   // Saved by older versions
-  TRANSIENT_KEYS.forEach(key => { defaultState[key] = false; });
+  Object.assign(defaultState, TRANSIENT_DEFAULTS);
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;
@@ -84,6 +90,10 @@ export const store = createStore({
     },
     resetStore(state) {
       merge(state, createState());
+    },
+    // On the standalone site, opening a league from the home page doesn't reload the page
+    loadLeagueState(state) {
+      Object.assign(state, createState(), { leagueId: getLeagueId() });
     },
     setSport(state, payload) {
       state.sport = payload;

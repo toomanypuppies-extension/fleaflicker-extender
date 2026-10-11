@@ -124,3 +124,15 @@ export const findMyTeamIdOnPage = (leagueId) => {
   }
   return null;
 };
+
+/**
+ * A league id typed or pasted on the home page: "12089", or a fleaflicker link like
+ * "https://www.fleaflicker.com/nhl/leagues/12089/players". Null if there isn't one.
+ */
+export const parseLeagueInput = (text) => {
+  const trimmed = (text || '').trim();
+  if (/^\d{1,9}$/.test(trimmed)) {
+    return trimmed;
+  }
+  return trimmed.match(/leagues\/(\d{1,9})(?:\D|$)/)?.[1] || null;
+};

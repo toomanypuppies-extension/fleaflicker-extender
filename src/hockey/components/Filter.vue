@@ -1,5 +1,20 @@
 <template>
-  <div class="formContainer containerColor">
+  <div class="formContainer containerColor" :class="{ compact: narrow }">
+    <div v-if="narrow" class="filterBar">
+      <button type="button" class="clearButton" :aria-expanded="sheetOpen" @click="sheetOpen = true">
+        <va-icon class="material-icons" size="1.1em">tune</va-icon>
+        Filters<template v-if="activeFilterCount"> ({{ activeFilterCount }})</template>
+      </button>
+      <button v-if="activeFilterCount" type="button" class="clearButton" @click="clearFilters">Clear</button>
+    </div>
+    <div v-if="narrow && sheetOpen" class="sheetBackdrop" @click="sheetOpen = false"></div>
+
+    <div v-show="!narrow || sheetOpen" :class="{ filterSheet: narrow }" :role="narrow ? 'dialog' : null"
+      :aria-label="narrow ? 'Filters' : null">
+    <div v-if="narrow" class="sheetHeader">
+      <h2>Filters</h2>
+      <button type="button" class="clearButton" @click="sheetOpen = false">Done</button>
+    </div>
     <div class="filterGrid">
       <va-input
         v-model="search"
@@ -110,6 +125,7 @@
         Clear filters<template v-if="activeFilterCount"> ({{ activeFilterCount }})</template>
       </button>
     </div>
+    </div>
   </div>
 </template>
 
@@ -117,6 +133,7 @@
 import { mapGetters, mapState } from "vuex";
 import { STAT_FILTER_COLUMNS, COLUMNS_BY_KEY } from "../collections/columns";
 import { GAME_DAYS_MODES } from "../collections/filtering";
+import { isNarrow } from "../../utils/narrow";
 import {
   DAYS_ARRAY,
   HOCKEY_INJURY_LIST,
@@ -156,6 +173,8 @@ export default {
         { value: GAME_DAYS_MODES.any, text: "any day" },
       ],
       addingStatFilter: false,
+      // On phones the filters open in a sheet
+      sheetOpen: false,
       draft: { key: null, min: "", max: "" },
     };
   },
@@ -167,6 +186,13 @@ export default {
     },
     emitUpdate(key, val) {
       this.$store.commit('setKeyValue', { key, value: val })
+    },
+    closeSheetOnEscape(event) {
+      if (event.key === 'Escape' && this.sheetOpen && !event.target.closest?.('.va-dropdown__content')) {
+        // Handled, so the extension's panel doesn't close as well
+        event.preventDefault();
+        this.sheetOpen = false;
+      }
     },
     startStatFilter() {
       this.draft = { key: null, min: "", max: "" };
@@ -195,8 +221,12 @@ export default {
       this.searchTimer = setTimeout(() => this.emitUpdate('filter', val), SEARCH_DELAY);
     },
   },
+  mounted() {
+    document.addEventListener('keydown', this.closeSheetOnEscape);
+  },
   beforeUnmount() {
     clearTimeout(this.searchTimer);
+    document.removeEventListener('keydown', this.closeSheetOnEscape);
   },
   watch: {
     // Filters cleared from elsewhere, like the empty table's Clear filters
@@ -222,6 +252,9 @@ export default {
       statFilters: state => state.statFilters,
       gameDaysMode: state => state.gameDaysMode,
     }),
+    narrow() {
+      return isNarrow.value;
+    },
     draftError() {
       const min = parseBound(this.draft.min);
       const max = parseBound(this.draft.max);
@@ -255,6 +288,59 @@ export default {
 .formContainer {
   margin-bottom: 1em;
   padding: 0.75em;
+}
+
+.filterBar {
+  display: flex;
+  gap: 0.5em;
+
+  .clearButton {
+    min-height: 44px;
+  }
+}
+
+.formContainer.compact {
+  padding: 0.5em;
+}
+
+.sheetBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 19;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.filterSheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  max-height: 85%;
+  overflow-y: auto;
+  padding: 1em;
+  background: var(--themeBaseColor);
+  border-top: 2px solid var(--teamSecondaryColor);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+
+  .clearButton,
+  .modeButton {
+    min-height: 44px;
+  }
+}
+
+.sheetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75em;
+
+  h2 {
+    font-size: 1.2em;
+    font-weight: 700;
+    margin: 0;
+  }
 }
 
 .filterGrid {

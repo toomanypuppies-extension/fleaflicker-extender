@@ -30,3 +30,14 @@ test('across a daylight saving change and a month end', () => {
 test('eastern day', () => {
   assert.equal(easternDay(Date.parse('2026-10-11T03:00:00Z')), '10/10/2026');
 });
+
+test('league ids from what was typed or pasted', async () => {
+  const { parseLeagueInput } = await import('../src/utils/util.js');
+  assert.equal(parseLeagueInput(' 12089 '), '12089');
+  assert.equal(parseLeagueInput('https://www.fleaflicker.com/nhl/leagues/12089'), '12089');
+  assert.equal(parseLeagueInput('www.fleaflicker.com/nhl/leagues/12089/players?position=C'), '12089');
+  assert.equal(parseLeagueInput('https://www.fleaflicker.com/nhl/leagues/12089/teams/63133'), '12089');
+  assert.equal(parseLeagueInput('abc'), null);
+  assert.equal(parseLeagueInput(''), null);
+  assert.equal(parseLeagueInput(undefined), null);
+});
