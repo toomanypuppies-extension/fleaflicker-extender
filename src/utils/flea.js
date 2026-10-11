@@ -1,6 +1,5 @@
 import { fleaClient } from './fleaClient';
 import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
-import { mapToQueryArrayString } from './util';
 
 
 const buildUrl = (segment) => {
@@ -61,43 +60,6 @@ export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targe
     }
   }
   return activityList.filter(item => parseInt(item.timeEpochMilli, 10) > targetTimeEpochMilli);
-}
-
-// Ex: https://www.fleaflicker.com/api/FetchPlayerListing?sport=NHL&league_id=12089&filter.player_id=3756&filter.player_id=3757
-export const getSelectPlayers = async (sport, leagueId, playerIds, offset = 0) => {
-  try {
-    if (!leagueId) {
-      console.error('No league id provided. Failing call');
-      return;
-    }
-    const response = await fleaClient.get(
-      buildUrl(`FetchPlayerListing?sport=${sport}&league_id=${leagueId}&result_offset=${offset}&${mapToQueryArrayString(playerIds, 'filter.player_id')}`)
-    );
-    return response.data;
-  } catch (err) {
-    console.error(err)
-  }
-}
-
-export const getAllSelectPlayers = async (sport = 'NHL', leagueId, playerIds) => {
-  let playerList = [];
-  let offset = 0;
-  let morePlayersLeft = true;
-  while (morePlayersLeft) {
-    const response = await getSelectPlayers(sport, leagueId, playerIds, offset);
-    playerList = playerList.concat(response.players);
-
-    if (!response.resultOffsetNext) {
-      morePlayersLeft = false;
-    }
-
-    offset = response.resultOffsetNext;
-
-    if (offset >= response.resultTotal) {
-      morePlayersLeft = false;
-    }
-  }
-  return playerList;
 }
 
 // Ex https://www.fleaflicker.com/api/FetchPlayerListing?sport=NHL&league_id=12089
