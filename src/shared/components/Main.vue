@@ -54,6 +54,11 @@ export default defineComponent({
 </script>
 
 <style lang="scss">
+/*
+ * Not scoped, so they reach vuestic's elements, but every rule is inside .mainContent so nothing
+ * applies to the fleaflicker page around the extension. :where() keeps the specificity of the
+ * unprefixed selector. yarn check:css enforces this.
+ */
 .mainContent {
   box-shadow: -2px 0px 1px 0px rgba(0, 0, 0, 0.25);
   display: flex;
@@ -66,39 +71,10 @@ export default defineComponent({
   color: var(--themeAccentColor);
 }
 
-.containerColor {
+:where(.mainContent) .containerColor {
   border: 2px var(--teamSecondaryColor) solid;
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);
-}
-
-.v-flex {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: 0.5em;
-  width: 100%;
-}
-
-.spacer {
-  height: 0.5em;
-}
-
-.h-flex {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 0.5em;
-  width: 100%;
-}
-
-.align-center {
-  align-items: center;
-}
-
-.flex-spaceBetween {
-  display: flex;
-  justify-content: space-between;
 }
 
 /*
@@ -123,14 +99,14 @@ export default defineComponent({
   --va-input-wrapper-border-color: color-mix(in srgb, var(--themeAccentColor) 50%, transparent);
 }
 
-.darkTheme .va-checkbox__square {
+.mainContent.darkTheme .va-checkbox__square {
   color: #e2e2e2 !important;
   background: #333333 !important;
   border-color: #e2e2e2;
 }
 
 /* Vuestic colors the check to contrast with the light checkbox color, which hides it on the dark square */
-.darkTheme .va-checkbox__icon {
+.mainContent.darkTheme .va-checkbox__icon {
   color: #e2e2e2 !important;
 }
 </style>

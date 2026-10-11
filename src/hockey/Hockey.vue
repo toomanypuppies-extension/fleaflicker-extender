@@ -251,7 +251,7 @@ export default {
 };
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .loadMessage {
   padding: 0.5em;
   margin-bottom: 0.5em;

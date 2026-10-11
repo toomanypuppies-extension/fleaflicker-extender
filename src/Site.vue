@@ -79,7 +79,7 @@ export default defineComponent({
 })
 </script>
 
-<style>
+<style scoped>
 .site-container {
   padding: 1em;
   position: fixed;

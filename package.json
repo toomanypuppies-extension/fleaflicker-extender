@@ -8,9 +8,9 @@
     "si:build": "shx rm -rf dist/site && cross-env STANDALONE=true parcel build --target=site",
     "si:serveprod": "yarn si:build && serve -s -p 1234 dist/site/",
     "ex:dev": "cross-env NODE_ENV=development parcel watch --no-hmr --target=extension",
-    "ex:build": "parcel build --target=extension",
-    "ex:build:chrome": "shx rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist",
-    "ex:build:firefox": "shx rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist",
+    "ex:build": "parcel build --target=extension && node scripts/check-extension-css.mjs dist/extension/main.css",
+    "ex:build:chrome": "shx rm -rf extension-build-chrome/dist && parcel build --target=extension --dist-dir=extension-build-chrome/dist && node scripts/check-extension-css.mjs extension-build-chrome/dist/extension/main.css",
+    "ex:build:firefox": "shx rm -rf extension-build-firefox/dist && parcel build --target=extension --dist-dir=extension-build-firefox/dist && node scripts/check-extension-css.mjs extension-build-firefox/dist/extension/main.css",
     "gh-mv-docs": "shx mv dist/site docs && shx cp CNAME docs/CNAME",
     "vuestic-px": "node scripts/vuestic-px.mjs",
     "test": "node --test --import ./test/support/setup.mjs \"test/**/*.test.mjs\""

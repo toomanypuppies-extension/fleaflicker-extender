@@ -132,7 +132,8 @@ export default {
   },
   methods: {
     closeOnEscape(event) {
-      if (event.key === 'Escape' && this.selectedPlayer && !this.$store.state.openSettings && !this.$store.state.openHelp) {
+      const inDropdown = event.target.closest?.('.va-dropdown__content');
+      if (event.key === 'Escape' && this.selectedPlayer && !inDropdown && !this.$store.state.openSettings && !this.$store.state.openHelp) {
         // Handled, so the extension's panel doesn't close as well
         event.preventDefault();
         this.$emit('clearSelectedPlayer');

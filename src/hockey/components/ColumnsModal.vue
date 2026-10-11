@@ -6,6 +6,7 @@
     hide-default-actions
     close-button
     disable-attachment
+    allow-body-scroll
     max-width="640px"
     :background-color="themeBaseColor"
   >

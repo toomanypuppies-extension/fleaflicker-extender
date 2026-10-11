@@ -47,7 +47,8 @@ export default {
       // Esc closes dialogs and dropdowns first, and fields keep it
       // The player panel closes first, it listens for Esc itself
       const { openSettings, openHelp } = this.$store.state;
-      if (openSettings || openHelp || event.target.closest?.('input, textarea, select, [role="combobox"], .va-select')) {
+      // Open dropdowns have focus in their list, which vuestic moves to the end of the page
+      if (openSettings || openHelp || event.target.closest?.('input, textarea, select, [role="combobox"], .va-select, .va-dropdown__content')) {
         return;
       }
       this.toggleDrawer();
@@ -121,7 +122,7 @@ export default {
   }
 }
 
-.expandCollapse {
+.fleaflicker-extender-drawer .expandCollapse {
   border: none;
   padding: 0;
   position: absolute;
