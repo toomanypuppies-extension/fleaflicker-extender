@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup,
+  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup, groupByMatchup,
 } from '../src/hockey/collections/league.js';
 import { ACTIVITY_KINDS } from '../src/hockey/collections/activity.js';
 
@@ -214,4 +214,21 @@ test('the current matchup from either team', async () => {
   assert.deepEqual(currentMatchup(league.scoreboard, 63145), { opponentId: 63134, score: '217', opponentScore: '117', inProgress: true });
   assert.deepEqual(currentMatchup(league.scoreboard, 63134), { opponentId: 63145, score: '117', opponentScore: '217', inProgress: true });
   assert.equal(currentMatchup(league.scoreboard, 1), null);
+});
+
+test("teams are grouped by matchup, the user's matchup first with their team first", () => {
+  const scoreboard = {
+    matchups: [
+      { awayId: 1, homeId: 2, awayScore: '10', homeScore: '20' },
+      { awayId: 3, homeId: 4, awayScore: '30', homeScore: '40' },
+    ],
+  };
+  const summaries = [1, 2, 3, 4, 5].map(teamId => ({ teamId }));
+  const ids = (groups) => groups.map(group => group.teams.map(team => team.teamId));
+
+  assert.deepEqual(ids(groupByMatchup(summaries, scoreboard)), [[1, 2], [3, 4], [5]]);
+  assert.deepEqual(ids(groupByMatchup(summaries, scoreboard, 4)), [[4, 3], [1, 2], [5]]);
+  assert.equal(groupByMatchup(summaries, scoreboard, 4)[0].matchup.homeScore, '40');
+  assert.equal(groupByMatchup(summaries, scoreboard)[2].matchup, null);
+  assert.deepEqual(ids(groupByMatchup(summaries, undefined)), [[1, 2, 3, 4, 5]]);
 });

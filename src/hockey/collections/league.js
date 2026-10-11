@@ -266,3 +266,36 @@ export const summarizeTeam = ({ team, roster, rules, period, activityItems, acqu
     hasRoster: !!roster,
   };
 };
+
+/**
+ * Team summaries grouped into this period's matchups: [{ matchup, teams: [away, home] }].
+ * The group with `firstTeamId` (the user's team) comes first, with that team first in it. Teams
+ * without a matchup end up in a last group whose matchup is null.
+ * @param {Array} summaries anything with a teamId, like summarizeTeam's
+ */
+export const groupByMatchup = (summaries, scoreboard, firstTeamId = null) => {
+  const byId = new Map(summaries.map(summary => [summary.teamId, summary]));
+  const grouped = new Set();
+
+  const groups = (scoreboard?.matchups || [])
+    .map(matchup => {
+      const teams = [byId.get(matchup.awayId), byId.get(matchup.homeId)].filter(Boolean);
+      teams.forEach(team => grouped.add(team.teamId));
+      if (teams[1]?.teamId === firstTeamId) {
+        teams.reverse();
+      }
+      return { matchup, teams };
+    })
+    .filter(group => group.teams.length);
+
+  const first = groups.findIndex(group => group.teams.some(team => team.teamId === firstTeamId));
+  if (first > 0) {
+    groups.unshift(...groups.splice(first, 1));
+  }
+
+  const unmatched = summaries.filter(summary => !grouped.has(summary.teamId));
+  if (unmatched.length) {
+    groups.push({ matchup: null, teams: unmatched });
+  }
+  return groups;
+};

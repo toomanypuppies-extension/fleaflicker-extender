@@ -22,8 +22,26 @@
         </p>
         <p v-if="loadingRosters" class="loading" role="status">Loading rosters…</p>
 
-        <div class="teamCards">
-          <button v-for="summary in summaries" :key="summary.teamId" type="button" class="teamCard"
+        <div class="matchups">
+          <section v-for="group in matchupGroups" :key="group.teams.map(team => team.teamId).join('-')" class="matchup"
+            :class="{ myMatchup: group.teams.some(team => team.teamId === myTeamId) }"
+            :aria-label="group.matchup ? group.teams.map(team => team.name).join(' vs ') : 'No matchup this period'">
+          <h3 class="matchupHeader">
+            <template v-if="group.matchup">
+              <span class="matchupSide">
+                <span class="matchupTeam">{{ group.teams[0].name }}</span>
+                <span v-if="group.matchup.awayScore !== null" class="matchupScore">{{ scoreFor(group, 0) }}</span>
+              </span>
+              <span class="matchupVs">{{ group.matchup.inProgress ? 'vs' : 'final' }}</span>
+              <span class="matchupSide right">
+                <span v-if="group.matchup.homeScore !== null" class="matchupScore">{{ scoreFor(group, 1) }}</span>
+                <span class="matchupTeam">{{ group.teams[1]?.name }}</span>
+              </span>
+            </template>
+            <template v-else>No matchup this period</template>
+          </h3>
+          <div class="teamCards">
+          <button v-for="summary in group.teams" :key="summary.teamId" type="button" class="teamCard"
             :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId, selected: summary.teamId === timelineTeamId }"
             :aria-pressed="summary.teamId === timelineTeamId"
             :title="summary.teamId === timelineTeamId ? 'Show every team\'s moves' : `Show ${summary.name}'s moves`"
@@ -34,12 +52,6 @@
               <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
             </span>
             <span class="cardMeta">{{ summary.record }} · waiver #{{ summary.waiverPosition }}</span>
-            <span v-if="summary.matchup" class="cardLine">
-              vs {{ teamName(summary.matchup.opponentId) }}
-              <template v-if="summary.matchup.score !== null">
-                · {{ summary.matchup.score }}–{{ summary.matchup.opponentScore }}
-              </template>
-            </span>
             <span class="cardStats">
               <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
               <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
@@ -58,6 +70,8 @@
               Could go on IR: {{ summary.irEligible.map(player => `${player.name} (${player.injury})`).join(', ') }}
             </span>
           </button>
+          </div>
+          </section>
         </div>
       </section>
 
@@ -119,7 +133,7 @@
 import { mapState } from "vuex";
 import { syncActivity, TIMELINE_WINDOW } from "../collections/activity";
 import {
-  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit,
+  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit, groupByMatchup,
 } from "../collections/league";
 import { buildTimeline, TIMELINE_FILTERS } from "../collections/timeline";
 import PlayerName from "./PlayerName.vue";
@@ -172,9 +186,6 @@ export default {
     acquisitionLimit() {
       return acquisitionLimit(this.league?.settings);
     },
-    teamsById() {
-      return new Map((this.league?.teams || []).map(team => [team.id, team]));
-    },
     playersById() {
       return new Map((this.players || []).map(player => [player.id, player]));
     },
@@ -191,11 +202,12 @@ export default {
         record: team.record,
         rank: team.rank,
         waiverPosition: team.waiverPosition,
-        matchup: currentMatchup(this.league.scoreboard, team.id),
       }));
-      // Your team, then your opponent, then the standings
-      const order = (summary) => (summary.teamId === this.myTeamId ? 0 : summary.teamId === this.opponentId ? 1 : 2);
-      return summaries.sort((a, b) => order(a) - order(b) || a.rank - b.rank);
+      return summaries.sort((a, b) => a.rank - b.rank);
+    },
+    // Your matchup first, then the scoreboard's order
+    matchupGroups() {
+      return groupByMatchup(this.summaries, this.league?.scoreboard, this.myTeamId);
     },
     timeline() {
       return buildTimeline(this.activityItems, {
@@ -228,8 +240,10 @@ export default {
       this.rosters = await loadTeamRosters(this.leagueId, this.league.teams.map(team => team.id), this.activityItems, { now: this.now });
       this.loadingRosters = false;
     },
-    teamName(teamId) {
-      return this.teamsById.get(teamId)?.name || 'Unknown team';
+    // A team's score in its matchup, groups list your team first, which may be the home team
+    scoreFor(group, index) {
+      const { matchup } = group;
+      return group.teams[index]?.teamId === matchup.homeId ? matchup.homeScore : matchup.awayScore;
     },
     setMyTeam(value) {
       this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
@@ -339,10 +353,78 @@ select {
   margin: 0 0 0.75em;
 }
 
+.matchups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+  gap: 1em;
+}
+
+.matchup {
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 8px;
+  padding: 0.6em;
+
+  &.myMatchup {
+    border-color: var(--teamSecondaryColor);
+  }
+}
+
+.matchupHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  font-size: 0.95em;
+  font-weight: 700;
+  margin: 0 0 0.5em;
+}
+
+.matchupSide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+
+  &.right {
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+.matchupTeam {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.matchupScore {
+  font-size: 1.15em;
+}
+
+.matchupVs {
+  font-size: 0.8em;
+  font-weight: normal;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+// minmax(0, ...) lets long team names shrink instead of widening the grid
 .teamCards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 0.75em;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5em;
+}
+
+@media (max-width: 640px) {
+  .matchups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .teamCards {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .teamCard {
