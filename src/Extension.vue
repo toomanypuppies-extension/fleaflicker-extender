@@ -9,9 +9,12 @@
   >
     <Main></Main>
 
-    <div
+    <button
+      type="button"
       @click="toggleDrawer"
       class="expandCollapse"
+      :aria-label="drawerExpanded ? 'Close Fleaflicker Extender' : 'Open Fleaflicker Extender'"
+      :aria-expanded="drawerExpanded"
     >
       <va-icon
         v-if="sport === 'nhl'"
@@ -19,7 +22,7 @@
         :color="teamSecondaryColor"
         size="large"
       >sports_hockey</va-icon>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -37,6 +40,23 @@ export default {
     toggleDrawer() {
       this.$store.commit('toggleDrawer');
     },
+    closeOnEscape(event) {
+      if (event.key !== 'Escape' || !this.drawerExpanded) {
+        return;
+      }
+      // Esc closes dialogs and dropdowns first, and fields keep it
+      const { openSettings, openHelp } = this.$store.state;
+      if (openSettings || openHelp || event.target.closest?.('input, textarea, select, [role="combobox"], .va-select')) {
+        return;
+      }
+      this.toggleDrawer();
+    },
+  },
+  mounted() {
+    document.addEventListener('keydown', this.closeOnEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.closeOnEscape);
   },
   computed: {
     ...mapState({
@@ -101,6 +121,8 @@ export default {
 }
 
 .expandCollapse {
+  border: none;
+  padding: 0;
   position: absolute;
   left: -48px;
   bottom: 48px;

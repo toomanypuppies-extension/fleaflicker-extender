@@ -1,72 +1,58 @@
 <template>
   <div class="formContainer containerColor">
-    <div class="v-flex">
+    <div class="filterGrid">
       <va-input
         v-model="search"
         @update:model-value="debounceSearch"
         :color="themeAccentColor"
         label="Search"
-        placeholder="Nils Hoglander"
-        bordered
-      />
-      <span class="spacer"></span>
-      <va-select
-        :model-value="injurySelections"
-        @update:model-value="(val) => emitUpdate('injurySelections', val)"
-        :options="injuryOptions"
-        :color="themeAccentColor"
-        label="Injury"
-        placeholder="OUT"
-        maxHeight="300px"
-        multiple
-        bordered
+        placeholder="Player name"
         clearable
       />
-    </div>
-    <div class="v-flex">
       <va-select
         :model-value="teamSelections"
         @update:model-value="(val) => emitUpdate('teamSelections', val)"
         :options="teamOptions"
         :color="themeAccentColor"
         label="Teams"
-        placeholder="Seattle Kraken"
+        placeholder="Any"
         maxHeight="300px"
         multiple
-        bordered
         clearable
       />
-      <span class="spacer"></span>
-
-      <va-select
-        :model-value="positionSelections"
-        @update:model-value="(val) => emitUpdate('positionSelections', val)"
-        :options="positionOptions"
-        :color="themeAccentColor"
-        label="Position"
-        placeholder="F"
-        maxHeight="300px"
-        multiple
-        bordered
-        clearable
-      />
-    </div>
-    <div class="v-flex">
       <va-select
         :model-value="gameDaysSelections"
         @update:model-value="(val) => emitUpdate('gameDaysSelections', val)"
         :options="daysOptions"
         :color="themeAccentColor"
         label="Game Days"
-        placeholder="Mo, Tu"
+        placeholder="Any"
         maxHeight="300px"
         multiple
-        bordered
         clearable
       />
-
-      <span class="spacer"></span>
-
+      <va-select
+        :model-value="injurySelections"
+        @update:model-value="(val) => emitUpdate('injurySelections', val)"
+        :options="injuryOptions"
+        :color="themeAccentColor"
+        label="Injury"
+        placeholder="Any"
+        maxHeight="300px"
+        multiple
+        clearable
+      />
+      <va-select
+        :model-value="positionSelections"
+        @update:model-value="(val) => emitUpdate('positionSelections', val)"
+        :options="positionOptions"
+        :color="themeAccentColor"
+        label="Position"
+        placeholder="Any"
+        maxHeight="300px"
+        multiple
+        clearable
+      />
       <va-select
         :model-value="ownership"
         @update:model-value="(val) => emitUpdate('ownership', val)"
@@ -75,24 +61,14 @@
         label="Ownership"
         placeholder="All"
         maxHeight="300px"
-        bordered
         clearable
       />
-
     </div>
-    <div class="settings-icon">
-      <va-icon
-        @click="clearFilters"
-        :color="themeAccentColor"
-        class="material-icons"
-        size="medium"
-      >delete</va-icon>
-      <va-icon
-        @click="toggleSettings"
-        :color="themeAccentColor"
-        class="material-icons"
-        size="medium"
-      >settings</va-icon>
+    <div class="filterFooter">
+      <button type="button" class="clearButton" :disabled="activeFilterCount === 0" @click="clearFilters">
+        <va-icon class="material-icons" size="1.1em">clear</va-icon>
+        Clear filters<template v-if="activeFilterCount"> ({{ activeFilterCount }})</template>
+      </button>
     </div>
   </div>
 </template>
@@ -136,9 +112,6 @@ export default {
       clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(() => this.emitUpdate('filter', val), SEARCH_DELAY);
     },
-    toggleSettings() {
-      this.$store.commit('toggleKeyValue', { key: 'openSettings' })
-    },
   },
   beforeUnmount() {
     clearTimeout(this.searchTimer);
@@ -156,6 +129,16 @@ export default {
       owners: state => state.owners,
       ownership: state => state.ownership,
     }),
+    activeFilterCount() {
+      return [
+        this.search?.trim(),
+        this.teamSelections.length,
+        this.gameDaysSelections.length,
+        this.injurySelections.length,
+        this.positionSelections.length,
+        this.ownership && this.ownership !== "All",
+      ].filter(Boolean).length;
+    },
     ownershipOptions() {
       return [...OWNERSHIP_OPTIONS, ...this.owners]
     }
@@ -163,23 +146,48 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .formContainer {
-  display: flex;
   margin-bottom: 1em;
+  padding: 0.75em;
 }
 
-.settings-icon {
-  display: flex;
-  flex-shrink: 1;
-  padding: 0.5em;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 100%;
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75em;
 }
 
-.tall-checkbox {
-  height: 38px;
+.filterFooter {
   display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5em;
+}
+
+.clearButton {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.3em 0.75em;
+  min-height: 32px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--teamSecondaryColor30Opacity);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
 }
 </style>

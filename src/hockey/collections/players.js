@@ -1,5 +1,5 @@
-import { getLocalStorage, clearLocalStorage } from "../../utils/storage";
-import { getStored, setStoredEntries } from "../../utils/db";
+import { getLocalStorage } from "../../utils/storage";
+import { getStored, setStoredEntries, removeStored } from "../../utils/db";
 import { convertEpochToTimeString, easternDay } from "../../utils/util";
 import { getAllHockeyPlayers } from "../../utils/flea";
 import { syncActivity, ACTIVITY_KINDS } from "./activity";
@@ -185,8 +185,9 @@ const applyOwnershipChanges = async (leagueId, players, meta, now) => {
     return false;
   }
 
+  // Teams joined, left or were renamed
   if (items.some(item => item.kind === ACTIVITY_KINDS.membership)) {
-    clearLocalStorage('hockey_owners');
+    await removeStored('hockey_league', leagueId);
   }
 
   // Each item has its player's owner from when the item was fetched. Applied oldest first, every

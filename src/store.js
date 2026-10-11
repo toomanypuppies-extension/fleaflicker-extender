@@ -11,7 +11,10 @@ const initState = {
   settings: {
     darkMode: true,
   },
+  // players, schedule or league
+  activeTab: 'players',
   openSettings: false,
+  openHelp: false,
   favoriteTeam: "Seattle Kraken",
   excludeIfNoPoints: true,
   selectedPlayer: null,
@@ -26,6 +29,9 @@ const initState = {
   weekStartDates: null,
 }
 
+// Open dialogs aren't saved, so a reload doesn't reopen them
+const TRANSIENT_KEYS = ['openSettings', 'openHelp'];
+
 const createState = () => {
   let initialState = initState;
   if (!!getLeagueId()) {
@@ -35,6 +41,8 @@ const createState = () => {
     }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
+  // Saved by older versions
+  TRANSIENT_KEYS.forEach(key => { defaultState[key] = false; });
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;
@@ -82,7 +90,7 @@ export const store = createStore({
     toggleDrawer(state) {
       state.drawerExpanded = !state.drawerExpanded;
       // We set this immediately since it happens on nav. Otherwise the debounce would prevent the set
-      setLocalStorage('vuex-state', state, state.leagueId);
+      saveState(state);
     },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))
@@ -104,8 +112,12 @@ export const store = createStore({
   }
 })
 
-const localStoreSubscriber = debounce((mutation, state) => {
-  setLocalStorage('vuex-state', state, state.leagueId);
-}, 250);
+const saveState = (state) => {
+  const saved = { ...state };
+  TRANSIENT_KEYS.forEach(key => delete saved[key]);
+  setLocalStorage('vuex-state', saved, state.leagueId);
+};
+
+const localStoreSubscriber = debounce((mutation, state) => saveState(state), 250);
 
 store.subscribe(localStoreSubscriber)

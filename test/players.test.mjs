@@ -99,15 +99,15 @@ test('trades fall back to a full fetch', async () => {
   assert.equal(flea.callsTo('FetchPlayerListing'), 3);
 });
 
-test('membership changes clear the cached owners', async () => {
+test('membership changes clear the cached league info, which has the team names', async () => {
   await load();
-  setLocalStorage('hockey_owners', { owners: ['Old Team'], fetchedAt: start });
+  await setStored('hockey_league', { name: 'League', teams: [{ name: 'Old Team' }] });
   flea.activity.unshift({ timeEpochMilli: String(start + MINUTE), membership: {} });
   advanceClock(2 * MINUTE);
 
   await load({ forceRefresh: true });
 
-  assert.equal(getLocalStorage('hockey_owners'), null);
+  assert.equal(await getStored('hockey_league'), null);
 });
 
 test('more than 5 pages of activity falls back to a full fetch', async () => {

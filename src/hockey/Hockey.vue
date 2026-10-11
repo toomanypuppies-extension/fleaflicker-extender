@@ -1,29 +1,43 @@
 <template>
-  <Filter />
-  <Settings @refreshPlayers="refreshPlayers" @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
-  <div v-if="loadMessage" class="loadMessage containerColor">{{ loadMessage }}</div>
-  <PlayerList sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
-    @playerSelected="(player) => selectPlayer(player)" />
-  <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
-    @clearSelectedPlayer="clearSelectedPlayer" />
+  <AppToolbar
+    v-model:activeTab="activeTab"
+    :loading="loading"
+    :updatedAt="playersSavedAt"
+    @refresh="refreshAll"
+    @openHelp="setKey('openHelp', true)"
+    @openSettings="setKey('openSettings', true)"
+  />
+  <div v-if="loadMessage" class="loadMessage containerColor" role="status">{{ loadMessage }}</div>
+
+  <template v-if="activeTab === 'players'">
+    <Filter />
+    <PlayerList sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
+      @playerSelected="(player) => selectPlayer(player)" />
+    <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
+      @clearSelectedPlayer="clearSelectedPlayer" />
+  </template>
+  <ScheduleView v-else-if="activeTab === 'schedule'" />
+  <LeagueView v-else-if="activeTab === 'league'" />
+
+  <SettingsModal @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
+  <HelpModal />
 </template>
 
 <script>
-import {
-  HOCKEY_TEAM_NAME_TO_ABBR,
-  HOCKEY_TEAM_ABBR_TO_COLORS,
-  HOCKEY_TEAM_ABBR_TO_NAME,
-} from "./constants";
+import { HOCKEY_TEAM_ABBR_TO_NAME, TABS } from "./constants";
 import { getLeagueId } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
-import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
+import AppToolbar from "./components/AppToolbar.vue";
+import SettingsModal from "./components/SettingsModal.vue";
+import HelpModal from "./components/HelpModal.vue";
+import ScheduleView from "./components/ScheduleView.vue";
+import LeagueView from "./components/LeagueView.vue";
 import { loadHockeyPlayers, LOAD_ERRORS } from "./collections/players";
 import { clearAllStored } from "../utils/db";
-import { mapGetters, mapState } from "vuex";
+import { mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
-import { loadLeagueOwners } from "./collections/owners";
 import { loadLeagueInfo } from "./collections/league";
 import { recordLeagueVisit } from "../utils/recentLeagues";
 
@@ -45,8 +59,12 @@ export default {
   components: {
     PlayerList,
     PlayerCard,
-    Settings,
     Filter,
+    AppToolbar,
+    SettingsModal,
+    HelpModal,
+    ScheduleView,
+    LeagueView,
   },
   methods: {
     async loadGames(forceRefresh) {
@@ -77,13 +95,17 @@ export default {
       this.loadError = result.error;
       this.loading = false;
     },
-    async loadLeague() {
-      this.league = await loadLeagueInfo(this.leagueId);
-      recordLeagueVisit({ id: this.leagueId, name: this.league?.name, sport: "nhl" });
+    async loadLeague(forceRefresh) {
+      const league = await loadLeagueInfo(this.leagueId, { forceRefresh });
+      if (league) {
+        this.league = league;
+        // For the Ownership filter
+        this.setKey('owners', league.teams.map(team => team.name));
+      }
+      recordLeagueVisit({ id: this.leagueId, name: league?.name, sport: "nhl" });
     },
-    async loadOwners() {
-      const owners = await loadLeagueOwners(this.leagueId)
-      this.$store.commit('setKeyValue', { key: 'owners', value: owners })
+    setKey(key, value) {
+      this.$store.commit('setKeyValue', { key, value });
     },
     toggleDrawer() {
       this.$store.commit('toggleDrawer')
@@ -98,9 +120,12 @@ export default {
         this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })
       }
     },
-    refreshPlayers() {
+    refreshAll() {
       this.loadPlayers(true);
       this.loadGames(true);
+      if (this.leagueId) {
+        this.loadLeague(true);
+      }
     },
     async resetApp() {
       const confirmed = window.confirm(
@@ -115,11 +140,15 @@ export default {
   },
   created() {
     this.leagueId = getLeagueId();
+    // The standalone site keeps the tab in the URL, so it can be linked to
+    const tabFromUrl = this.$route?.query?.tab;
+    if (TABS.some(tab => tab.key === tabFromUrl)) {
+      this.activeTab = tabFromUrl;
+    }
   },
   mounted() {
     this.loadPlayers();
     this.loadGames();
-    this.loadOwners();
     if (this.leagueId) {
       this.loadLeague();
     }
@@ -141,29 +170,26 @@ export default {
           hour: "numeric",
           minute: "2-digit",
         });
-        return `Couldn't reach Fleaflicker, showing players saved ${savedAt}. Use Refresh Players to try again.`;
+        return `Couldn't reach Fleaflicker, showing players saved ${savedAt}. Use Refresh to try again.`;
       }
-      return "Couldn't reach Fleaflicker. Use Refresh Players to try again in a minute.";
+      return "Couldn't reach Fleaflicker. Use Refresh to try again in a minute.";
+    },
+    activeTab: {
+      get() {
+        return this.$store.state.activeTab;
+      },
+      set(tab) {
+        this.setKey('activeTab', tab);
+        if (this.$router && this.$route.query.tab !== tab) {
+          // Passing the path keeps its slashes, the route's param would encode them
+          this.$router.replace({ path: this.$route.path, query: { ...this.$route.query, tab } });
+        }
+      },
     },
     ...mapState({
       excludeIfNoPoints: state => state.excludeIfNoPoints,
-      drawerExpanded: state => state.drawerExpanded,
+      selectedPlayer: state => state.selectedPlayer,
     }),
-    ...mapGetters([
-      'themeBaseColor',
-      'themeAccentColor',
-      'teamMainColor',
-      'teamSecondaryColor'
-    ]),
-    bindCssVars() {
-      return {
-        "--themeAccentColor": this.themeAccentColor,
-        "--themeBaseColor": this.themeBaseColor,
-        "--teamMainColor": this.teamMainColor,
-        "--teamSecondaryColor": this.teamSecondaryColor,
-        "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
-      };
-    },
   },
 };
 </script>

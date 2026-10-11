@@ -5,6 +5,13 @@ export const NHL_API_BASEV2 = `${proxyBase}/proxy/nhlv2`;
 // League settings from the rules page, which the API doesn't have. Used by the extension too.
 export const LEAGUE_SETTINGS_BASE = `${proxyBase}/proxy/flea-rules`;
 
+// The app's sections
+export const TABS = [
+  { key: 'players', label: 'Players' },
+  { key: 'schedule', label: 'Schedule' },
+  { key: 'league', label: 'League' },
+];
+
 export const DAYS_ARRAY = [
   'Mo',
   'Tu',

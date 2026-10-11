@@ -2,8 +2,7 @@ import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createFakeFlea, startClock, stopClock, settle, storage, setLeague } from './support/fakeFlea.mjs';
 import { fleaClient } from '../src/utils/fleaClient.js';
-import { getActivityToTimeEpochMilli, getLeagueOwners } from '../src/utils/flea.js';
-import { loadLeagueOwners } from '../src/hockey/collections/owners.js';
+import { getActivityToTimeEpochMilli, getLeagueStandings } from '../src/utils/flea.js';
 
 let flea;
 let start;
@@ -41,9 +40,9 @@ test('throttled calls are retried after a backoff', async () => {
   let throttled = 2;
   flea.fail = () => (throttled-- > 0 ? 403 : undefined);
 
-  const owners = await settle(getLeagueOwners('100'));
+  const standings = await settle(getLeagueStandings('100'));
 
-  assert.deepEqual(owners, ['Team A', 'Team B']);
+  assert.deepEqual(standings.divisions[0].teams.map(team => team.name), ['Team A', 'Team B']);
   assert.equal(flea.callsTo('FetchLeagueStandings'), 3);
   // Waited ~5s then ~15s
   assert.ok(Date.now() - start >= 20 * 1000);
@@ -65,25 +64,9 @@ test('calls are spaced out', async () => {
     return adapter(config);
   };
 
-  await settle(Promise.all([1, 2, 3].map(() => getLeagueOwners('100'))));
+  await settle(Promise.all([1, 2, 3].map(() => getLeagueStandings('100'))));
 
   assert.equal(times.length, 3);
   assert.ok(times[1] - times[0] >= 300);
   assert.ok(times[2] - times[1] >= 300);
-});
-
-test('owners are cached for a day', async () => {
-  assert.deepEqual(await settle(loadLeagueOwners('100')), ['Team A', 'Team B']);
-  flea.teams = ['Renamed'];
-
-  assert.deepEqual(await settle(loadLeagueOwners('100')), ['Team A', 'Team B']);
-  assert.equal(flea.callsTo('FetchLeagueStandings'), 1);
-});
-
-test('owners fall back to the cached list when the fetch fails', async () => {
-  await settle(loadLeagueOwners('100'));
-  storage.setItem('ff-extender-100-hockey_owners', JSON.stringify({ owners: ['Team A'], fetchedAt: 0 }));
-  flea.fail = () => 'network';
-
-  assert.deepEqual(await settle(loadLeagueOwners('100')), ['Team A']);
 });

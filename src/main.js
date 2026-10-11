@@ -9,11 +9,14 @@ import {
   VaIcon,
   VaInnerLoading,
   VaInput,
+  VaModal,
   VaSelect,
 } from 'vuestic-ui';
 // Only vuestic's CSS variables, each component brings its own styles. Its reset and body styles
 // would restyle the fleaflicker page the extension runs on, the standalone site loads them in index.html.
 import 'vuestic-ui/dist/styles/css-variables.css'
+// Vuestic's rem sizes in px, see scripts/vuestic-px.mjs
+import './styles/vuestic-px.css'
 import Main from './shared/components/Main.vue';
 import Extension from './Extension.vue';
 import Site from './Site.vue';
@@ -26,7 +29,7 @@ globalThis.__VUE_PROD_DEVTOOLS__ = false;
 globalThis.__VUE_PROD_HYDRATION_MISMATCH_DETAILS__ = false;
 
 const vuestic = () => createVuesticEssential({
-  components: { VaButton, VaCard, VaCheckbox, VaIcon, VaInnerLoading, VaInput, VaSelect },
+  components: { VaButton, VaCard, VaCheckbox, VaIcon, VaInnerLoading, VaInput, VaModal, VaSelect },
 });
 
 if (!STANDALONE) {

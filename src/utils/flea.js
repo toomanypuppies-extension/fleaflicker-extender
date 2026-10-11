@@ -147,14 +147,6 @@ export const getLeagueStandings = async (leagueId) => {
   }
 }
 
-export const getLeagueOwners = async (leagueId) => {
-  const standings = await getLeagueStandings(leagueId);
-
-  const teams = standings?.divisions?.[0]?.teams;
-  if (!teams) return [];
-
-  return teams.map(team => team.name);
-}
 const fetchLeagueEndpoint = async (endpoint, leagueId, params = {}) => {
   if (!leagueId) {
     console.error('No league id provided. Failing call');

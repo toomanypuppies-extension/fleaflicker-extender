@@ -104,6 +104,20 @@ export default defineComponent({
 /*
   * VUESTIC OVERRIDES
   */
+/* Vuestic's modal titles are small, uppercase and in its own blue */
+.mainContent .va-modal__title {
+  /* Vuestic sets it inline */
+  color: inherit !important;
+  font-size: 1.25em;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Fleaflicker's bootstrap makes every label bold */
+.mainContent .va-checkbox__label {
+  font-weight: normal;
+}
+
 /* Vuestic's default light grey border disappears on the light theme */
 .mainContent .va-input-wrapper {
   --va-input-wrapper-border-color: color-mix(in srgb, var(--themeAccentColor) 50%, transparent);
