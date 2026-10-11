@@ -22,7 +22,7 @@ import { loadHockeyPlayers } from "./collections/players";
 import { mapGetters } from "vuex";
 import { mapState } from "vuex/dist/vuex.cjs.js";
 import { getGamesThisWeek } from "./api/nhlv2";
-import { getLeagueOwners } from "../utils/flea";
+import { loadLeagueOwners } from "./collections/owners";
 
 export default {
   data() {
@@ -61,7 +61,7 @@ export default {
       this.loading = false;
     },
     async loadOwners() {
-      const owners = await getLeagueOwners(this.leagueId)
+      const owners = await loadLeagueOwners(this.leagueId)
       this.$store.commit('setKeyValue', { key: 'owners', value: owners })
     },
     debounceFiltering() {

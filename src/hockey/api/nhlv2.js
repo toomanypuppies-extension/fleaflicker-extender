@@ -54,11 +54,16 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
       nextMondayDate2,
       nextMondayDate3
     ]
+    // Used to tell whether fantasy stats could have changed since the last player fetch
+    const gameStartTimes = [...weekOneResponse.data.gameWeek, ...weekTwoResponse.data.gameWeek]
+      .flatMap(day => day.games.map(game => new Date(game.startTimeUTC).getTime()))
+      .filter(time => !isNaN(time));
 
     const games = {
       gamesByTeam,
       gamesByMatchup,
-      weekStartDates
+      weekStartDates,
+      gameStartTimes
     }
 
     setLocalStorage('gamesThisWeek', games);

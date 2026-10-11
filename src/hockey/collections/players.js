@@ -1,6 +1,6 @@
 import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { convertEpochToTimeString } from "../../utils/util";
-import { getAllHockeyPlayers } from "../../utils/flea";
+import { getAllHockeyPlayers, getActivityToTimeEpochMilli } from "../../utils/flea";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;
@@ -61,38 +61,129 @@ export const convertPlayerObjects = (players) => {
   })
 }
 
-export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
-  // Fetch all players
-  // If cache was populated <60min ago, then don't fetch
+const MINUTE = 60 * 1000;
+// Minimum time between stat refreshes while games are being played
+const LIVE_STATS_INTERVAL = 30 * MINUTE;
+const LIVE_STATS_INTERVAL_FORCED = 5 * MINUTE;
+// Fallback when there is no schedule to check against (old behaviour)
+const STATS_MAX_AGE_WITHOUT_SCHEDULE = 30 * MINUTE;
+// Upper bound on how long a game (plus scoring updates) can take
+const GAME_WINDOW = 4 * 60 * MINUTE;
+// Minimum time between league activity checks on page load
+const ACTIVITY_CHECK_INTERVAL = 5 * MINUTE;
+// Past this many activity pages a full fetch is about as cheap
+const MAX_ACTIVITY_PAGES = 5;
+// Activity timestamps come from flea's clock, allow for some drift from ours
+const CLOCK_SKEW = MINUTE;
 
-  if (forceRefresh) {
-    clearLocalStorage('hockey_players');
-    clearLocalStorage('hockey_playersFetchedAt');
+const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+
+// Stats only change while NHL games are being played. Flea's requestedGames (todaysGame)
+// and numGamesInSchedulePeriod also roll over daily, so always refresh once per day.
+const statsNeedRefresh = (statsEpoch, now, forceRefresh) => {
+  if (easternDay(statsEpoch) !== easternDay(now)) {
+    return true;
   }
 
-  const storedPlayers = getLocalStorage('hockey_players');
-  const playersStoreTime = getLocalStorage('hockey_playersFetchedAt');
-
-  let finalPlayers;
-
-  let storedLessThan30mAgo = false;
-
-  if (playersStoreTime) {
-    const playersStoreTimeEpochMilli = parseInt(playersStoreTime, 10);
-    const storedDateObject = new Date(playersStoreTimeEpochMilli);
-    const msAgo = new Date() - storedDateObject;
-    storedLessThan30mAgo = msAgo < 1800000;
+  const gameStartTimes = getLocalStorage('gamesThisWeek')?.gameStartTimes;
+  if (!gameStartTimes) {
+    return now - statsEpoch > STATS_MAX_AGE_WITHOUT_SCHEDULE;
   }
 
-  if (storedLessThan30mAgo && !forceRefresh) {
-    return storedPlayers;
+  const minInterval = forceRefresh ? LIVE_STATS_INTERVAL_FORCED : LIVE_STATS_INTERVAL;
+  if (now - statsEpoch < minInterval) {
+    return false;
   }
 
-  const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints, forceRefresh);
-  finalPlayers = convertPlayerObjects(players);
+  // Was any game in progress between the last stats fetch and now?
+  return gameStartTimes.some(start => start < now && start + GAME_WINDOW > statsEpoch);
+}
+
+const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
+  const fetchStart = new Date().getTime();
+  const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints);
+  const finalPlayers = convertPlayerObjects(players);
 
   setLocalStorage('hockey_players', finalPlayers);
-  setLocalStorage('hockey_playersFetchedAt', new Date().getTime());
+  setLocalStorage('hockey_playersMeta', {
+    stopIfNoPoints,
+    statsEpoch: fetchStart,
+    activityEpoch: fetchStart - CLOCK_SKEW,
+    activityCheckedEpoch: fetchStart,
+  });
 
   return finalPlayers;
+}
+
+// Applies league activity since the last check to the stored players.
+// Returns false if the changes can't be applied incrementally and a full fetch is needed.
+const applyOwnershipChanges = async (leagueId, players, meta, now) => {
+  const items = await getActivityToTimeEpochMilli('NHL', leagueId, meta.activityEpoch, MAX_ACTIVITY_PAGES);
+  if (!items) {
+    return false;
+  }
+
+  // Trade and commissioner items don't list the players that moved
+  if (items.some(item => item.trade || item.commishPowers)) {
+    return false;
+  }
+
+  if (items.some(item => item.membership)) {
+    clearLocalStorage('hockey_owners');
+  }
+
+  const playersById = new Map(players.map(player => [player.id, player]));
+  items.forEach(item => {
+    // transaction.player.owner is the player's current owner, not the owner at the time
+    // of the transaction, so the order the items are applied in doesn't matter
+    const leaguePlayer = item.transaction?.player;
+    const player = playersById.get(leaguePlayer?.proPlayer?.id);
+    if (player) {
+      player.owner = leaguePlayer.owner?.name;
+    }
+  });
+
+  const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => parseInt(item.timeEpochMilli, 10)));
+  setLocalStorage('hockey_players', players);
+  setLocalStorage('hockey_playersMeta', {
+    ...meta,
+    activityEpoch: newestActivityEpoch,
+    activityCheckedEpoch: now,
+  });
+
+  return true;
+}
+
+export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
+  // Keep a snapshot of all players and only update what could have changed:
+  // - stats, only when NHL games have been played since the last fetch (full fetch)
+  // - ownership, from the league activity feed (usually a single call)
+  const storedPlayers = getLocalStorage('hockey_players');
+  const meta = getLocalStorage('hockey_playersMeta');
+  const now = new Date().getTime();
+
+  try {
+    if (
+      !storedPlayers ||
+      !meta ||
+      meta.stopIfNoPoints !== stopIfNoPoints ||
+      statsNeedRefresh(meta.statsEpoch, now, forceRefresh)
+    ) {
+      return await fetchAllPlayers(leagueId, stopIfNoPoints);
+    }
+
+    if (!forceRefresh && now - meta.activityCheckedEpoch < ACTIVITY_CHECK_INTERVAL) {
+      return storedPlayers;
+    }
+
+    const applied = await applyOwnershipChanges(leagueId, storedPlayers, meta, now);
+    if (!applied) {
+      return await fetchAllPlayers(leagueId, stopIfNoPoints);
+    }
+    return storedPlayers;
+  } catch (err) {
+    // Most likely throttled, stale players are better than none
+    console.error(err);
+    return storedPlayers || [];
+  }
 }

@@ -27,13 +27,23 @@ export const getRecentHockeyActivity = async (sport = 'NHL', leagueId, offset = 
   }
 }
 
-export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targetTimeEpochMilli) => {
+// Activity is returned newest first, 30 items per page.
+// Returns null if more than maxPages would be needed to reach targetTimeEpochMilli.
+export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targetTimeEpochMilli, maxPages = Infinity) => {
   let activityList = [];
   let offset = 0;
+  let pages = 0;
   let moreActivitiesLeft = true;
   while (moreActivitiesLeft) {
+    if (pages >= maxPages) {
+      return null;
+    }
     const response = await getRecentHockeyActivity(sport, leagueId, offset);
-    activityList = activityList.concat(response.items);
+    if (!response) {
+      throw new Error('Failed to fetch league activity');
+    }
+    pages++;
+    activityList = activityList.concat(response.items || []);
     offset = response.resultOffsetNext;
 
     if (offset >= response.resultTotal) {
@@ -44,11 +54,11 @@ export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targe
     }
 
     const lastActivity = activityList[activityList.length - 1];
-    if (parseInt(lastActivity.timeEpochMilli, 10) < targetTimeEpochMilli) {
+    if (!lastActivity || parseInt(lastActivity.timeEpochMilli, 10) < targetTimeEpochMilli) {
       moreActivitiesLeft = false;
     }
   }
-  return activityList;
+  return activityList.filter(item => parseInt(item.timeEpochMilli, 10) > targetTimeEpochMilli);
 }
 
 // Ex: https://www.fleaflicker.com/api/FetchPlayerListing?sport=NHL&league_id=12089&filter.player_id=3756&filter.player_id=3757
@@ -118,6 +128,9 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
   let morePlayersLeft = true;
   while (morePlayersLeft) {
     const response = await getPlayers('NHL', leagueId, freeAgent, offset);
+    if (!response) {
+      throw new Error('Failed to fetch player listing');
+    }
     playersList = playersList.concat(response.players);
     offset = response.resultOffsetNext;
 
