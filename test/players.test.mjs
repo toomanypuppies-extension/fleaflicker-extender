@@ -1,8 +1,9 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createFakeFlea, startClock, stopClock, advanceClock, settle, storage, setLeague } from './support/fakeFlea.mjs';
+import { createFakeFlea, startClock, stopClock, advanceClock, settle, storage, setLeague, resetStorage, withoutIndexedDb } from './support/fakeFlea.mjs';
 import { loadHockeyPlayers, LOAD_ERRORS } from '../src/hockey/collections/players.js';
 import { getLocalStorage, setLocalStorage } from '../src/utils/storage.js';
+import { getStored } from '../src/utils/db.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -11,8 +12,8 @@ const LEAGUE = '100';
 let flea;
 let start;
 
-beforeEach(() => {
-  storage.reset();
+beforeEach(async () => {
+  await resetStorage();
   setLeague(LEAGUE);
   start = startClock();
   flea = createFakeFlea();
@@ -38,8 +39,10 @@ test('first load fetches every page of players with points', async () => {
   assert.equal(flea.callsTo('FetchPlayerListing'), 3);
   assert.equal(result.players.length, 90);
   assert.equal(result.error, undefined);
-  assert.equal(result.savedAt, start);
-  assert.equal(getLocalStorage('hockey_players').length, 90);
+  // When the fetch started. Waiting on storage moves the test clock on a little first.
+  assert.ok(result.savedAt >= start && result.savedAt < start + MINUTE);
+  assert.equal(result.savedAt, (await getStored('hockey_playersMeta')).statsEpoch);
+  assert.equal((await getStored('hockey_players')).length, 90);
 });
 
 test('reloading soon after makes no calls, then checks activity after 5 minutes', async () => {
@@ -68,7 +71,7 @@ test('refresh applies ownership changes from league activity', async () => {
   // Player 1 was added then dropped, the current owner wins
   assert.equal(playerById(result, 1).owner, undefined);
   assert.equal(playerById(result, 2).owner, 'Team B');
-  assert.equal(getLocalStorage('hockey_players').find(player => player.id === 2).owner, 'Team B');
+  assert.equal((await getStored('hockey_players')).find(player => player.id === 2).owner, 'Team B');
 });
 
 test('activity already applied is not fetched again', async () => {
@@ -78,9 +81,9 @@ test('activity already applied is not fetched again', async () => {
   await load({ forceRefresh: true });
 
   // Next check only needs the newest page and finds nothing new
-  const before = getLocalStorage('hockey_playersMeta').activityEpoch;
+  const before = (await getStored('hockey_playersMeta')).activityEpoch;
   await load({ forceRefresh: true });
-  assert.equal(getLocalStorage('hockey_playersMeta').activityEpoch, before);
+  assert.equal((await getStored('hockey_playersMeta')).activityEpoch, before);
   assert.equal(before, start + MINUTE);
 });
 
@@ -211,7 +214,7 @@ test('a league that does not exist', async () => {
 });
 
 test('fleaflicker unreachable shows stored players', async () => {
-  await load();
+  const { savedAt } = await load();
   advanceClock(31 * MINUTE);
   flea.fail = () => 'network';
 
@@ -219,7 +222,7 @@ test('fleaflicker unreachable shows stored players', async () => {
 
   assert.equal(result.error, LOAD_ERRORS.unavailable);
   assert.equal(result.players.length, 90);
-  assert.equal(result.savedAt, start);
+  assert.equal(result.savedAt, savedAt);
 });
 
 test('fleaflicker unreachable with nothing stored', async () => {
@@ -240,11 +243,13 @@ test('stored players from a different points setting are not shown', async () =>
 });
 
 test('players are shown even when they cannot be stored', async () => {
-  storage.setQuota(1000);
+  await withoutIndexedDb(async () => {
+    storage.setQuota(1000);
 
-  const result = await load();
+    const result = await load();
 
-  assert.equal(result.players.length, 90);
-  assert.equal(result.error, undefined);
-  assert.equal(getLocalStorage('hockey_players'), null);
+    assert.equal(result.players.length, 90);
+    assert.equal(result.error, undefined);
+    assert.equal(getLocalStorage('hockey_players'), null);
+  });
 });

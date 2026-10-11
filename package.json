@@ -42,6 +42,7 @@
     "@parcel/transformer-sass": "2.12.0",
     "@parcel/transformer-vue": "^2.12.0",
     "cross-env": "^7.0.3",
+    "fake-indexeddb": "6.0.0",
     "parcel": "^2.12.0",
     "sass": "^1.49.8",
     "serve": "^14.1.2",

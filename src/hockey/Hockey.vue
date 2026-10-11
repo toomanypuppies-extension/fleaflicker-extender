@@ -20,7 +20,7 @@ import PlayerCard from "./components/PlayerCard.vue";
 import Settings from "./components/Settings.vue";
 import Filter from "./components/Filter.vue";
 import { loadHockeyPlayers, LOAD_ERRORS } from "./collections/players";
-import { clearAllLocalStorage } from "../utils/storage";
+import { clearAllStored } from "../utils/db";
 import { mapGetters, mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
 import { loadLeagueOwners } from "./collections/owners";
@@ -95,14 +95,14 @@ export default {
       this.loadPlayers(true);
       this.loadGames(true);
     },
-    resetApp() {
+    async resetApp() {
       const confirmed = window.confirm(
         "Reset the app? This clears your filters and settings and fetches all players again, which can take a minute."
       );
       if (!confirmed) {
         return;
       }
-      clearAllLocalStorage();
+      await clearAllStored();
       location.reload();
     }
   },

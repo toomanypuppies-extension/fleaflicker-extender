@@ -3,6 +3,9 @@ import { register } from 'node:module';
 
 register('./hooks.mjs', import.meta.url);
 
+// In-memory IndexedDB
+await import('fake-indexeddb/auto');
+
 /**
  * In-memory localStorage. Like browsers, Object.keys() lists the stored keys and setItem throws
  * QuotaExceededError past the quota (counted in UTF-16 code units).

@@ -1,5 +1,6 @@
 import { mock } from 'node:test';
 import { fleaClient } from '../../src/utils/fleaClient.js';
+import { clearAllStored, resetDbConnection } from '../../src/utils/db.js';
 
 const PAGE_SIZE = 30;
 
@@ -131,4 +132,23 @@ export const storage = globalThis.localStorage;
 
 export const setLeague = (leagueId) => {
   globalThis.location.href = `https://www.fleaflicker.com/nhl/leagues/${leagueId}`;
+};
+
+// Clears localStorage and IndexedDB
+export const resetStorage = async () => {
+  globalThis.localStorage.reset();
+  await clearAllStored();
+};
+
+// Runs fn as if IndexedDB couldn't be opened, so storage falls back to localStorage
+export const withoutIndexedDb = async (fn) => {
+  const indexedDB = globalThis.indexedDB;
+  delete globalThis.indexedDB;
+  resetDbConnection();
+  try {
+    return await fn();
+  } finally {
+    globalThis.indexedDB = indexedDB;
+    resetDbConnection();
+  }
 };

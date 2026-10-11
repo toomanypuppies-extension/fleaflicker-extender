@@ -1,4 +1,5 @@
-import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
+import { getLocalStorage, clearLocalStorage } from "../../utils/storage";
+import { getStored, setStoredEntries } from "../../utils/db";
 import { convertEpochToTimeString } from "../../utils/util";
 import { getAllHockeyPlayers, getActivityToTimeEpochMilli } from "../../utils/flea";
 
@@ -104,16 +105,17 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints);
   const finalPlayers = convertPlayerObjects(players);
 
-  // If the players can't be stored (storage full), still show them, and leave any older
-  // stored players paired with their own metadata
-  if (setLocalStorage('hockey_players', finalPlayers)) {
-    setLocalStorage('hockey_playersMeta', {
+  // If the players can't be stored (storage full), still show them. Players and their metadata
+  // are stored together, so older stored players stay paired with their own metadata.
+  await setStoredEntries({
+    hockey_players: finalPlayers,
+    hockey_playersMeta: {
       stopIfNoPoints,
       statsEpoch: fetchStart,
       activityEpoch: fetchStart - ACTIVITY_OVERLAP,
       activityCheckedEpoch: fetchStart,
-    });
-  }
+    },
+  }, leagueId);
 
   return { players: finalPlayers, savedAt: fetchStart };
 }
@@ -147,13 +149,14 @@ const applyOwnershipChanges = async (leagueId, players, meta, now) => {
   });
 
   const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => parseInt(item.timeEpochMilli, 10)));
-  if (setLocalStorage('hockey_players', players)) {
-    setLocalStorage('hockey_playersMeta', {
+  await setStoredEntries({
+    hockey_players: players,
+    hockey_playersMeta: {
       ...meta,
       activityEpoch: newestActivityEpoch,
       activityCheckedEpoch: now,
-    });
-  }
+    },
+  }, leagueId);
 
   return true;
 }
@@ -188,8 +191,8 @@ const loadHockeyPlayersNow = async (leagueId, stopIfNoPoints, forceRefresh) => {
     return { players: [], error: LOAD_ERRORS.noLeague };
   }
 
-  const storedPlayers = getLocalStorage('hockey_players');
-  const meta = getLocalStorage('hockey_playersMeta');
+  const storedPlayers = await getStored('hockey_players', leagueId);
+  const meta = await getStored('hockey_playersMeta', leagueId);
   const now = new Date().getTime();
   const stored = { players: storedPlayers, savedAt: meta?.statsEpoch };
 
