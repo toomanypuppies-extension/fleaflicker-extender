@@ -24,13 +24,14 @@
 
         <div class="teamCards">
           <button v-for="summary in summaries" :key="summary.teamId" type="button" class="teamCard"
-            :class="{ mine: summary.teamId === myTeamId, selected: summary.teamId === timelineTeamId }"
+            :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId, selected: summary.teamId === timelineTeamId }"
             :aria-pressed="summary.teamId === timelineTeamId"
             :title="summary.teamId === timelineTeamId ? 'Show every team\'s moves' : `Show ${summary.name}'s moves`"
             @click="toggleTimelineTeam(summary.teamId)">
             <span class="cardTitle">
               <span class="teamName">{{ summary.name }}</span>
               <span v-if="summary.teamId === myTeamId" class="badge">You</span>
+              <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
             </span>
             <span class="cardMeta">{{ summary.record }} · waiver #{{ summary.waiverPosition }}</span>
             <span v-if="summary.matchup" class="cardLine">
@@ -40,7 +41,8 @@
               </template>
             </span>
             <span class="cardStats">
-              <span class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
+              <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
+              <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
                 <strong>{{ summary.acquisitionLimit === null ? summary.acquisitions : summary.acquisitionsLeft }}</strong>
                 {{ summary.acquisitionLimit === null ? 'adds' : `of ${summary.acquisitionLimit} adds left` }}
               </span>
@@ -144,6 +146,8 @@ export default {
   data() {
     return {
       activityItems: [],
+      // Adds can't be counted until the activity has been read
+      activityLoaded: false,
       rosters: {},
       loadingActivity: false,
       loadingRosters: false,
@@ -160,6 +164,10 @@ export default {
     }),
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
+    },
+    // Your team's opponent in the current matchup
+    opponentId() {
+      return this.myTeamId ? currentMatchup(this.league?.scoreboard, this.myTeamId)?.opponentId ?? null : null;
     },
     acquisitionLimit() {
       return acquisitionLimit(this.league?.settings);
@@ -185,8 +193,9 @@ export default {
         waiverPosition: team.waiverPosition,
         matchup: currentMatchup(this.league.scoreboard, team.id),
       }));
-      // Your team first, then the standings
-      return summaries.sort((a, b) => (b.teamId === this.myTeamId) - (a.teamId === this.myTeamId) || a.rank - b.rank);
+      // Your team, then your opponent, then the standings
+      const order = (summary) => (summary.teamId === this.myTeamId ? 0 : summary.teamId === this.opponentId ? 1 : 2);
+      return summaries.sort((a, b) => order(a) - order(b) || a.rank - b.rank);
     },
     timeline() {
       return buildTimeline(this.activityItems, {
@@ -207,6 +216,7 @@ export default {
         const since = Math.min(this.now - TIMELINE_WINDOW, this.period?.start ?? Infinity);
         const log = await syncActivity(this.leagueId, { since, now: this.now });
         this.activityItems = log.items;
+        this.activityLoaded = true;
         this.$emit('activityUpdated', log);
       } catch (err) {
         console.error(err);
@@ -358,6 +368,11 @@ select {
     border-width: 2px;
   }
 
+  &.opponent {
+    border-color: #ef5350;
+    border-width: 2px;
+  }
+
   &.selected {
     background: var(--teamSecondaryColor30Opacity);
   }
@@ -385,6 +400,11 @@ select {
   border-radius: 3px;
   background: var(--teamSecondaryColor);
   color: var(--teamMainColor);
+
+  &.opponentBadge {
+    background: #ef5350;
+    color: #fff;
+  }
 }
 
 .cardMeta,
@@ -410,6 +430,11 @@ select {
   &.warn strong {
     color: #ef5350;
   }
+}
+
+.pending {
+  opacity: 0.7;
+  font-style: italic;
 }
 
 .irEligible {
