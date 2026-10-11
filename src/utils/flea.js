@@ -164,7 +164,15 @@ export const getLeagueRules = (leagueId) => fetchLeagueEndpoint('FetchLeagueRule
 
 // The current matchup period (schedulePeriod) and the season's others (eligibleSchedulePeriods)
 // Ex https://www.fleaflicker.com/api/FetchLeagueScoreboard?sport=NHL&league_id=12089
-export const getLeagueScoreboard = (leagueId) => fetchLeagueEndpoint('FetchLeagueScoreboard', leagueId);
+export const getLeagueScoreboard = (leagueId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchLeagueScoreboard', leagueId, scoringPeriod ? { scoring_period: scoringPeriod } : {}
+);
+
+// Both lineups in a matchup on one day (scoring period), with each player's points that day
+// Ex https://www.fleaflicker.com/api/FetchLeagueBoxscore?sport=NHL&league_id=12089&fantasy_game_id=3603193&scoring_period=11
+export const getLeagueBoxscore = (leagueId, gameId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchLeagueBoxscore', leagueId, { fantasy_game_id: gameId, scoring_period: scoringPeriod }
+);
 
 // A team's current roster, grouped into starters, bench, IR and taxi
 // Ex https://www.fleaflicker.com/api/FetchRoster?sport=NHL&league_id=12089&team_id=63133

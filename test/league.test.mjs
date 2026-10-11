@@ -47,7 +47,20 @@ test('league info has the name, teams, roster rules and matchup periods', async 
     waiverPosition: 14,
     owners: ['funkyquasar'],
   });
-  assert.deepEqual(league.rules, { maxActive: 18, maxRosterSize: 20, irSlots: 2 });
+  assert.deepEqual(league.rules, {
+    maxActive: 18,
+    maxRosterSize: 20,
+    irSlots: 2,
+    startSlots: [
+      { label: 'C', eligibility: ['C'], count: 2 },
+      { label: 'LW', eligibility: ['LW'], count: 2 },
+      { label: 'RW', eligibility: ['RW'], count: 2 },
+      { label: 'F', eligibility: ['C', 'LW', 'RW'], count: 1 },
+      { label: 'D', eligibility: ['D'], count: 4 },
+      { label: 'F/D', eligibility: ['C', 'LW', 'RW', 'D'], count: 1 },
+      { label: 'G', eligibility: ['G'], count: 2 },
+    ],
+  });
 
   const { periods } = league.scoreboard;
   assert.equal(periods.length, 26);
@@ -57,6 +70,9 @@ test('league info has the name, teams, roster rules and matchup periods', async 
   assert.equal(breakPeriod.end - breakPeriod.start, 14 * DAY);
   const last = periods[periods.length - 1];
   assert.equal(last.end, last.lastDayStart + DAY);
+  // Box scores are fetched by day
+  assert.deepEqual([periods[1].firstDay, periods[1].lastDay], [7, 13]);
+  assert.ok(league.scoreboard.matchups.every(matchup => matchup.gameId));
 });
 
 test('the current period is the one containing now', async () => {

@@ -11,6 +11,8 @@ const DAY = 24 * HOUR;
 const LEAGUE_INFO_MAX_AGE = HOUR;
 // Roster rules rarely change
 const RULES_MAX_AGE = DAY;
+// Bump when stored league info gains fields, so info stored by older versions is refetched
+const LEAGUE_INFO_FORMAT = 2;
 
 // Injuries that let a player go on IR, in this app's leagues
 export const IR_ELIGIBLE_INJURIES = ['DTD', 'OUT', 'SUS', 'IR'];
@@ -45,6 +47,10 @@ const convertRules = (rules) => ({
   irSlots: (rules.rosterPositions || [])
     .filter(position => position.group === ROSTER_GROUPS.injured)
     .reduce((total, position) => total + (position.start || 0), 0),
+  // Lineup slots and who can fill them, like { label: 'F', eligibility: ['C', 'LW', 'RW'], count: 1 }
+  startSlots: (rules.rosterPositions || [])
+    .filter(position => position.group === ROSTER_GROUPS.start && position.start > 0)
+    .map(position => ({ label: position.label, eligibility: position.eligibility || [], count: position.start })),
 });
 
 // Matchup periods run from the start of their first day to the start of the next period
@@ -54,6 +60,9 @@ const convertScoreboard = (scoreboard) => {
       ordinal: period.ordinal,
       start: parseInt(period.low.startEpochMilli, 10),
       lastDayStart: parseInt(period.high.startEpochMilli, 10),
+      // Fleaflicker's scoring periods (days) in the matchup, for box scores
+      firstDay: period.low.ordinal,
+      lastDay: period.high.ordinal,
     }))
     .sort((a, b) => a.start - b.start)
     .map((period, i, all) => ({ ...period, end: all[i + 1]?.start ?? period.lastDayStart + DAY }));
@@ -63,6 +72,8 @@ const convertScoreboard = (scoreboard) => {
     currentOrdinal: scoreboard.schedulePeriod?.ordinal,
     // This period's head-to-head matchups
     matchups: (scoreboard.games || []).map(game => ({
+      // For box scores
+      gameId: game.id,
       awayId: game.away?.id,
       homeId: game.home?.id,
       awayScore: game.awayScore?.score?.formatted ?? null,
@@ -115,7 +126,9 @@ export const currentPeriod = (scoreboard, now) => (
  * Returns what's stored when fleaflicker can't be reached, with error set.
  */
 export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh = false } = {}) => {
-  const stored = await getStored('hockey_league', leagueId);
+  const saved = await getStored('hockey_league', leagueId);
+  // Stored by an older version without fields added since, refetch everything
+  const stored = !saved || saved.format === LEAGUE_INFO_FORMAT ? saved : { ...saved, fetchedAt: 0, rulesFetchedAt: 0 };
   const stale = (fetchedAt, maxAge) => (
     forceRefresh || !fetchedAt || now - fetchedAt >= maxAge || easternDay(fetchedAt) !== easternDay(now)
   );
@@ -143,6 +156,7 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
 
     const info = {
       ...stored,
+      format: LEAGUE_INFO_FORMAT,
       ...(infoStale && {
         ...convertStandings(standings),
         scoreboard: convertScoreboard(scoreboard),

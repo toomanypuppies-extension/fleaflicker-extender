@@ -40,6 +40,10 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
     standings: null,
     rules: null,
     scoreboard: null,
+    // Scoreboards for other matchup periods, by a day (scoring period) in them
+    scoreboardsByDay: {},
+    // FetchLeagueBoxscore responses by `${gameId}:${day}`
+    boxscores: {},
     // team id to FetchRoster response
     rosters: {},
     // The proxy's rules page settings, null when the route isn't available
@@ -94,7 +98,9 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
       case 'FetchLeagueRules':
         return fake.rules;
       case 'FetchLeagueScoreboard':
-        return fake.scoreboard;
+        return params?.scoring_period ? fake.scoreboardsByDay[params.scoring_period] || null : fake.scoreboard;
+      case 'FetchLeagueBoxscore':
+        return fake.boxscores[`${params?.fantasy_game_id}:${params?.scoring_period}`] || null;
       case 'FetchRoster':
         return fake.rosters[params?.team_id] || null;
       case 'LeagueSettings':

@@ -1,0 +1,908 @@
+{
+ "game": {
+  "id": "3603193",
+  "away": {
+   "id": 63145,
+   "name": "Chicken and Raffls"
+  },
+  "home": {
+   "id": 63134,
+   "name": "Hellbuycky Barnes"
+  }
+ },
+ "scoringPeriod": {
+  "duration": "DAY",
+  "ordinal": 12,
+  "startEpochMilli": "1791626400000"
+ },
+ "pointsAway": {
+  "scoringPeriod": {
+   "value": {
+    "value": 75.85,
+    "formatted": "75.85"
+   }
+  }
+ },
+ "pointsHome": {
+  "scoringPeriod": {
+   "value": {
+    "value": 36.799995,
+    "formatted": "36.8"
+   }
+  }
+ },
+ "lineups": [
+  {
+   "group": "START",
+   "slots": [
+    {
+     "position": {
+      "label": "C"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 2872,
+       "nameFull": "Tomas Hertl",
+       "proTeamAbbreviation": "VGK",
+       "position": "C/LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28075,
+         "startTimeEpochMilli": "1791684000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.8,
+         "formatted": "0.8"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 3746,
+       "nameFull": "Mitch Marner",
+       "proTeamAbbreviation": "VGK",
+       "position": "F"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28075,
+         "startTimeEpochMilli": "1791684000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 10.05,
+         "formatted": "10.05"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "C"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 3769,
+       "nameFull": "Jack Eichel",
+       "proTeamAbbreviation": "VGK",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28075,
+         "startTimeEpochMilli": "1791684000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.4,
+         "formatted": "1.4"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4418,
+       "nameFull": "Nick Suzuki",
+       "proTeamAbbreviation": "MTL",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28070,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.55,
+         "formatted": "1.55"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "LW"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4109,
+       "nameFull": "Brandon Hagel",
+       "proTeamAbbreviation": "TB",
+       "position": "LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28073,
+         "startTimeEpochMilli": "1791675000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 19.8,
+         "formatted": "19.8"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 3125,
+       "nameFull": "Carter Verhaeghe",
+       "proTeamAbbreviation": "FLA",
+       "position": "LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28065,
+         "startTimeEpochMilli": "1791669600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.4,
+         "formatted": "0.4"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "LW"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4398,
+       "nameFull": "Kirill Kaprizov",
+       "proTeamAbbreviation": "MIN",
+       "position": "LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28065,
+         "startTimeEpochMilli": "1791669600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 17.3,
+         "formatted": "17.3"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 3178,
+       "nameFull": "Artturi Lehkonen",
+       "proTeamAbbreviation": "COL",
+       "position": "LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28072,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.65,
+         "formatted": "0.65"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "RW"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4881,
+       "nameFull": "Kirill Marchenko",
+       "proTeamAbbreviation": "TOR",
+       "position": "RW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28072,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 4.3,
+         "formatted": "4.3"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 3757,
+       "nameFull": "Brock Boeser",
+       "proTeamAbbreviation": "VAN",
+       "position": "W"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28063,
+         "startTimeEpochMilli": "1791660600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 4.95,
+         "formatted": "4.95"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "RW"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 8205,
+       "nameFull": "Jack Quinn",
+       "proTeamAbbreviation": "BUF",
+       "position": "RW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28069,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.9,
+         "formatted": "0.9"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 8922,
+       "nameFull": "Juraj Slafkovský",
+       "proTeamAbbreviation": "MTL",
+       "position": "W"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28070,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 2.45,
+         "formatted": "2.45"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "F"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 10229,
+       "nameFull": "Anton Frondell",
+       "proTeamAbbreviation": "CHI",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28067,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.45,
+         "formatted": "1.45"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 583,
+       "nameFull": "Nazem Kadri",
+       "proTeamAbbreviation": "COL",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28072,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.75,
+         "formatted": "0.75"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "D"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 181,
+       "nameFull": "John Carlson",
+       "proTeamAbbreviation": "TB",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28073,
+         "startTimeEpochMilli": "1791675000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.45,
+         "formatted": "1.45"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 490,
+       "nameFull": "Victor Hedman",
+       "proTeamAbbreviation": "TB",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28073,
+         "startTimeEpochMilli": "1791675000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 2.5,
+         "formatted": "2.5"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "D"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 2840,
+       "nameFull": "Jaccob Slavin",
+       "proTeamAbbreviation": "CAR",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28067,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.05,
+         "formatted": "1.05"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 2655,
+       "nameFull": "Dougie Hamilton",
+       "proTeamAbbreviation": "NJ",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28063,
+         "startTimeEpochMilli": "1791660600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.3,
+         "formatted": "1.3"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "D"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4091,
+       "nameFull": "Samuel Girard",
+       "proTeamAbbreviation": "PIT",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28071,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 1.3,
+         "formatted": "1.3"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4845,
+       "nameFull": "Noah Dobson",
+       "proTeamAbbreviation": "MTL",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28070,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.65,
+         "formatted": "0.65"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "D"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 9248,
+       "nameFull": "Jackson LaCombe",
+       "proTeamAbbreviation": "ANA",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28074,
+         "startTimeEpochMilli": "1791684000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 6.45,
+         "formatted": "6.45"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4860,
+       "nameFull": "Mattias Samuelsson",
+       "proTeamAbbreviation": "BUF",
+       "position": "D"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28069,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.65,
+         "formatted": "0.65"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "F/D"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4397,
+       "nameFull": "Nico Hischier",
+       "proTeamAbbreviation": "NJ",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28063,
+         "startTimeEpochMilli": "1791660600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 14.9,
+         "formatted": "14.9"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 8223,
+       "nameFull": "Marco Rossi",
+       "proTeamAbbreviation": "VAN",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28063,
+         "startTimeEpochMilli": "1791660600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.9,
+         "formatted": "0.9"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "G"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 9,
+       "nameFull": "Jake Allen",
+       "proTeamAbbreviation": "NJ",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28063,
+         "startTimeEpochMilli": "1791660600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 7,
+         "formatted": "7"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 2762,
+       "nameFull": "Andrei Vasilevskiy",
+       "proTeamAbbreviation": "TB",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28073,
+         "startTimeEpochMilli": "1791675000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 5,
+         "formatted": "5"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "G"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 3950,
+       "nameFull": "Mackenzie Blackwood",
+       "proTeamAbbreviation": "COL",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28072,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": -2.25,
+         "formatted": "-2.25"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4446,
+       "nameFull": "Jake Oettinger",
+       "proTeamAbbreviation": "DAL",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28071,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 5,
+         "formatted": "5"
+        }
+       }
+      ]
+     }
+    }
+   ]
+  },
+  {
+   "slots": [
+    {
+     "position": {
+      "label": "BN"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 9268,
+       "nameFull": "Ryan Leonard",
+       "proTeamAbbreviation": "WSH",
+       "position": "RW"
+      }
+     },
+     "home": {
+      "proPlayer": {
+       "id": 3473,
+       "nameFull": "Kasperi Kapanen",
+       "proTeamAbbreviation": "EDM",
+       "position": "RW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28064,
+         "startTimeEpochMilli": "1791662400000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 0.65,
+         "formatted": "0.65"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "BN"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 2441,
+       "nameFull": "Rickard Rakell",
+       "proTeamAbbreviation": "PIT",
+       "position": "W"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28071,
+         "startTimeEpochMilli": "1791673200000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "value": 2.25,
+         "formatted": "2.25"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4094,
+       "nameFull": "Jordan Kyrou",
+       "proTeamAbbreviation": "WSH",
+       "position": "RW"
+      }
+     }
+    },
+    {
+     "position": {
+      "label": "BN"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4876,
+       "nameFull": "Martin Fehervary",
+       "proTeamAbbreviation": "WSH",
+       "position": "D"
+      }
+     },
+     "home": {
+      "proPlayer": {
+       "id": 922,
+       "nameFull": "Alex Ovechkin",
+       "proTeamAbbreviation": "WSH",
+       "position": "W"
+      }
+     }
+    },
+    {
+     "position": {
+      "label": "BN"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 5022,
+       "nameFull": "Lukas Dostal",
+       "proTeamAbbreviation": "ANA",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28074,
+         "startTimeEpochMilli": "1791684000000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "formatted": "0"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 8064,
+       "nameFull": "Aliaksei Protas",
+       "proTeamAbbreviation": "WSH",
+       "position": "W"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "group": "INJURED",
+   "slots": [
+    {
+     "position": {
+      "label": "IR"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 3213,
+       "nameFull": "Aleksander Barkov",
+       "proTeamAbbreviation": "FLA",
+       "position": "C"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28065,
+         "startTimeEpochMilli": "1791669600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "formatted": "—"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 2467,
+       "nameFull": "Ryan Nugent-Hopkins",
+       "proTeamAbbreviation": "EDM",
+       "position": "C/LW"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28064,
+         "startTimeEpochMilli": "1791662400000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "formatted": "—"
+        }
+       }
+      ]
+     }
+    },
+    {
+     "position": {
+      "label": "IR"
+     },
+     "away": {
+      "proPlayer": {
+       "id": 4770,
+       "nameFull": "Filip Gustavsson",
+       "proTeamAbbreviation": "MIN",
+       "position": "G"
+      },
+      "requestedGames": [
+       {
+        "game": {
+         "id": 28065,
+         "startTimeEpochMilli": "1791669600000",
+         "status": "FINAL_SCORE"
+        },
+        "pointsActual": {
+         "formatted": "—"
+        }
+       }
+      ]
+     },
+     "home": {
+      "proPlayer": {
+       "id": 4402,
+       "nameFull": "Igor Shesterkin",
+       "proTeamAbbreviation": "NYR",
+       "position": "G"
+      }
+     }
+    }
+   ]
+  }
+ ]
+}
