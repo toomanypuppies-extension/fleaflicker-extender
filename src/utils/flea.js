@@ -100,6 +100,7 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     playersList = playersList.concat(response.players);
     offset = response.resultOffsetNext;
 
+    // Without a next offset this would refetch the first page forever
     if (!offset || offset >= response.resultTotal) {
       morePlayersLeft = false;
     }
