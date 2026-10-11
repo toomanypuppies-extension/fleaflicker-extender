@@ -73,8 +73,10 @@ const GAME_WINDOW = 4 * 60 * MINUTE;
 const ACTIVITY_CHECK_INTERVAL = 5 * MINUTE;
 // Past this many activity pages a full fetch is about as cheap
 const MAX_ACTIVITY_PAGES = 5;
-// Activity timestamps come from flea's clock, allow for some drift from ours
-const CLOCK_SKEW = MINUTE;
+// After a full fetch, re-read activity from this far back. Covers the proxy serving player listings
+// up to 5 min old (see TTL_BY_ENDPOINT in the proxy) and drift between our clock and flea's.
+// Re-applying activity is harmless, it just sets players to their current owner again.
+const ACTIVITY_OVERLAP = 6 * MINUTE;
 
 const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
 
@@ -108,7 +110,7 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   setLocalStorage('hockey_playersMeta', {
     stopIfNoPoints,
     statsEpoch: fetchStart,
-    activityEpoch: fetchStart - CLOCK_SKEW,
+    activityEpoch: fetchStart - ACTIVITY_OVERLAP,
     activityCheckedEpoch: fetchStart,
   });
 
