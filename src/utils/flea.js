@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { fleaClient } from './fleaClient';
 import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
 import { mapToQueryArrayString } from './util';
 
@@ -14,7 +14,7 @@ export const getRecentHockeyActivity = async (sport = 'NHL', leagueId, offset = 
       console.error('No league id provided. Failing call');
       return;
     }
-    const response = await axios.get(buildUrl('FetchLeagueActivity'), {
+    const response = await fleaClient.get(buildUrl('FetchLeagueActivity'), {
       params: {
         sport: sport,
         league_id: leagueId,
@@ -68,7 +68,7 @@ export const getSelectPlayers = async (sport, leagueId, playerIds, offset = 0) =
       console.error('No league id provided. Failing call');
       return;
     }
-    const response = await axios.get(
+    const response = await fleaClient.get(
       buildUrl(`FetchPlayerListing?sport=${sport}&league_id=${leagueId}&result_offset=${offset}&${mapToQueryArrayString(playerIds, 'filter.player_id')}`)
     );
     return response.data;
@@ -105,7 +105,7 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
       console.error('No league id provided. Failing call');
       return;
     }
-    const response = await axios.get(buildUrl('FetchPlayerListing'), {
+    const response = await fleaClient.get(buildUrl('FetchPlayerListing'), {
       params: {
         sport: sport,
         league_id: leagueId,
@@ -164,7 +164,7 @@ export const getLeagueStandings = async (leagueId) => {
       console.error('No league id provided. Failing call');
       return;
     }
-    const response = await axios.get(buildUrl('FetchLeagueStandings'), {
+    const response = await fleaClient.get(buildUrl('FetchLeagueStandings'), {
       params: {
         sport: 'NHL',
         league_id: leagueId,
