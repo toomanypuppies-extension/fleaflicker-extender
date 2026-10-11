@@ -11,8 +11,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v4.0.4
-      with: 
-        node_version: '18'
+      with:
+        # Uses engines.node
+        node-version-file: package.json
     - name: Run install
       uses: borales/actions-yarn@v4
       with:
