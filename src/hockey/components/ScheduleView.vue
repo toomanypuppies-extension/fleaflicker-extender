@@ -38,7 +38,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in sortedTeams" :key="row.team" :class="{ favorite: row.team === favoriteTeamAbbr }">
+            <tr v-for="row in sortedTeams" :key="row.team">
               <th scope="row" class="teamColumn">
                 <button type="button" class="teamButton" :title="`Show ${teamName(row.team)} players`" @click="showTeam(row.team)">
                   {{ row.team }}
@@ -61,8 +61,7 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
-import { HOCKEY_TEAM_ABBR_TO_NAME, HOCKEY_TEAM_NAME_TO_ABBR, DATE_MAP } from "../constants";
+import { HOCKEY_TEAM_ABBR_TO_NAME, DATE_MAP } from "../constants";
 import { weekGrid, LIGHT_NIGHT_MAX_GAMES } from "../collections/schedule";
 
 const MINUTE = 60 * 1000;
@@ -88,12 +87,6 @@ export default {
     };
   },
   computed: {
-    ...mapState({
-      favoriteTeam: state => state.favoriteTeam,
-    }),
-    favoriteTeamAbbr() {
-      return HOCKEY_TEAM_NAME_TO_ABBR[this.favoriteTeam];
-    },
     grid() {
       return weekGrid(this.schedule?.[this.weekIndex], { now: this.now });
     },
@@ -295,13 +288,6 @@ export default {
 
     &:hover {
       text-decoration: underline;
-    }
-  }
-
-  tr.favorite {
-    th,
-    td {
-      box-shadow: inset 0 1px 0 var(--teamSecondaryColor), inset 0 -1px 0 var(--teamSecondaryColor);
     }
   }
 }
