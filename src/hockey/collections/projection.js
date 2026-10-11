@@ -268,6 +268,19 @@ export const projectTeam = ({
   };
 };
 
+// Games a projection expects the team to start
+export const gamesLeft = (projection) => projection.players.reduce((total, player) => total + player.games, 0);
+
+/**
+ * A win chance as a percentage. While games are left nothing is certain, so near certainties
+ * show as >99% or <1%.
+ */
+export const formatChance = (fraction, anyGamesLeft) => {
+  if (anyGamesLeft && fraction > 0.99) return '>99%';
+  if (anyGamesLeft && fraction < 0.01) return '<1%';
+  return `${Math.round(fraction * 100)}%`;
+};
+
 // Standard normal cumulative distribution (Abramowitz and Stegun 7.1.26)
 const normalCdf = (x) => {
   const t = 1 / (1 + 0.3275911 * Math.abs(x) / Math.SQRT2);

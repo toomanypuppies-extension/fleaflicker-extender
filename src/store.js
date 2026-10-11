@@ -37,6 +37,13 @@ const initState = {
   // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
   timelineTeamId: null,
   timelineFilters: [],
+  // The matchup open on the League tab (its box score game id), or null for the list
+  openMatchupId: null,
+  // PROJECTION_METHODS key
+  projectionMethod: 'mix',
+  // Teams compared in the open matchup, empty for the matchup's two teams, and a COMPARE_RANGES key
+  compareTeamIds: [],
+  compareRange: 'matchup',
   owners: [],
   ownership: "",
   gamesByMatchup: null,

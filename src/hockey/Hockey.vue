@@ -17,7 +17,7 @@
   </template>
   <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" />
   <LeagueView v-else-if="activeTab === 'league'" :leagueId="leagueId" :league="league" :players="tablePlayers"
-    :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
+    :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
 
   <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
     @clearSelectedPlayer="clearSelectedPlayer" />
@@ -116,7 +116,7 @@ export default {
       this.loading = false;
       if (this.players.length) {
         this.loadActivity();
-        this.loadLastSeasonIfShown();
+        this.loadLastSeasonIfNeeded();
       }
     },
     async loadActivity() {
@@ -143,8 +143,10 @@ export default {
         this.setKey('selectedPlayer', player);
       }
     },
-    async loadLastSeasonIfShown() {
-      if (this.lastSeasonById || !usesLastSeason(this.$store.state.visibleColumnKeys)) {
+    // For last season columns, and for projections on the League tab
+    async loadLastSeasonIfNeeded() {
+      const needed = usesLastSeason(this.$store.state.visibleColumnKeys) || this.activeTab === 'league';
+      if (this.lastSeasonById || !needed) {
         return;
       }
       this.lastSeasonById = await loadLastSeasonStats(this.leagueId);
@@ -224,7 +226,12 @@ export default {
   watch: {
     "$store.state.visibleColumnKeys"() {
       if (!this.loading) {
-        this.loadLastSeasonIfShown();
+        this.loadLastSeasonIfNeeded();
+      }
+    },
+    activeTab() {
+      if (!this.loading) {
+        this.loadLastSeasonIfNeeded();
       }
     },
   },

@@ -172,10 +172,13 @@ test('only starters with a game count, by player and by main position', () => {
     day([
       { group: 'START', playerId: 1, name: 'A', position: 'C/LW', games: 1, points: 2.5 },
       { group: 'START', playerId: 2, name: 'B', position: 'D', games: 1, points: 4 },
-    ], 6.5),
+      // Fleaflicker lists some forwards as F or W
+      { group: 'START', playerId: 5, name: 'F', position: 'F', eligibility: ['C', 'LW', 'RW'], games: 1, points: 1 },
+      { group: 'START', playerId: 6, name: 'W', position: 'W', eligibility: ['LW', 'RW'], games: 1, points: 2 },
+    ], 9.5),
   ];
 
-  assert.deepEqual(pointsByPlayer(days).map(p => [p.playerId, p.points, p.games]), [[1, 7.5, 2], [2, 4, 1], [4, -2, 1]]);
-  assert.deepEqual(pointsByPosition(days).map(p => [p.position, p.points]), [['C', 7.5], ['LW', 0], ['RW', 0], ['D', 4], ['G', -2]]);
-  assert.equal(totalPoints(days), 9.5);
+  assert.deepEqual(pointsByPlayer(days).map(p => [p.playerId, p.points, p.games]), [[1, 7.5, 2], [2, 4, 1], [6, 2, 1], [5, 1, 1], [4, -2, 1]]);
+  assert.deepEqual(pointsByPosition(days).map(p => [p.position, p.points]), [['C', 8.5], ['LW', 2], ['RW', 0], ['D', 4], ['G', -2]]);
+  assert.equal(totalPoints(days), 12.5);
 });

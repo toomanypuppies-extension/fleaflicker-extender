@@ -37,6 +37,8 @@ const convertSide = (lineups, side) => lineups.flatMap(lineup => (lineup.slots |
     playerId: proPlayer.id,
     name: proPlayer.nameFull,
     position: proPlayer.position,
+    // Positions they can fill, for players listed as F or W
+    eligibility: proPlayer.positionEligibility || [],
     games: games.length,
     points: round(games.reduce((total, game) => total + (game.pointsActual?.value || 0), 0)),
   };
@@ -185,8 +187,12 @@ export const loadTeamDays = async (leagueId, { scoreboard, teamIds, range = 'mat
   return { days, failed };
 };
 
-// A player's main position, the first listed (C/LW counts as C)
-export const primaryPosition = (position) => (position || '').split('/')[0];
+// A player's main position: the first listed (C/LW counts as C), or for players listed as F or W,
+// the first they're eligible for
+export const primaryPosition = (position, eligibility = []) => {
+  const first = (position || '').split('/')[0];
+  return POSITIONS.includes(first) ? first : eligibility.find(candidate => POSITIONS.includes(candidate)) || first;
+};
 
 // Starters with a game that day, the only players whose points count
 const countedSlots = (days) => days.flatMap(day => day.lineup.filter(slot => slot.group === ROSTER_GROUPS.start && slot.games > 0));
@@ -213,7 +219,7 @@ export const pointsByPlayer = (days) => {
 export const pointsByPosition = (days) => {
   const totals = Object.fromEntries(POSITIONS.map(position => [position, { position, points: 0, games: 0 }]));
   for (const slot of countedSlots(days)) {
-    const total = totals[primaryPosition(slot.position)];
+    const total = totals[primaryPosition(slot.position, slot.eligibility)];
     if (total) {
       total.points += slot.points;
       total.games += slot.games;

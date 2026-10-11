@@ -2,6 +2,10 @@
   <div class="leagueView">
     <p v-if="!league" class="notice containerColor">League info couldn't be loaded. Use Refresh to try again.</p>
 
+    <MatchupView v-else-if="openGroup" :leagueId="leagueId" :league="league" :group="openGroup" :period="period"
+      :rosters="rosters" :players="players" :schedule="schedule" :now="now"
+      @close="openMatchup(null)" @openPlayer="openPlayer" />
+
     <template v-else>
       <section class="teamsSection containerColor" aria-labelledby="teamsHeading">
         <div class="sectionHeader">
@@ -40,6 +44,17 @@
             </template>
             <template v-else>No matchup this period</template>
           </h3>
+          <div v-if="group.matchup" class="matchupProjection">
+            <span v-if="projectionFor(group)">
+              Projected <strong>{{ projectionFor(group).finals[0] }}</strong> to <strong>{{ projectionFor(group).finals[1] }}</strong>
+              · {{ projectionFor(group).winLabel }}
+            </span>
+            <span v-else-if="loadingRosters">Projecting…</span>
+            <span v-else-if="rosters[group.teams[0].teamId]">No games left to project</span>
+            <button type="button" class="detailsButton" @click="openMatchup(group.matchup.gameId)">
+              Details <span class="material-icons" aria-hidden="true">chevron_right</span>
+            </button>
+          </div>
           <div class="teamCards">
           <button v-for="summary in group.teams" :key="summary.teamId" type="button" class="teamCard"
             :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId, selected: summary.teamId === timelineTeamId }"
@@ -137,6 +152,8 @@ import {
 } from "../collections/league";
 import { buildTimeline, TIMELINE_FILTERS } from "../collections/timeline";
 import PlayerName from "./PlayerName.vue";
+import MatchupView from "./MatchupView.vue";
+import { projectTeam, teamGamesPlayed, winChance, gamesLeft, formatChance } from "../collections/projection";
 
 const PLAYER_VERBS = {
   add: 'added',
@@ -147,13 +164,15 @@ const PLAYER_VERBS = {
 };
 
 export default {
-  components: { PlayerName },
+  components: { PlayerName, MatchupView },
   props: {
     leagueId: String,
     // From loadLeagueInfo
     league: Object,
     // The table's players, for opening player details
     players: Array,
+    // The NHL schedule, for projections
+    schedule: Array,
     now: Number,
   },
   emits: ['activityUpdated', 'openPlayer'],
@@ -175,7 +194,45 @@ export default {
       myTeamId: state => state.myTeamId,
       timelineTeamId: state => state.timelineTeamId,
       timelineFilters: state => state.timelineFilters,
+      openMatchupId: state => state.openMatchupId,
+      projectionMethod: state => state.projectionMethod,
     }),
+    // The open matchup, if it's still in this period's scoreboard
+    openGroup() {
+      return this.openMatchupId ? this.matchupGroups.find(group => group.matchup?.gameId === this.openMatchupId) : null;
+    },
+    // Each matchup's projected final scores and win chance, by game id
+    projections() {
+      const startSlots = this.league?.rules?.startSlots;
+      if (!startSlots || !this.players?.length || !this.schedule || !this.period) {
+        return {};
+      }
+      const teamGames = teamGamesPlayed(this.players);
+      const projections = {};
+      for (const group of this.matchupGroups) {
+        if (!group.matchup || group.teams.some(team => !this.rosters[team.teamId])) continue;
+        const scores = group.teams.map((_, index) => parseFloat(this.scoreFor(group, index)) || 0);
+        const [first, second] = group.teams.map(team => projectTeam({
+          roster: this.rosters[team.teamId],
+          playersById: this.playersById,
+          startSlots,
+          schedule: this.schedule,
+          period: this.period,
+          method: this.projectionMethod,
+          teamGames,
+          scoreAsOf: this.league.fetchedAt,
+        }));
+        // Nothing to project once the matchup's games are over
+        if (gamesLeft(first) + gamesLeft(second) === 0) continue;
+        const chance = winChance(scores[0], first, scores[1], second);
+        const leader = chance >= 0.5 ? 0 : 1;
+        projections[group.matchup.gameId] = {
+          finals: [scores[0] + first.expected, scores[1] + second.expected].map(score => score.toFixed(1)),
+          winLabel: `${group.teams[leader].name} ${formatChance(Math.max(chance, 1 - chance), true)} to win`,
+        };
+      }
+      return projections;
+    },
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
     },
@@ -244,6 +301,15 @@ export default {
     scoreFor(group, index) {
       const { matchup } = group;
       return group.teams[index]?.teamId === matchup.homeId ? matchup.homeScore : matchup.awayScore;
+    },
+    projectionFor(group) {
+      return this.projections[group.matchup.gameId];
+    },
+    openMatchup(gameId) {
+      this.$store.commit('setKeyValue', { key: 'openMatchupId', value: gameId });
+      // Compare the matchup's teams until others are picked
+      this.$store.commit('setKeyValue', { key: 'compareTeamIds', value: [] });
+      this.$el?.scrollTo?.({ top: 0 });
     },
     setMyTeam(value) {
       this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
@@ -395,6 +461,34 @@ select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.matchupProjection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25em 0.75em;
+  font-size: 0.9em;
+  margin: -0.25em 0 0.5em;
+}
+
+.detailsButton {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid rgba(127, 127, 127, 0.6);
+  border-radius: 4px;
+  padding: 0.15em 0.25em 0.15em 0.6em;
+  min-height: 32px;
+  cursor: pointer;
+
+  .material-icons {
+    font-size: 1.2em;
+  }
 }
 
 .matchupScore {
