@@ -24,6 +24,8 @@ import { clearAllStored } from "../utils/db";
 import { mapGetters, mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
 import { loadLeagueOwners } from "./collections/owners";
+import { loadLeagueInfo } from "./collections/league";
+import { recordLeagueVisit } from "../utils/recentLeagues";
 
 export default {
   data() {
@@ -37,6 +39,7 @@ export default {
       latestLoadId: 0,
       gamesByTeam: {},
       gameWeek: {},
+      league: null,
     };
   },
   components: {
@@ -73,6 +76,10 @@ export default {
       this.playersSavedAt = result.savedAt;
       this.loadError = result.error;
       this.loading = false;
+    },
+    async loadLeague() {
+      this.league = await loadLeagueInfo(this.leagueId);
+      recordLeagueVisit({ id: this.leagueId, name: this.league?.name, sport: "nhl" });
     },
     async loadOwners() {
       const owners = await loadLeagueOwners(this.leagueId)
@@ -113,6 +120,9 @@ export default {
     this.loadPlayers();
     this.loadGames();
     this.loadOwners();
+    if (this.leagueId) {
+      this.loadLeague();
+    }
   },
   computed: {
     loadMessage() {
