@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod,
+  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit,
 } from '../src/hockey/collections/league.js';
 import { ACTIVITY_KINDS } from '../src/hockey/collections/activity.js';
 
@@ -79,6 +79,32 @@ test('league info is reused for an hour, roster rules for a day', async () => {
   advanceClock(HOUR);
   await info();
   assert.deepEqual(flea.calls.sort(), ['FetchLeagueScoreboard', 'FetchLeagueStandings']);
+});
+
+test('settings from the rules page give the acquisition limit', async () => {
+  const league = await info();
+
+  assert.equal(league.settings.waivers.hoursAfterDrop, 24);
+  assert.equal(acquisitionLimit(league.settings), 7);
+  assert.equal(acquisitionLimit({ transactionLimit: { period: 'season', limit: 50 } }), null);
+  assert.equal(acquisitionLimit(undefined), null);
+});
+
+test('league info loads without settings, which are tried again after an hour', async () => {
+  flea.fail = (endpoint) => (endpoint === 'LeagueSettings' ? 404 : undefined);
+
+  const league = await info();
+  assert.equal(league.name, 'Messier - D3');
+  assert.equal(league.settings, undefined);
+
+  flea.fail = null;
+  flea.calls = [];
+  await info();
+  assert.deepEqual(flea.calls, []);
+
+  advanceClock(HOUR);
+  const later = await info();
+  assert.equal(acquisitionLimit(later.settings), 7);
 });
 
 test('stored league info is returned when fleaflicker is unreachable', async () => {

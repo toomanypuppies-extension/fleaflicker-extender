@@ -42,6 +42,16 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
     scoreboard: null,
     // team id to FetchRoster response
     rosters: {},
+    // The proxy's rules page settings, null when the route isn't available
+    settings: {
+      transactionLimit: { period: 'week', limit: 7 },
+      waivers: {
+        gameStartWaivers: true,
+        hoursAfterDrop: 24,
+        gameStartLockTime: { hour: 5, minute: 0 },
+        firstComeFirstServedTime: { hour: 8, minute: 0 },
+      },
+    },
     calls: [],
     // (endpoint, params) => undefined | status code | 'network'
     fail: null,
@@ -87,13 +97,17 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
         return fake.scoreboard;
       case 'FetchRoster':
         return fake.rosters[params?.team_id] || null;
+      case 'LeagueSettings':
+        return fake.settings;
       default:
         return null;
     }
   };
 
   fleaClient.defaults.adapter = async (config) => {
-    const endpoint = new URL(config.url).pathname.split('/').pop();
+    const path = new URL(config.url).pathname;
+    // The proxy's settings route is /proxy/flea-rules/nhl/<league id>
+    const endpoint = path.includes('/flea-rules/') ? 'LeagueSettings' : path.split('/').pop();
     fake.calls.push(endpoint);
 
     const failure = fake.fail?.(endpoint, config.params);

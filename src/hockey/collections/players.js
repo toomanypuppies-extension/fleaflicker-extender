@@ -88,6 +88,10 @@ export const convertPlayerObjects = (players) => {
       trend5: trend(player.lastX?.[1]),
       trend10: trend(player.lastX?.[2]),
       hasGameToday,
+      // Free agents can go on waivers once their game starts
+      todaysGameStart: hasGameToday
+        ? parseInt(player.requestedGames[0].game.startTimeEpochMilli, 10)
+        : undefined,
       expandedData: {
         image: player.proPlayer?.headshotUrl,
         news: player.proPlayer?.news?.[0],

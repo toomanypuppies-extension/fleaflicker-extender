@@ -1,5 +1,5 @@
 import { getStored, setStored } from "../../utils/db";
-import { getLeagueStandings, getLeagueRules, getLeagueScoreboard, getTeamRoster } from "../../utils/flea";
+import { getLeagueStandings, getLeagueRules, getLeagueScoreboard, getTeamRoster, getLeagueSettings } from "../../utils/flea";
 import { easternDay } from "../../utils/util";
 import { ACTIVITY_KINDS } from "./activity";
 
@@ -64,13 +64,33 @@ const convertScoreboard = (scoreboard) => {
   };
 };
 
+// Optional, the proxy route may be unavailable. Undefined keeps what was stored before.
+const fetchSettings = async (leagueId) => {
+  try {
+    const settings = await getLeagueSettings(leagueId);
+    return settings && { transactionLimit: settings.transactionLimit, waivers: settings.waivers };
+  } catch (err) {
+    console.warn('Unable to load league settings', err);
+    return undefined;
+  }
+};
+
+/**
+ * Acquisitions allowed per matchup period, or null when there's no limit or it isn't known.
+ * Fleaflicker's weekly limit applies to each head-to-head matchup period.
+ */
+export const acquisitionLimit = (settings) => (
+  settings?.transactionLimit?.period === 'week' ? settings.transactionLimit.limit : null
+);
+
 export const currentPeriod = (scoreboard, now) => (
   scoreboard?.periods.find(period => period.start <= now && now < period.end) ||
   scoreboard?.periods.find(period => period.ordinal === scoreboard.currentOrdinal)
 );
 
 /**
- * The league's name, teams, roster rules and matchup periods.
+ * The league's name, teams, roster rules, matchup periods, and settings from the rules page
+ * (transaction limit and waiver timing, missing if they couldn't be loaded).
  * Returns what's stored when fleaflicker can't be reached, with error set.
  */
 export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh = false } = {}) => {
@@ -81,15 +101,20 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
 
   const infoStale = stale(stored?.fetchedAt, LEAGUE_INFO_MAX_AGE);
   const rulesStale = stale(stored?.rulesFetchedAt, RULES_MAX_AGE);
-  if (stored && !infoStale && !rulesStale) {
+  // Settings that couldn't be loaded are tried again sooner
+  const settingsStale = stored?.settings
+    ? stale(stored.settingsFetchedAt, RULES_MAX_AGE)
+    : stale(stored?.settingsTriedAt, LEAGUE_INFO_MAX_AGE);
+  if (stored && !infoStale && !rulesStale && !settingsStale) {
     return stored;
   }
 
   try {
-    const [standings, scoreboard, rules] = await Promise.all([
+    const [standings, scoreboard, rules, settings] = await Promise.all([
       infoStale ? getLeagueStandings(leagueId) : null,
       infoStale ? getLeagueScoreboard(leagueId) : null,
       rulesStale ? getLeagueRules(leagueId) : null,
+      settingsStale ? fetchSettings(leagueId) : undefined,
     ]);
     if ((infoStale && (!standings || !scoreboard)) || (rulesStale && !rules)) {
       throw new Error('Failed to fetch league info');
@@ -103,6 +128,8 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
         fetchedAt: now,
       }),
       ...(rulesStale && { rules: convertRules(rules), rulesFetchedAt: now }),
+      ...(settingsStale && { settingsTriedAt: now }),
+      ...(settings && { settings, settingsFetchedAt: now }),
     };
     await setStored('hockey_league', info, leagueId);
     return info;

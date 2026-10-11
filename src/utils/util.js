@@ -15,6 +15,57 @@ export const getSport = () => {
 // The calendar day in the NHL's and fleaflicker's time zone, e.g. "1/5/2026"
 export const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
 
+const EASTERN = 'America/New_York';
+
+const easternParts = (epochMilli) => Object.fromEntries(
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: EASTERN,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(epochMilli))
+    .filter(part => part.type !== 'literal')
+    .map(part => [part.type, parseInt(part.value, 10)])
+);
+
+// The instant a wall clock time happens in Eastern, e.g. 5:00 AM on Jan 5 2026 (month is 1-12)
+const easternWallTimeToEpoch = ({ year, month, day, hour, minute }) => {
+  const asUtc = Date.UTC(year, month - 1, day, hour, minute);
+  // Eastern is 4 or 5 hours behind UTC, try both
+  return [4, 5]
+    .map(hours => asUtc + hours * 60 * 60 * 1000)
+    .find(epoch => {
+      const parts = easternParts(epoch);
+      return parts.day === day && parts.hour === hour && parts.minute === minute;
+    }) ?? asUtc + 5 * 60 * 60 * 1000;
+};
+
+/**
+ * The first time after `after` that an Eastern clock shows hour:minute,
+ * e.g. when the next 5:00 AM waiver processing happens
+ */
+export const nextEasternTime = (after, { hour, minute = 0 }) => {
+  const { year, month, day } = easternParts(after);
+  for (let offset = 0; offset < 3; offset++) {
+    // Date.UTC rolls over month and year ends
+    const date = new Date(Date.UTC(year, month - 1, day + offset));
+    const epoch = easternWallTimeToEpoch({
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(),
+      hour,
+      minute,
+    });
+    if (epoch > after) {
+      return epoch;
+    }
+  }
+  return null;
+};
+
 export const convertEpochToTimeString = (epoch) => {
   return new Date(parseInt(epoch, 10)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

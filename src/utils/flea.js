@@ -1,5 +1,5 @@
 import { fleaClient } from './fleaClient';
-import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
+import { FLEA_API_BASE, LEAGUE_SETTINGS_BASE, SORT_OPTIONS } from '../hockey/constants';
 
 
 const buildUrl = (segment) => {
@@ -177,3 +177,13 @@ export const getLeagueScoreboard = (leagueId) => fetchLeagueEndpoint('FetchLeagu
 // A team's current roster, grouped into starters, bench, IR and taxi
 // Ex https://www.fleaflicker.com/api/FetchRoster?sport=NHL&league_id=12089&team_id=63133
 export const getTeamRoster = (leagueId, teamId) => fetchLeagueEndpoint('FetchRoster', leagueId, { team_id: teamId });
+
+/**
+ * Settings from the league's rules page, through the proxy: transactionLimit ({ period, limit } or null)
+ * and waivers ({ hoursAfterDrop, gameStartWaivers, gameStartLockTime, firstComeFirstServedTime, ... }).
+ * See the proxy's flea/rules.js.
+ */
+export const getLeagueSettings = async (leagueId) => {
+  const response = await fleaClient.get(`${LEAGUE_SETTINGS_BASE}/nhl/${leagueId}`);
+  return response.data;
+}

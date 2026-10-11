@@ -52,3 +52,19 @@ test('a player without stats has no games played or ranks', () => {
   assert.equal(player.rank, undefined);
   assert.equal(player.trend5, undefined);
 });
+
+test("today's game start time is kept", () => {
+  const [player] = convertPlayerObjects([{
+    ...skater,
+    requestedGames: [{
+      game: {
+        away: { abbreviation: 'TOR' },
+        home: { abbreviation: 'COL' },
+        startTimeEpochMilli: '1791756000000',
+      },
+    }],
+  }]);
+
+  assert.equal(player.todaysGameStart, 1791756000000);
+  assert.equal(convertPlayerObjects([skater])[0].todaysGameStart, undefined);
+});

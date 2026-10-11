@@ -2,6 +2,8 @@
 const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
 export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
 export const NHL_API_BASEV2 = `${proxyBase}/proxy/nhlv2`;
+// League settings from the rules page, which the API doesn't have. Used by the extension too.
+export const LEAGUE_SETTINGS_BASE = `${proxyBase}/proxy/flea-rules`;
 
 export const DAYS_ARRAY = [
   'Mo',
