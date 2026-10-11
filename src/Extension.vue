@@ -41,10 +41,11 @@ export default {
       this.$store.commit('toggleDrawer');
     },
     closeOnEscape(event) {
-      if (event.key !== 'Escape' || !this.drawerExpanded) {
+      if (event.key !== 'Escape' || !this.drawerExpanded || event.defaultPrevented) {
         return;
       }
       // Esc closes dialogs and dropdowns first, and fields keep it
+      // The player panel closes first, it listens for Esc itself
       const { openSettings, openHelp } = this.$store.state;
       if (openSettings || openHelp || event.target.closest?.('input, textarea, select, [role="combobox"], .va-select')) {
         return;

@@ -11,8 +11,8 @@
 
   <template v-if="activeTab === 'players'">
     <Filter />
-    <PlayerList sport="nhl" :loading="loading" :players="players" :gamesByTeam="gamesByTeam"
-      @playerSelected="(player) => selectPlayer(player)" />
+    <PlayerList sport="nhl" :loading="loading" :players="tablePlayers" :gamesByTeam="gamesByTeam"
+      :availabilityKnown="!!waiverSettings" @playerSelected="(player) => selectPlayer(player)" />
     <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
       @clearSelectedPlayer="clearSelectedPlayer" />
   </template>
@@ -40,6 +40,13 @@ import { mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
 import { loadLeagueInfo } from "./collections/league";
 import { recordLeagueVisit } from "../utils/recentLeagues";
+import { getActivityLog } from "./collections/activity";
+import { latestDrops, waiverStatus, availabilityLabel, availabilityOrder } from "./collections/waivers";
+import { loadLastSeasonStats, lastSeasonFields } from "./collections/lastSeason";
+import { usesLastSeason } from "./collections/columns";
+
+// Waiver status depends on the time, so it's worked out again this often
+const CLOCK_INTERVAL = 60 * 1000;
 
 export default {
   data() {
@@ -54,6 +61,11 @@ export default {
       gamesByTeam: {},
       gameWeek: {},
       league: null,
+      activityItems: [],
+      // Last season's stats by player id, loaded when a last season column is shown
+      lastSeasonById: null,
+      now: Date.now(),
+      clock: null,
     };
   },
   components: {
@@ -94,6 +106,20 @@ export default {
       this.playersSavedAt = result.savedAt;
       this.loadError = result.error;
       this.loading = false;
+      if (this.players.length) {
+        this.loadActivity();
+        this.loadLastSeasonIfShown();
+      }
+    },
+    async loadActivity() {
+      // Kept up to date by the player load, which reads new activity for ownership changes
+      this.activityItems = (await getActivityLog(this.leagueId)).items;
+    },
+    async loadLastSeasonIfShown() {
+      if (this.lastSeasonById || !usesLastSeason(this.$store.state.visibleColumnKeys)) {
+        return;
+      }
+      this.lastSeasonById = await loadLastSeasonStats(this.leagueId);
     },
     async loadLeague(forceRefresh) {
       const league = await loadLeagueInfo(this.leagueId, { forceRefresh });
@@ -147,13 +173,44 @@ export default {
     }
   },
   mounted() {
+    this.clock = setInterval(() => { this.now = Date.now(); }, CLOCK_INTERVAL);
     this.loadPlayers();
     this.loadGames();
     if (this.leagueId) {
       this.loadLeague();
     }
   },
+  beforeUnmount() {
+    clearInterval(this.clock);
+  },
+  watch: {
+    "$store.state.visibleColumnKeys"() {
+      if (!this.loading) {
+        this.loadLastSeasonIfShown();
+      }
+    },
+  },
   computed: {
+    waiverSettings() {
+      return this.league?.settings?.waivers;
+    },
+    drops() {
+      return latestDrops(this.activityItems);
+    },
+    // Players with availability and last season's stats, for the table
+    tablePlayers() {
+      const context = { waivers: this.waiverSettings, drops: this.drops, now: this.now };
+      return this.players.map(player => {
+        const availability = waiverStatus(player, context);
+        return {
+          ...player,
+          availability,
+          availabilityLabel: availabilityLabel(availability, this.now),
+          availabilityOrder: availabilityOrder(availability),
+          ...lastSeasonFields(this.lastSeasonById, player.id),
+        };
+      });
+    },
     loadMessage() {
       if (this.loading || !this.loadError) {
         return null;

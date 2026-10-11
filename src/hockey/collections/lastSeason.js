@@ -42,11 +42,14 @@ export const loadLastSeasonStats = async (leagueId) => {
   }
 };
 
-// Copies of the players with last season's stats added, as lastSeasonPoints, lastSeasonAvg, ...
-export const withLastSeasonStats = (players, lastSeasonById) => players.map(player => {
-  const lastSeason = lastSeasonById?.[player.id];
-  return {
-    ...player,
-    ...Object.fromEntries(Object.entries(LAST_SEASON_FIELDS).map(([stat, field]) => [field, lastSeason?.[stat]])),
-  };
-});
+// A player's last season stats as player fields: { lastSeasonPoints, lastSeasonAvg, ... }
+export const lastSeasonFields = (lastSeasonById, playerId) => {
+  const lastSeason = lastSeasonById?.[playerId];
+  return Object.fromEntries(Object.entries(LAST_SEASON_FIELDS).map(([stat, field]) => [field, lastSeason?.[stat]]));
+};
+
+// Copies of the players with last season's stats added, see lastSeasonFields
+export const withLastSeasonStats = (players, lastSeasonById) => players.map(player => ({
+  ...player,
+  ...lastSeasonFields(lastSeasonById, player.id),
+}));

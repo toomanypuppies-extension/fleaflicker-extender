@@ -1,14 +1,13 @@
 <template>
   <div class="gameWeekOuterContainer">
-    <h3 class="startDate">{{ startDate }} - {{ endDate }}</h3>
+    <h4 class="startDate">{{ startDate }} - {{ endDate }}</h4>
     <div class="gameWeekContainer" :style="bindCssVars">
-      <div class="gameDay" :class="{ hasGame: !!week.MON }"><span>{{ week.MON }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.TUE }"><span>{{ week.TUE }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.WED }"><span>{{ week.WED }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.THU }"><span>{{ week.THU }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.FRI }"><span>{{ week.FRI }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.SAT }"><span>{{ week.SAT }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.SUN }"><span>{{ week.SUN }}</span></div>
+      <div v-for="day in days" :key="day.key" class="gameDayColumn">
+        <span class="dayLabel" :title="day.name">{{ day.short }}</span>
+        <div class="gameDay" :class="{ hasGame: !!week[day.key] }" :title="week[day.key] ? `${day.name} vs ${week[day.key]}` : `${day.name}, no game`">
+          <span>{{ week[day.key] }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -17,7 +16,20 @@
 import { mapGetters } from "vuex";
 import { nextSunday, format } from 'date-fns'
 
+const DAYS = [
+  { key: 'MON', short: 'M', name: 'Monday' },
+  { key: 'TUE', short: 'T', name: 'Tuesday' },
+  { key: 'WED', short: 'W', name: 'Wednesday' },
+  { key: 'THU', short: 'T', name: 'Thursday' },
+  { key: 'FRI', short: 'F', name: 'Friday' },
+  { key: 'SAT', short: 'S', name: 'Saturday' },
+  { key: 'SUN', short: 'S', name: 'Sunday' },
+];
+
 export default {
+  data() {
+    return { days: DAYS };
+  },
   props: {
     // Missing for weeks the team has no games
     week: { type: Object, default: () => ({}) },
@@ -56,9 +68,20 @@ export default {
 .gameWeekContainer {
   display: flex;
 
-  .gameDay:last-child {
+  .gameDayColumn:last-child .gameDay {
     border-right: 4px solid var(--teamMainColor);
   }
+}
+
+.gameDayColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dayLabel {
+  font-size: 0.75em;
+  opacity: 0.75;
 }
 
 .gameDay {
@@ -80,5 +103,8 @@ export default {
 
 .startDate {
   text-align: center;
+  font-size: 0.9em;
+  font-weight: 700;
+  margin: 0 0 0.25em;
 }
 </style>

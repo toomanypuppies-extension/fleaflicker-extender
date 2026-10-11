@@ -1,103 +1,70 @@
 <template>
-  <div v-if="selectedPlayer" class="playerContainer containerColor">
-    <div class="playerContainerLeft">
-      <va-icon @click="$emit('clearSelectedPlayer')" class="material-icons playerClose"
-        style="color: var(--themeAccentColor)" size="medium">close</va-icon>
-      <div class="v-flex">
-        <h2>
-          {{ selectedPlayer.name }} -
-          {{ teamAbbrToName[selectedPlayer.team] }}
-        </h2>
-        <div class="h-flex">
-          <img class="playerImage" :src="selectedPlayer.expandedData.image" alt="Player Image"
-            v-if="selectedPlayer.expandedData.image" />
-          <div class="playerImage playerImageDefault" v-if="!selectedPlayer.expandedData.image"></div>
-          <div class="playerStats">
-            <div class="flex-spaceBetween">
-              <p>Position</p>
-              <p>{{ selectedPlayer.position }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Injured Status</p>
-              <p>{{ selectedPlayer.injury || "Healthy" }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Points</p>
-              <p>{{ selectedPlayer.points }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Average</p>
-              <p>{{ selectedPlayer.avg }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Last 1</p>
-              <p>{{ selectedPlayer.last1 }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Last 5</p>
-              <p>{{ selectedPlayer.last5 }}</p>
-            </div>
-            <div class="flex-spaceBetween">
-              <p>Last 10</p>
-              <p>{{ selectedPlayer.last10 }}</p>
-            </div>
-          </div>
-        </div>
+  <aside v-if="selectedPlayer" class="playerPanel containerColor" aria-label="Player details">
+    <div class="panelHeader">
+      <div>
+        <h2 class="playerName">{{ selectedPlayer.name }}</h2>
+        <p class="playerTeam">
+          {{ teamAbbrToName[selectedPlayer.team] || selectedPlayer.team }} · {{ selectedPlayer.position }}
+          <span v-if="selectedPlayer.injury" class="injury">{{ selectedPlayer.injury }}</span>
+        </p>
       </div>
+      <button type="button" class="closeButton" aria-label="Close player details" @click="$emit('clearSelectedPlayer')">
+        <va-icon class="material-icons" size="1.4em">close</va-icon>
+      </button>
     </div>
-    <div class="playerContainerRight">
-      <div class="h-flex">
-        <a :href="selectedPlayerFleaflickerLink" v-if="selectedPlayerFleaflickerLink" @click="$emit('fleaflickerNav')"
-          style="color: var(--themeAccentColor)" :target="fleaTarget">Fleaflicker
-          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
-        </a>
-        <a :href="selectedPlayerDobberLink" v-if="selectedPlayerDobberLink" target="_blank"
-          style="color: var(--themeAccentColor)">Dobber
-          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
-        </a>
-        <a :href="selectedPlayerPuckpediaLink" v-if="selectedPlayerPuckpediaLink" target="_blank"
-          style="color: var(--themeAccentColor)">PuckPedia
-          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
-        </a>
-        <a :href="selectedPlayerDailyFaceoffTeamLink" v-if="selectedPlayerDailyFaceoffTeamLink" target="_blank"
-          style="color: var(--themeAccentColor)">{{ teamAbbrToName[selectedPlayer.team] }} Daily Faceoff
-          <va-icon class="material-icons" style="color: var(--themeAccentColor)" size="small">link</va-icon>
-        </a>
-      </div>
-      <div class="playerNews">
-        <h2>
-          {{ selectedPlayer.expandedData?.news?.title || "No player news"
-          }}{{ selectedPlayerNewsTime }}
-        </h2>
-        <br />
-        <p>{{ selectedPlayer.expandedData?.news?.contents }}</p>
-        <br />
-        <p>{{ selectedPlayer.expandedData?.news?.analysis }}</p>
-      </div>
+
+    <div class="summary">
+      <img v-if="selectedPlayer.expandedData?.image" class="playerImage" :src="selectedPlayer.expandedData.image" alt="" />
+      <div v-else class="playerImage playerImageDefault"></div>
+      <dl class="playerStats">
+        <template v-for="stat in stats" :key="stat.label">
+          <dt>{{ stat.label }}</dt>
+          <dd>{{ stat.value }}</dd>
+        </template>
+      </dl>
     </div>
-    <div v-if="gamesByMatchup && weekStartDates" class="upcomingGames">
-      <h2>Upcoming games</h2>
-      <hr />
+
+    <nav class="links" aria-label="More about this player">
+      <a :href="fleaflickerLink" @click="$emit('fleaflickerNav')" :target="fleaTarget">Fleaflicker
+        <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
+      <a :href="dobberLink" target="_blank" rel="noopener">Dobber
+        <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
+      <a :href="puckpediaLink" target="_blank" rel="noopener">PuckPedia
+        <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
+      <a v-if="dailyFaceoffLink" :href="dailyFaceoffLink" target="_blank" rel="noopener">Line combinations
+        <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
+    </nav>
+
+    <section class="playerNews">
+      <h3>{{ news?.title || "No player news" }}</h3>
+      <p v-if="newsTime" class="newsTime">{{ newsTime }}</p>
+      <p v-if="news?.contents">{{ news.contents }}</p>
+      <p v-if="news?.analysis">{{ news.analysis }}</p>
+    </section>
+
+    <section v-if="gamesByMatchup && weekStartDates" class="upcomingGames">
+      <h3>Upcoming games</h3>
       <div class="gameGrid">
-        <GameWeek :week="gameWeekForTeam['0']" :startDate="weekStartDates[0]" />
-        <GameWeek :week="gameWeekForTeam['1']" :startDate="weekStartDates[1]" />
-        <GameWeek :week="gameWeekForTeam['2']" :startDate="weekStartDates[2]" />
-        <GameWeek :week="gameWeekForTeam['3']" :startDate="weekStartDates[3]" />
+        <GameWeek v-for="week in 4" :key="week" :week="gameWeekForTeam[week - 1]" :startDate="weekStartDates[week - 1]" />
       </div>
-    </div>
-  </div>
+    </section>
+  </aside>
 </template>
 
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME } from "../constants";
+import { slugify } from "../../utils/util";
 import GameWeek from "./GameWeek.vue";
 import { mapState } from 'vuex';
+
+const formatNumber = (value, places = 2) => (typeof value === 'number' ? String(+value.toFixed(places)) : null);
 
 export default {
   props: {
     leagueId: String,
     teamAbbrToName: Object,
   },
+  emits: ['clearSelectedPlayer', 'fleaflickerNav'],
   components: {
     GameWeek
   },
@@ -110,137 +77,231 @@ export default {
     fleaTarget() {
       return process.env.STANDALONE ? '_blank' : '_self';
     },
+    stats() {
+      const player = this.selectedPlayer;
+      const isGoalie = player.goalsAgainst !== undefined;
+      const lastSeason = player.lastSeasonPoints !== undefined
+        ? `${formatNumber(player.lastSeasonPoints, 1)} pts, ${formatNumber(player.lastSeasonAvg)} avg, ${player.lastSeasonGamesPlayed} GP`
+        : null;
+      return [
+        { label: 'Owner', value: player.owner || player.availabilityLabel || 'Free agent' },
+        { label: 'Today', value: player.todaysGame || 'No game' },
+        { label: 'Points', value: `${formatNumber(player.points)} (${formatNumber(player.avg)} avg)` },
+        { label: 'Games played', value: player.gamesPlayed },
+        isGoalie
+          ? { label: 'GA / SV%', value: `${player.goalsAgainst} / ${player.savePct?.toFixed(3).replace(/^0/, '') ?? '–'}` }
+          : { label: 'Goals / Assists', value: `${player.goals ?? 0} / ${player.assists ?? 0}` },
+        { label: 'Last 1 / 5 / 10', value: [player.last1, player.last5, player.last10].map(v => formatNumber(v)).join(' / ') },
+        { label: 'Rank', value: player.rank ? `${player.rank} overall, ${player.positionRankLabel || ''}${player.positionRank}` : null },
+        { label: '% owned', value: player.percentOwned !== undefined ? `${player.percentOwned}%` : null },
+        { label: 'Last season', value: lastSeason },
+      ].filter(stat => stat.value !== null && stat.value !== undefined && stat.value !== '');
+    },
     gameWeekForTeam() {
-      if (
-        this.selectedPlayer?.team &&
-        this.selectedPlayer.team !== "FA"
-      ) {
-        const teamAbbr = this.selectedPlayer.team;
-        // Teams with no games in the next 4 weeks (eliminated, off-season) aren't in the schedule
-        return this.gamesByMatchup?.[teamAbbr] || {};
-      } else {
-        return {};
+      const team = this.selectedPlayer?.team;
+      // Teams with no games in the next 4 weeks (eliminated, off-season) aren't in the schedule
+      return (team && team !== "FA" && this.gamesByMatchup?.[team]) || {};
+    },
+    news() {
+      return this.selectedPlayer.expandedData?.news;
+    },
+    newsTime() {
+      const epoch = this.news?.timeEpochMilli;
+      return epoch
+        ? new Date(parseInt(epoch, 10)).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : null;
+    },
+    nameSlug() {
+      return slugify(this.selectedPlayer?.name);
+    },
+    dobberLink() {
+      return `https://frozenpool.dobbersports.com/players/${this.nameSlug}`;
+    },
+    puckpediaLink() {
+      return `https://puckpedia.com/player/${this.nameSlug}`;
+    },
+    dailyFaceoffLink() {
+      const teamName = HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer?.team];
+      return teamName && this.selectedPlayer.team !== "FA"
+        ? `https://www.dailyfaceoff.com/teams/${slugify(teamName)}/line-combinations/`
+        : null;
+    },
+    fleaflickerLink() {
+      return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/players/${this.nameSlug}-${this.selectedPlayer.id}`;
+    },
+  },
+  methods: {
+    closeOnEscape(event) {
+      if (event.key === 'Escape' && this.selectedPlayer && !this.$store.state.openSettings && !this.$store.state.openHelp) {
+        // Handled, so the extension's panel doesn't close as well
+        event.preventDefault();
+        this.$emit('clearSelectedPlayer');
       }
     },
-    selectedPlayerNewsTime() {
-      const epoch = this.selectedPlayer.expandedData?.news?.timeEpochMilli;
-      if (epoch) {
-        const formattedTime = new Date(parseInt(epoch, 10)).toLocaleDateString(
-          [],
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          }
-        );
-        return ` - ${formattedTime}`;
-      }
-      return null;
-    },
-    selectedPlayerDobberLink() {
-      if (this.selectedPlayer?.name) {
-        const kebabName = this.selectedPlayer.name
-          ?.split(" ")
-          ?.join("-")
-          ?.replaceAll(".", "");
-        return `https://frozenpool.dobbersports.com/players/${kebabName.toLowerCase()}`;
-      }
-      return null;
-    },
-    selectedPlayerPuckpediaLink() {
-      if (this.selectedPlayer?.name) {
-        const kebabName = this.selectedPlayer.name
-          ?.split(" ")
-          ?.join("-")
-          ?.replaceAll(".", "");
-        return `https://puckpedia.com/player/${kebabName.toLowerCase()}`;
-      }
-      return null;
-    },
-    selectedPlayerDailyFaceoffTeamLink() {
-      if (
-        this.selectedPlayer?.team &&
-        this.selectedPlayer.team !== "FA" &&
-        HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
-      ) {
-        const kebabTeam = HOCKEY_TEAM_ABBR_TO_NAME[this.selectedPlayer.team]
-          ?.split(" ")
-          ?.join("-")
-          ?.replaceAll('.', '')
-        return `https://www.dailyfaceoff.com/teams/${kebabTeam.toLowerCase()}/line-combinations/`;
-      }
-      return null;
-    },
-    selectedPlayerFleaflickerLink() {
-      if (this.selectedPlayer?.name) {
-        const kebabName = this.selectedPlayer.name
-          ?.split(" ")
-          ?.join("-")
-          ?.replaceAll(".", "");
-        return ` https://www.fleaflicker.com/nhl/leagues/${this.leagueId
-          }/players/${kebabName.toLowerCase()}-${this.selectedPlayer.id}`;
-      }
-      return null;
-    },
+  },
+  mounted() {
+    document.addEventListener('keydown', this.closeOnEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.closeOnEscape);
   },
 };
 </script>
 
 <style lang="scss" scoped>
-.playerContainer {
-  position: relative;
-  margin-top: 1em;
-  display: grid;
+.playerPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: min(460px, 100%);
+  overflow-y: auto;
   padding: 1.25em;
-  grid-template-columns: repeat(3, 1fr);
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25em;
+}
+
+// Fleaflicker's bootstrap sizes and spaces headings and makes dt bold
+h2,
+h3,
+h4 {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 1em;
 }
 
-@media only screen and (hover: none) and (pointer: coarse) {
-  .playerContainer {
-    display: flex;
-    flex-direction: column;
+.playerName {
+  font-size: 1.4em;
+  font-weight: 700;
+}
+
+.playerTeam {
+  opacity: 0.85;
+  margin-top: 0.2em;
+}
+
+.injury {
+  margin-left: 0.4em;
+  padding: 0 0.4em;
+  border-radius: 3px;
+  background: #ef5350;
+  color: #fff;
+  font-size: 0.85em;
+}
+
+.closeButton {
+  display: inline-flex;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 0.25em;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--teamSecondaryColor30Opacity);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
   }
 }
 
-.playerContainerLeft {
-  grid-column: 1;
+.summary {
+  display: flex;
+  gap: 1em;
+  align-items: flex-start;
 }
 
-.playerContainerRight {
-  grid-column: 2 / span 2;
+.playerImage {
+  width: 120px;
+  height: 120px;
+  flex-shrink: 0;
+  object-fit: cover;
 }
 
-.upcomingGames {
-  grid-column: 1 / span 3;
+.playerStats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3em 0.75em;
+  flex: 1;
 
-  .gameGrid {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
+  dt {
+    opacity: 0.75;
+    font-weight: normal;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.25em;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2em;
   }
 }
 
 .playerNews {
   background: rgba(0, 0, 0, 0.1);
-  padding: 0.5em;
+  padding: 0.75em;
+
+  h3 {
+    font-size: 1.05em;
+    font-weight: 700;
+    margin-bottom: 0.4em;
+  }
+
+  p {
+    margin-bottom: 0.5em;
+    line-height: 1.4;
+  }
 }
 
-.playerImage {
-  height: 200px;
-  width: 200px;
+.newsTime {
+  font-size: 0.85em;
+  opacity: 0.75;
 }
 
-.playerStats {
+.upcomingGames h3 {
+  font-size: 1.05em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.gameGrid {
   display: flex;
-  width: 100%;
   flex-direction: column;
-  justify-content: space-between;
-  margin-left: 1em;
+  align-items: flex-start;
+  gap: 0.75em;
 }
 
-.playerClose {
-  position: absolute;
-  top: 0;
-  right: 0;
+@media (max-width: 480px) {
+  .summary {
+    flex-direction: column;
+  }
 }
 </style>

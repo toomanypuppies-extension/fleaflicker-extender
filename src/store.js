@@ -23,6 +23,12 @@ const initState = {
   injurySelections: [],
   positionSelections: [],
   gameDaysSelections: [],
+  // all or any, see GAME_DAYS_MODES
+  gameDaysMode: 'all',
+  // [{ key, min, max }]
+  statFilters: [],
+  // Columns picked in the column chooser, empty for the defaults
+  visibleColumnKeys: [],
   owners: [],
   ownership: "",
   gamesByMatchup: null,
@@ -63,6 +69,8 @@ export const store = createStore({
       state.injurySelections = [];
       state.positionSelections = [];
       state.gameDaysSelections = [];
+      state.gameDaysMode = 'all';
+      state.statFilters = [];
       state.ownership = "";
     },
     loadFromLocalStorage(state) {
