@@ -45,3 +45,21 @@ Use [fleaflicker-extender-proxy](https://github.com/toomanypuppies-extension/fle
 1. Clone this repo locally and `cd` into the repo root
 2. Have yarn installed and run `yarn`
 3. Run `yarn si:dev`
+
+## Tests and checks
+
+- `yarn test` runs the tests (node's test runner, no browser needed).
+- The extension builds (`ex:build`, `ex:build:chrome`, `ex:build:firefox`) finish with
+  `scripts/check-extension-css.mjs`, which fails if the extension's CSS could restyle fleaflicker's
+  own page. Keep component styles `<style scoped>`, and put anything global inside `.mainContent`.
+- `yarn vuestic-px` regenerates `src/styles/vuestic-px.css`, vuestic's sizes in px so its components
+  are the same size on fleaflicker's page (10px root font) as on the standalone site. Run it after
+  upgrading vuestic or registering another vuestic component in `src/main.js`.
+
+## Proxy
+
+Both the standalone site and the extension use
+[fleaflicker-extender-proxy](https://github.com/toomanypuppies-extension/fleaflicker-extender-proxy):
+the site for every fleaflicker and NHL call, the extension for the NHL schedule and
+`/proxy/flea-rules`, the league settings fleaflicker's API doesn't have (add limit, waiver timing).
+Without that route the app still works, but add limits and waiver status show as unknown.
