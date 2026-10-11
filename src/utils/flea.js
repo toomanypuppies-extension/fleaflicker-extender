@@ -63,7 +63,8 @@ export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targe
 }
 
 // Ex https://www.fleaflicker.com/api/FetchPlayerListing?sport=NHL&league_id=12089
-export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) => {
+// season is the year a season starts in, e.g. 2025 for 2025-26. Omitted for the current season.
+export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0, season) => {
   try {
     if (!leagueId) {
       console.error('No league id provided. Failing call');
@@ -75,7 +76,8 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
         league_id: leagueId,
         'filter.free_agent_only': freeAgent,
         sort: SORT_OPTIONS.total,
-        result_offset: offset
+        result_offset: offset,
+        ...(season && { sort_season: season }),
       },
     });
     return response.data;
@@ -86,16 +88,23 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
   }
 }
 
-export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
+/**
+ * Every page of the player listing, sorted by points.
+ * @returns {Promise<{ players: Array, seasons?: { eligibleValues: number[], selectedValue: number } }>}
+ *   seasons are the ones fleaflicker has stats for, and the one listed
+ */
+export const getAllHockeyPlayers = async (leagueId, { stopIfNoPoints = true, freeAgent = false, season } = {}) => {
   let playersList = [];
+  let seasons;
   let offset = 0;
   let morePlayersLeft = true;
   while (morePlayersLeft) {
-    const response = await getPlayers('NHL', leagueId, freeAgent, offset);
+    const response = await getPlayers('NHL', leagueId, freeAgent, offset, season);
     if (!response) {
       throw new Error('Failed to fetch player listing');
     }
-    playersList = playersList.concat(response.players);
+    seasons = seasons || response.sortSeasons;
+    playersList = playersList.concat(response.players || []);
     offset = response.resultOffsetNext;
 
     // Without a next offset this would refetch the first page forever
@@ -117,7 +126,7 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     }
   }
 
-  return playersList;
+  return { players: playersList, seasons };
 }
 
 export const getLeagueStandings = async (leagueId) => {

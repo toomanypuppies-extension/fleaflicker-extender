@@ -7,7 +7,7 @@ const PAGE_SIZE = 30;
 // What axios 0.x rejects with
 const axiosError = (message, config, response) => Object.assign(new Error(message), { config, response, isAxiosError: true });
 
-export const leaguePlayer = (id, { points = 0, owner, team = 'SEA' } = {}) => ({
+export const leaguePlayer = (id, { points = 0, avg, owner, team = 'SEA' } = {}) => ({
   proPlayer: {
     id,
     nameFull: `Player ${id}`,
@@ -16,6 +16,7 @@ export const leaguePlayer = (id, { points = 0, owner, team = 'SEA' } = {}) => ({
     positionEligibility: ['C', 'F'],
   },
   viewingActualPoints: { value: points, formatted: String(points) },
+  ...(avg !== undefined && { viewingActualPointsAverage: { value: avg, formatted: String(avg) } }),
   owner: owner ? { name: owner } : undefined,
 });
 
@@ -29,6 +30,9 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
       ...Array.from({ length: withPoints }, (_, i) => leaguePlayer(i + 1, { points: withPoints - i })),
       ...Array.from({ length: withoutPoints }, (_, i) => leaguePlayer(withPoints + i + 1)),
     ],
+    // Players listed for an earlier season (sort_season), by season
+    seasonPlayers: {},
+    sortSeasons: { eligibleValues: [2025, 2026], selectedValue: 2026 },
     // Newest first, like fleaflicker
     activity: [],
     teams: ['Team A', 'Team B'],
@@ -59,13 +63,16 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
   const respond = (endpoint, params) => {
     const offset = params?.result_offset || 0;
     switch (endpoint) {
-      case 'FetchPlayerListing':
+      case 'FetchPlayerListing': {
+        const players = params?.sort_season ? fake.seasonPlayers[params.sort_season] || [] : fake.players;
         // fleaflicker's last page still has a resultOffsetNext, past resultTotal
         return {
-          players: fake.players.slice(offset, offset + PAGE_SIZE),
+          players: players.slice(offset, offset + PAGE_SIZE),
           resultOffsetNext: offset + PAGE_SIZE,
-          resultTotal: fake.players.length,
+          resultTotal: players.length,
+          sortSeasons: { ...fake.sortSeasons, selectedValue: params?.sort_season || fake.sortSeasons.selectedValue },
         };
+      }
       case 'FetchLeagueActivity':
         return {
           items: fake.activity.slice(offset, offset + PAGE_SIZE),

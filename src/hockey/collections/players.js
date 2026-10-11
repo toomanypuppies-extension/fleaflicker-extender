@@ -139,7 +139,7 @@ const statsNeedRefresh = (statsEpoch, now, forceRefresh) => {
 
 const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   const fetchStart = new Date().getTime();
-  const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints);
+  const { players, seasons } = await getAllHockeyPlayers(leagueId, { stopIfNoPoints });
   const finalPlayers = convertPlayerObjects(players);
 
   // If the players can't be stored (storage full), still show them. Players and their metadata
@@ -149,6 +149,9 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
     hockey_playersMeta: {
       format: PLAYERS_FORMAT,
       stopIfNoPoints,
+      season: seasons?.selectedValue,
+      // The latest season before this one that fleaflicker has stats for
+      previousSeason: previousSeason(seasons),
       statsEpoch: fetchStart,
       activityEpoch: fetchStart - ACTIVITY_OVERLAP,
       activityCheckedEpoch: fetchStart,
@@ -157,6 +160,11 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
 
   return { players: finalPlayers, savedAt: fetchStart };
 }
+
+const previousSeason = (seasons) => {
+  const earlier = (seasons?.eligibleValues || []).filter(season => season < seasons.selectedValue);
+  return earlier.length ? Math.max(...earlier) : undefined;
+};
 
 // Applies league activity since the last check to the stored players.
 // Returns false if the changes can't be applied incrementally and a full fetch is needed.
