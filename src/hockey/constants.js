@@ -62,6 +62,8 @@ export const HOCKEY_POSITION_OPTIONS = [
 
 export const OWNERSHIP_OPTIONS = [
   "Free Agent",
+  // Free agents who can be added right away, not on waivers
+  "Addable now",
   "Owned",
   "All"
 ]

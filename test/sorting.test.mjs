@@ -71,3 +71,16 @@ test('clicking a sorted column keeps the other sort', () => {
   assert.deepEqual(toggleSort(sorts, 'team'), [{ key: 'team', direction: 'asc' }, { key: 'points', direction: 'desc' }]);
   assert.deepEqual(toggleSort(toggleSort(sorts, 'team'), 'team'), [{ key: 'points', direction: 'desc' }]);
 });
+
+test('a column can sort by another field, lowest first', () => {
+  const players = [
+    { id: 1, todaysGame: 'VAN 7:00 PM', todaysGameStart: 300 },
+    { id: 2, todaysGame: '@EDM 9:00 PM', todaysGameStart: 500 },
+    { id: 3, todaysGame: 'BOS 1:00 PM', todaysGameStart: 100 },
+    { id: 4 },
+  ];
+  const types = { todaysGame: { type: 'numberLowFirst', field: 'todaysGameStart' } };
+
+  assert.deepEqual(ids(sortPlayers(players, [{ key: 'todaysGame', direction: 'desc' }], types)), [3, 1, 2, 4]);
+  assert.deepEqual(ids(sortPlayers(players, [{ key: 'todaysGame', direction: 'asc' }], types)), [2, 1, 3, 4]);
+});

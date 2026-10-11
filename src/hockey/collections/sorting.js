@@ -1,9 +1,10 @@
 export const MAX_SORTS = 2;
 
 // The first click on a column sorts it the way people usually want to read it:
-// numbers highest first, text A to Z. Both are shown as "desc".
+// numbers highest first, text A to Z, and ranks and times lowest first. All are shown as "desc".
 const compareValues = {
   number: (a, b) => b - a,
+  numberLowFirst: (a, b) => a - b,
   string: (a, b) => a.localeCompare(b),
 };
 
@@ -14,20 +15,27 @@ const isEmpty = (value) => value === undefined || value === null || value === ""
  * always go last, in either direction.
  * @param {Array} players
  * @param {Array<{ key: string, direction: 'desc' | 'asc' }>} sorts primary sort first
- * @param {Object} sortTypes column key to 'number' or 'string'
+ * @param {Object} sortTypes column key to 'number' or 'string', or to { type, field } to sort a column
+ *   by another field, like today's game by its start time
  */
 export const sortPlayers = (players, sorts, sortTypes) => {
+  const specFor = (key) => {
+    const spec = sortTypes[key];
+    return typeof spec === 'string' ? { type: spec, field: key } : spec;
+  };
+
   const comparators = sorts
-    .filter(sort => compareValues[sortTypes[sort.key]])
+    .filter(sort => compareValues[specFor(sort.key)?.type])
     .map(({ key, direction }) => {
-      const compare = compareValues[sortTypes[key]];
+      const { type, field } = specFor(key);
+      const compare = compareValues[type];
       return (a, b) => {
-        const aEmpty = isEmpty(a[key]);
-        const bEmpty = isEmpty(b[key]);
+        const aEmpty = isEmpty(a[field]);
+        const bEmpty = isEmpty(b[field]);
         if (aEmpty || bEmpty) {
           return aEmpty - bEmpty;
         }
-        const result = compare(a[key], b[key]);
+        const result = compare(a[field], b[field]);
         return direction === "asc" ? -result : result;
       };
     });

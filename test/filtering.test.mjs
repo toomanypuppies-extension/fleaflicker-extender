@@ -68,3 +68,33 @@ test('game days filter out everyone until the schedule has loaded', () => {
 test('filters combine', () => {
   assert.deepEqual(filter({ ownership: 'Free Agent', teamSelections: ['Seattle Kraken'] }), [2]);
 });
+
+test('game days can match teams playing on any of the selected days', () => {
+  assert.deepEqual(ids(filterPlayers(PLAYERS, { gameDaysSelections: ['We', 'Th'], gameDaysMode: 'any' }, GAMES_BY_TEAM)), [1, 2, 3, 4]);
+  assert.deepEqual(ids(filterPlayers(PLAYERS, { gameDaysSelections: ['We', 'Th'], gameDaysMode: 'all' }, GAMES_BY_TEAM)), []);
+});
+
+test('stat filters keep players within the range, and leave out players without the stat', () => {
+  const players = [
+    player({ id: 1, avg: 1.5, gamesPlayed: 10 }),
+    player({ id: 2, avg: 3, gamesPlayed: 2 }),
+    player({ id: 3, avg: 4.5, gamesPlayed: 12 }),
+    player({ id: 4, gamesPlayed: 12 }),
+  ];
+  const statFilter = (statFilters) => ids(filterPlayers(players, { statFilters }, {}));
+
+  assert.deepEqual(statFilter([{ key: 'avg', min: 2, max: null }]), [2, 3]);
+  assert.deepEqual(statFilter([{ key: 'avg', min: null, max: 3 }]), [1, 2]);
+  assert.deepEqual(statFilter([{ key: 'avg', min: 2, max: 4 }]), [2]);
+  assert.deepEqual(statFilter([{ key: 'avg', min: 2 }, { key: 'gamesPlayed', min: 5 }]), [3]);
+});
+
+test('addable now keeps free agents who are not on waivers', () => {
+  const players = [
+    player({ id: 1, availability: { status: 'free' } }),
+    player({ id: 2, availability: { status: 'waivers', until: 1 } }),
+    player({ id: 3, owner: 'Team A', availability: { status: 'owned' } }),
+    player({ id: 4 }),
+  ];
+  assert.deepEqual(ids(filterPlayers(players, { ownership: 'Addable now' }, {})), [1]);
+});

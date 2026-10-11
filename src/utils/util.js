@@ -66,6 +66,16 @@ export const nextEasternTime = (after, { hour, minute = 0 }) => {
   return null;
 };
 
+// A name as it appears in site URLs: "Ryan O'Reilly" -> "ryan-oreilly", "Tim Stützle" -> "tim-stutzle"
+export const slugify = (name) => (name || '')
+  .normalize('NFD')
+  // Accents, split off by normalize
+  .replace(/[̀-ͯ]/g, '')
+  .toLowerCase()
+  .replace(/['’.]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
 export const convertEpochToTimeString = (epoch) => {
   return new Date(parseInt(epoch, 10)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

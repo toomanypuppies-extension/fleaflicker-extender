@@ -86,3 +86,38 @@ export const waiverStatus = (player, { waivers, drops, now }) => {
   }
   return { status: WAIVER_STATUS.free };
 };
+
+const formatWhen = (epoch, now) => {
+  const date = new Date(epoch);
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toDateString() === new Date(now).toDateString()
+    ? time
+    : `${date.toLocaleDateString([], { weekday: 'short' })} ${time}`;
+};
+
+// Short text for the Availability column, empty for owned players or unknown settings
+export const availabilityLabel = (availability, now) => {
+  switch (availability?.status) {
+    case WAIVER_STATUS.free:
+      return 'Free agent';
+    case WAIVER_STATUS.waivers:
+      return `Waivers until ${formatWhen(availability.until, now)}`;
+    case WAIVER_STATUS.locked:
+      return `Addable ${formatWhen(availability.until, now)}`;
+    default:
+      return '';
+  }
+};
+
+// Sorts free agents first, then by when players can be added. Owned players have no value, so sort last.
+export const availabilityOrder = (availability) => {
+  switch (availability?.status) {
+    case WAIVER_STATUS.free:
+      return 0;
+    case WAIVER_STATUS.waivers:
+    case WAIVER_STATUS.locked:
+      return availability.until;
+    default:
+      return undefined;
+  }
+};
