@@ -12,6 +12,21 @@ const getTodaysGame = (requestedGames, teamAbbr) => {
   }
 }
 
+const parseFormatted = (formatted) => formatted && parseFloat(formatted) || 0.0;
+
+// The two stats fleaflicker lists for each player: goals and assists for skaters,
+// goals against and save percentage for goalies
+const statsByCategory = (player) => Object.fromEntries(
+  (player.viewingActualStats || []).map(stat => [stat.category?.abbreviation, stat.value?.value])
+);
+
+// Fleaflicker flags recent results that are well above or below the player's usual
+const trend = (lastX) => {
+  if (lastX?.overPerforming) return 'hot';
+  if (lastX?.underPerforming) return 'cold';
+  return undefined;
+};
+
 export const convertPlayerObjects = (players) => {
   return players.map((player) => {
     // This allows for filtering on combine positions of W, F
@@ -26,11 +41,13 @@ export const convertPlayerObjects = (players) => {
     }
 
 
-    const points = player.viewingActualPoints?.formatted && parseFloat(player.viewingActualPoints.formatted, 10) || 0.0;
-    const avg = player.viewingActualPointsAverage?.formatted && parseFloat(player.viewingActualPointsAverage.formatted, 10) || 0.0;
-    const last1 = player.lastX?.[0]?.value?.formatted && parseFloat(player.lastX[0].value.formatted, 10) || 0.0;
-    const last5 = player.lastX?.[1]?.value?.formatted && parseFloat(player.lastX[1].value.formatted, 10) || 0.0;
-    const last10 = player.lastX?.[2]?.value?.formatted && parseFloat(player.lastX[2].value.formatted, 10) || 0.0;
+    const points = parseFormatted(player.viewingActualPoints?.formatted);
+    const avg = parseFormatted(player.viewingActualPointsAverage?.formatted);
+    const last1 = parseFormatted(player.lastX?.[0]?.value?.formatted);
+    const last5 = parseFormatted(player.lastX?.[1]?.value?.formatted);
+    const last10 = parseFormatted(player.lastX?.[2]?.value?.formatted);
+    const stats = statsByCategory(player);
+    const positionRank = player.rankFantasy?.positions?.[0];
 
     const gamesThisWeek = player.numGamesInSchedulePeriod || 0;
 
@@ -51,6 +68,24 @@ export const convertPlayerObjects = (players) => {
       last1,
       last5,
       last10,
+      // Fleaflicker doesn't list games played, the average is points per game
+      gamesPlayed: avg ? Math.round(points / avg) : 0,
+      goals: stats.G,
+      assists: stats.Ast,
+      goalsAgainst: stats.GA,
+      // Listed as a percentage, shown like .932
+      savePct: stats['%'] === undefined ? undefined : stats['%'] / 100,
+      percentOwned: player.proPlayer.percentOwnedRatio === undefined
+        ? undefined
+        : Math.round(player.proPlayer.percentOwnedRatio * 100),
+      rank: player.rankFantasy?.ordinal,
+      positionRank: positionRank?.ordinal,
+      positionRankLabel: positionRank?.position?.label,
+      // Game to game spread of the player's points this season
+      consistency: player.seasonsStandartDeviation?.value,
+      trend1: trend(player.lastX?.[0]),
+      trend5: trend(player.lastX?.[1]),
+      trend10: trend(player.lastX?.[2]),
       hasGameToday,
       expandedData: {
         image: player.proPlayer?.headshotUrl,
@@ -59,6 +94,9 @@ export const convertPlayerObjects = (players) => {
     }
   })
 }
+
+// Bump when convertPlayerObjects changes, so players stored by an older version are refetched
+const PLAYERS_FORMAT = 2;
 
 const MINUTE = 60 * 1000;
 // Minimum time between stat refreshes while games are being played
@@ -110,6 +148,7 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   await setStoredEntries({
     hockey_players: finalPlayers,
     hockey_playersMeta: {
+      format: PLAYERS_FORMAT,
       stopIfNoPoints,
       statsEpoch: fetchStart,
       activityEpoch: fetchStart - ACTIVITY_OVERLAP,
@@ -200,6 +239,7 @@ const loadHockeyPlayersNow = async (leagueId, stopIfNoPoints, forceRefresh) => {
     if (
       !storedPlayers ||
       !meta ||
+      meta.format !== PLAYERS_FORMAT ||
       meta.stopIfNoPoints !== stopIfNoPoints ||
       statsNeedRefresh(meta.statsEpoch, now, forceRefresh)
     ) {

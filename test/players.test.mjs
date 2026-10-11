@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, storage, setLeague, resetStorage, withoutIndexedDb } from './support/fakeFlea.mjs';
 import { loadHockeyPlayers, LOAD_ERRORS } from '../src/hockey/collections/players.js';
 import { getLocalStorage, setLocalStorage } from '../src/utils/storage.js';
-import { getStored } from '../src/utils/db.js';
+import { getStored, setStored } from '../src/utils/db.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -169,6 +169,18 @@ test('stats are refetched while a game is being played, at most every 30 minutes
 test('without a stored schedule stats are refetched after 30 minutes', async () => {
   await load();
   advanceClock(31 * MINUTE);
+  flea.calls = [];
+
+  await load();
+
+  assert.equal(flea.callsTo('FetchPlayerListing'), 3);
+});
+
+test('players stored by an older version are refetched', async () => {
+  await load();
+  const meta = await getStored('hockey_playersMeta');
+  delete meta.format;
+  await setStored('hockey_playersMeta', meta);
   flea.calls = [];
 
   await load();

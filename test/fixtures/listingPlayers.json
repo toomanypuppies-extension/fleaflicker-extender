@@ -1,0 +1,167 @@
+{
+  "skater": {
+    "proPlayer": {
+      "id": 4033,
+      "nameFull": "Auston Matthews",
+      "proTeamAbbreviation": "TOR",
+      "position": "C",
+      "headshotUrl": "https://d26bvpybnxg29h.cloudfront.net/nhl/4033.png",
+      "positionEligibility": [
+        "C"
+      ],
+      "percentOwnedRatio": 0.98
+    },
+    "viewingActualPoints": {
+      "value": 43.25,
+      "formatted": "43.25"
+    },
+    "viewingActualStats": [
+      {
+        "category": {
+          "abbreviation": "G"
+        },
+        "value": {
+          "value": 4,
+          "formatted": "4"
+        }
+      },
+      {
+        "category": {
+          "abbreviation": "Ast"
+        },
+        "value": {
+          "value": 6,
+          "formatted": "6"
+        }
+      }
+    ],
+    "viewingActualPointsAverage": {
+      "value": 7.2083335,
+      "formatted": "7.21"
+    },
+    "owner": {
+      "name": "Dumpster Fire Brigade"
+    },
+    "rankFantasy": {
+      "ordinal": 6,
+      "positions": [
+        {
+          "position": {
+            "label": "C"
+          },
+          "ordinal": 4
+        }
+      ]
+    },
+    "lastX": [
+      {
+        "value": {
+          "value": 17.45,
+          "formatted": "17.45"
+        },
+        "duration": 1,
+        "overPerforming": true
+      },
+      {
+        "value": {
+          "value": 8.5,
+          "formatted": "8.5"
+        },
+        "duration": 5
+      },
+      {
+        "value": {
+          "value": 7.21,
+          "formatted": "7.21"
+        },
+        "duration": 10
+      }
+    ],
+    "seasonsStandartDeviation": {
+      "value": 6.4310074,
+      "formatted": "6.43"
+    }
+  },
+  "goalie": {
+    "proPlayer": {
+      "id": 8468,
+      "nameFull": "Jeremy Swayman",
+      "proTeamAbbreviation": "BOS",
+      "position": "G",
+      "headshotUrl": "https://d26bvpybnxg29h.cloudfront.net/nhl/8468.png",
+      "positionEligibility": [
+        "G"
+      ],
+      "percentOwnedRatio": 0.98
+    },
+    "viewingActualPoints": {
+      "value": 35,
+      "formatted": "35"
+    },
+    "viewingActualStats": [
+      {
+        "category": {
+          "abbreviation": "GA"
+        },
+        "value": {
+          "value": 9,
+          "formatted": "9"
+        }
+      },
+      {
+        "category": {
+          "abbreviation": "%"
+        },
+        "value": {
+          "value": 93.233086,
+          "formatted": ".932"
+        }
+      }
+    ],
+    "viewingActualPointsAverage": {
+      "value": 5.8333335,
+      "formatted": "5.83"
+    },
+    "owner": {
+      "name": "Tistic Tmuni"
+    },
+    "rankFantasy": {
+      "ordinal": 19,
+      "positions": [
+        {
+          "position": {
+            "label": "G"
+          },
+          "ordinal": 1
+        }
+      ]
+    },
+    "lastX": [
+      {
+        "value": {
+          "value": 5.5,
+          "formatted": "5.5"
+        },
+        "duration": 1
+      },
+      {
+        "value": {
+          "value": 4.7,
+          "formatted": "4.7"
+        },
+        "duration": 5
+      },
+      {
+        "value": {
+          "value": 5.83,
+          "formatted": "5.83"
+        },
+        "duration": 10
+      }
+    ],
+    "seasonsStandartDeviation": {
+      "value": 4.758034,
+      "formatted": "4.76"
+    }
+  }
+}
