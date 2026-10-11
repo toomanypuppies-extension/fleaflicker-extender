@@ -172,50 +172,58 @@ const gamesByDate = (schedule) => {
 
 const gameFor = (games, team) => games?.find(game => game.away === team || game.home === team);
 
+const groupSlots = (groups, group) => (groups || []).filter(g => g.group === group).flatMap(g => g.slots);
+
+const round = (value) => Math.round(value * 100) / 100;
+
 /**
- * Expected points a team adds over the rest of the matchup period, if it starts its best lineup
- * each day: { expected, variance, days: [{ date, expected }], players: [...] }.
- * Players on IR, and injured players (DTD too), are expected to score nothing. Games that started
- * before `scoreAsOf` are left out, their points are already in the score.
- * @param roster from loadTeamRosters, for who's on the team and who's locked into today's lineup
+ * Expected points a team adds over the rest of a matchup period with the lineups it has set:
+ * { expected, bench, best, variance, days: [{ day, date, expected, bench, best, hasLineup }], players }.
+ * Only starters' points count. `bench` is what benched players with games are expected to score,
+ * `best` what the best possible lineup each day would score instead. Injured players, DTD too,
+ * are expected to score nothing. Games that started before `scoreAsOf` are left out, their points
+ * are already in the score.
+ * @param lineupFor (day) => that day's roster groups, like loadTeamRosters', or null if not known
  * @param playersById the player table's players, for averages
  */
 export const projectTeam = ({
-  roster, playersById, startSlots, schedule, period, method = DEFAULT_PROJECTION_METHOD, teamGames = {}, scoreAsOf = Date.now(),
+  lineupFor, playersById, startSlots = [], schedule, period, method = DEFAULT_PROJECTION_METHOD, teamGames = {}, scoreAsOf = Date.now(),
 }) => {
-  const empty = { expected: 0, variance: 0, days: [], players: [] };
-  if (!roster || !period || !startSlots?.length) {
-    return empty;
+  if (!period) {
+    return { expected: 0, bench: 0, best: 0, variance: 0, days: [], players: [] };
   }
 
-  const groupSlots = (group) => roster.groups.filter(g => g.group === group).flatMap(g => g.slots);
-  const starters = groupSlots(ROSTER_GROUPS.start);
-  const active = [...starters, ...groupSlots(ROSTER_GROUPS.bench)].map(slot => slot.player).filter(Boolean);
-
-  const players = active.map(rosterPlayer => {
-    const player = { ...rosterPlayer, ...playersById.get(rosterPlayer.id) };
-    const positions = player.positions || (player.position || '').split('/');
-    const injured = IR_ELIGIBLE_INJURIES.includes(player.injury);
-    const rate = pointsPerGame(player, method);
-    const chance = injured ? 0 : startRate({ ...player, positions }, teamGames);
-    const spread = player.consistency ?? Math.abs(rate) * DEFAULT_SPREAD_RATIO;
-    return {
-      id: player.id,
-      name: player.name,
-      team: player.team,
-      position: player.position,
-      positions,
-      injury: player.injury,
-      injured,
-      rate,
-      startRate: chance,
-      // Mean and variance of one of the player's team's games
-      gameValue: chance * rate,
-      gameVariance: chance * (spread ** 2 + rate ** 2) - (chance * rate) ** 2,
-      games: 0,
-      expected: 0,
-    };
-  });
+  const players = new Map();
+  const playerFor = (rosterPlayer) => {
+    if (!players.has(rosterPlayer.id)) {
+      const player = { ...rosterPlayer, ...playersById.get(rosterPlayer.id) };
+      const positions = player.positions || (player.position || '').split('/');
+      const injured = IR_ELIGIBLE_INJURIES.includes(player.injury);
+      const rate = pointsPerGame(player, method);
+      const chance = injured ? 0 : startRate({ ...player, positions }, teamGames);
+      const spread = player.consistency ?? Math.abs(rate) * DEFAULT_SPREAD_RATIO;
+      players.set(rosterPlayer.id, {
+        id: player.id,
+        name: player.name,
+        team: player.team,
+        position: player.position,
+        positions,
+        injury: player.injury,
+        injured,
+        rate,
+        startRate: chance,
+        // Mean and variance of one of the player's team's games
+        gameValue: chance * rate,
+        gameVariance: chance * (spread ** 2 + rate ** 2) - (chance * rate) ** 2,
+        // Games in the lineup, and on the bench
+        games: 0,
+        benchGames: 0,
+        expected: 0,
+        benchExpected: 0,
+      });
+    }
+    return players.get(rosterPlayer.id);
+  };
 
   const games = gamesByDate(schedule);
   const allSlots = expandSlots(startSlots);
@@ -225,51 +233,76 @@ export const projectTeam = ({
 
   for (let day = firstDay; day <= period.lastDay; day++) {
     const date = dayDate(period, day);
-    const dayGames = games.get(date);
-    let slots = allSlots;
-    if (day === firstDay) {
-      // Starters whose game has begun are locked in, their slots can't be used again today
-      const locked = starters.filter(slot => {
-        const game = slot.player && gameFor(dayGames, slot.player.team);
-        return game && game.start <= scoreAsOf;
-      });
-      slots = [...allSlots];
-      for (const slot of locked) {
-        const index = slots.findIndex(candidate => candidate.label === slot.label);
-        if (index >= 0) slots.splice(index, 1);
-      }
+    const groups = lineupFor(day);
+    if (!groups) {
+      days.push({ day, date, expected: 0, bench: 0, best: 0, hasLineup: false });
+      continue;
     }
+    const dayGames = games.get(date);
+    const gameOf = (player) => gameFor(dayGames, player.team);
+    const playsLater = (player) => {
+      const game = gameOf(player);
+      return !!game && game.start > scoreAsOf;
+    };
 
-    const candidates = players
-      .map((player, index) => ({ player, index, game: gameFor(dayGames, player.team) }))
-      .filter(({ player, game }) => game && game.start > scoreAsOf && player.gameValue > 0);
-    const lineup = bestLineup(candidates.map(({ player }) => ({ value: player.gameValue, positions: player.positions })), slots);
+    const starterSlots = groupSlots(groups, ROSTER_GROUPS.start).filter(slot => slot.player);
+    const benched = groupSlots(groups, ROSTER_GROUPS.bench).map(slot => slot.player).filter(Boolean);
+    let expected = 0;
+    let bench = 0;
 
-    let dayExpected = 0;
-    for (const candidateIndex of lineup) {
-      if (candidateIndex === null) continue;
-      const { player } = candidates[candidateIndex];
+    for (const slot of starterSlots) {
+      if (!playsLater(slot.player)) continue;
+      const player = playerFor(slot.player);
       player.games += 1;
       player.expected += player.gameValue;
-      dayExpected += player.gameValue;
+      expected += player.gameValue;
       variance += player.gameVariance;
     }
-    days.push({ day, date, expected: dayExpected });
+    for (const rosterPlayer of benched) {
+      const player = playerFor(rosterPlayer);
+      if (!playsLater(rosterPlayer) || player.gameValue <= 0) continue;
+      player.benchGames += 1;
+      player.benchExpected += player.gameValue;
+      bench += player.gameValue;
+    }
+    // Starters not playing later today still show in the player list
+    starterSlots.forEach(slot => playerFor(slot.player));
+
+    // The best lineup from everyone with a game still to come. Starters whose game has begun are
+    // locked in, their slots can't be used again.
+    const openSlots = [...allSlots];
+    for (const slot of starterSlots) {
+      const game = gameOf(slot.player);
+      if (game && game.start <= scoreAsOf) {
+        const index = openSlots.findIndex(candidate => candidate.label === slot.label);
+        if (index >= 0) openSlots.splice(index, 1);
+      }
+    }
+    const candidates = [...starterSlots.map(slot => slot.player), ...benched]
+      .filter(playsLater)
+      .map(playerFor)
+      .filter(player => player.gameValue > 0);
+    const lineup = bestLineup(candidates.map(player => ({ value: player.gameValue, positions: player.positions })), openSlots);
+    const best = lineup.reduce((total, index) => total + (index === null ? 0 : candidates[index].gameValue), 0);
+
+    days.push({ day, date, expected: round(expected), bench: round(bench), best: round(best), hasLineup: true });
   }
 
-  const round = (value) => Math.round(value * 100) / 100;
+  const sum = (key) => round(days.reduce((total, day) => total + day[key], 0));
   return {
-    expected: round(days.reduce((total, day) => total + day.expected, 0)),
+    expected: sum('expected'),
+    bench: sum('bench'),
+    best: sum('best'),
     variance,
-    days: days.map(day => ({ ...day, expected: round(day.expected) })),
-    players: players
-      .map(player => ({ ...player, expected: round(player.expected) }))
-      .sort((a, b) => b.expected - a.expected || b.rate - a.rate),
+    days,
+    players: [...players.values()]
+      .map(player => ({ ...player, expected: round(player.expected), benchExpected: round(player.benchExpected) }))
+      .sort((a, b) => b.expected - a.expected || b.benchExpected - a.benchExpected || b.rate - a.rate),
   };
 };
 
-// Games a projection expects the team to start
-export const gamesLeft = (projection) => projection.players.reduce((total, player) => total + player.games, 0);
+// Games a projection expects the team to start or bench
+export const gamesLeft = (projection) => projection.players.reduce((total, player) => total + player.games + player.benchGames, 0);
 
 /**
  * A win chance as a percentage. While games are left nothing is certain, so near certainties

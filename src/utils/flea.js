@@ -176,7 +176,10 @@ export const getLeagueBoxscore = (leagueId, gameId, scoringPeriod) => fetchLeagu
 
 // A team's current roster, grouped into starters, bench, IR and taxi
 // Ex https://www.fleaflicker.com/api/FetchRoster?sport=NHL&league_id=12089&team_id=63133
-export const getTeamRoster = (leagueId, teamId) => fetchLeagueEndpoint('FetchRoster', leagueId, { team_id: teamId });
+// With a scoring period (day), the lineup set for that day, which can be a future one
+export const getTeamRoster = (leagueId, teamId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchRoster', leagueId, { team_id: teamId, ...(scoringPeriod && { scoring_period: scoringPeriod }) }
+);
 
 /**
  * Settings from the league's rules page, through the proxy: transactionLimit ({ period, limit } or null)

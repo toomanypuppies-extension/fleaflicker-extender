@@ -46,6 +46,8 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
     boxscores: {},
     // team id to FetchRoster response
     rosters: {},
+    // FetchRoster responses for a day, by `${teamId}:${day}`
+    dayRosters: {},
     // The proxy's rules page settings, null when the route isn't available
     settings: {
       transactionLimit: { period: 'week', limit: 7 },
@@ -102,7 +104,9 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
       case 'FetchLeagueBoxscore':
         return fake.boxscores[`${params?.fantasy_game_id}:${params?.scoring_period}`] || null;
       case 'FetchRoster':
-        return fake.rosters[params?.team_id] || null;
+        return params?.scoring_period
+          ? fake.dayRosters[`${params.team_id}:${params.scoring_period}`] || null
+          : fake.rosters[params?.team_id] || null;
       case 'LeagueSettings':
         return fake.settings;
       default:

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup, groupByMatchup,
+  loadLeagueInfo, loadTeamRosters, loadPeriodMatchups, loadDayRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup, groupByMatchup,
 } from '../src/hockey/collections/league.js';
 import { ACTIVITY_KINDS } from '../src/hockey/collections/activity.js';
 
@@ -247,4 +247,47 @@ test("teams are grouped by matchup, the user's matchup first with their team fir
   assert.equal(groupByMatchup(summaries, scoreboard, 4)[0].matchup.homeScore, '40');
   assert.equal(groupByMatchup(summaries, scoreboard)[2].matchup, null);
   assert.deepEqual(ids(groupByMatchup(summaries, undefined)), [[1, 2, 3, 4, 5]]);
+});
+
+test("other weeks' matchups: final ones are kept, others are refetched hourly", async () => {
+  const league = await info();
+  const game = (id, away, home, final) => ({ id, away: { id: away }, home: { id: home }, isFinalScore: final, awayScore: { score: { formatted: '10' } } });
+  flea.scoreboardsByDay[1] = { games: [game('p1', 1, 2, true)] };
+  flea.scoreboardsByDay[14] = { games: [game('p3', 1, 3, false)] };
+  flea.calls = [];
+
+  // The current week is the scoreboard's
+  assert.equal(await settle(loadPeriodMatchups(LEAGUE, league.scoreboard, 2)), league.scoreboard.matchups);
+  assert.deepEqual(flea.calls, []);
+
+  const past = await settle(loadPeriodMatchups(LEAGUE, league.scoreboard, 1, { now: Date.now() }));
+  assert.deepEqual(past.map(m => [m.gameId, m.awayId, m.homeId, m.awayScore, m.final]), [['p1', 1, 2, '10', true]]);
+  const future = await settle(loadPeriodMatchups(LEAGUE, league.scoreboard, 3, { now: Date.now() }));
+  assert.equal(future[0].gameId, 'p3');
+  assert.equal(flea.callsTo('FetchLeagueScoreboard'), 2);
+
+  flea.calls = [];
+  await settle(loadPeriodMatchups(LEAGUE, league.scoreboard, 1, { now: Date.now() + 2 * HOUR }));
+  await settle(loadPeriodMatchups(LEAGUE, league.scoreboard, 3, { now: Date.now() + 2 * HOUR }));
+  assert.equal(flea.callsTo('FetchLeagueScoreboard'), 1);
+});
+
+test("the lineups teams set for each day are kept for a few minutes", async () => {
+  flea.dayRosters['1:9'] = FIXTURES.roster;
+  flea.dayRosters['1:10'] = FIXTURES.roster;
+  const now = Date.now();
+
+  const lineups = await settle(loadDayRosters(LEAGUE, [1], [9, 10, 11], { now }));
+  assert.deepEqual(Object.keys(lineups[1]), ['9', '10']);
+  assert.ok(lineups[1][9].some(group => group.group === 'START'));
+  assert.equal(flea.callsTo('FetchRoster'), 3);
+
+  flea.calls = [];
+  await settle(loadDayRosters(LEAGUE, [1], [9, 10, 11], { now: now + 5 * MINUTE }));
+  // Only the day that couldn't be loaded is tried again
+  assert.equal(flea.callsTo('FetchRoster'), 1);
+
+  flea.calls = [];
+  await settle(loadDayRosters(LEAGUE, [1], [10, 11], { now: now + 20 * MINUTE }));
+  assert.equal(flea.callsTo('FetchRoster'), 2);
 });

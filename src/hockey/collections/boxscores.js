@@ -1,7 +1,7 @@
 import { getStored, setStoredEntries } from "../../utils/db";
-import { getLeagueBoxscore, getLeagueScoreboard } from "../../utils/flea";
+import { getLeagueBoxscore } from "../../utils/flea";
 import { easternDay } from "../../utils/util";
-import { ROSTER_GROUPS } from "./league";
+import { ROSTER_GROUPS, loadPeriodMatchups } from "./league";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -79,10 +79,12 @@ export const dayDate = (period, day) => new Date(
 ).toISOString().slice(0, 10);
 
 /**
- * Matchup periods that have started, most recent last, limited to the range's count
+ * Matchup periods that have started, up to `endOrdinal` if given, most recent last, limited to the
+ * range's count
  */
-export const periodsInRange = (scoreboard, rangeKey, now) => {
-  const started = (scoreboard?.periods || []).filter(period => period.start <= now);
+export const periodsInRange = (scoreboard, rangeKey, now, endOrdinal = null) => {
+  const started = (scoreboard?.periods || [])
+    .filter(period => period.start <= now && (endOrdinal === null || period.ordinal <= endOrdinal));
   const count = COMPARE_RANGES[rangeKey]?.periods ?? 1;
   return count === Infinity ? started : started.slice(-count);
 };
@@ -96,30 +98,24 @@ const findMatchup = (matchups, teamId) => matchups.find(m => m.awayId === teamId
  * that are over are stored for good, so after the first load only today's are fetched.
  * @param {(done: number, total: number) => void} onProgress called as box scores are fetched
  */
-export const loadTeamDays = async (leagueId, { scoreboard, teamIds, range = 'matchup', now = Date.now(), onProgress }) => {
-  const periods = periodsInRange(scoreboard, range, now);
+export const loadTeamDays = async (leagueId, {
+  scoreboard, teamIds, range = 'matchup', endPeriod = null, now = Date.now(), onProgress,
+}) => {
+  const periods = periodsInRange(scoreboard, range, now, endPeriod);
   const stored = (await getStored('hockey_boxscores', leagueId)) || {};
-  const storedMatchups = (await getStored('hockey_matchups', leagueId)) || {};
   const boxscores = { ...stored };
-  const matchupsByPeriod = { ...storedMatchups };
   let failed = 0;
 
-  const save = () => setStoredEntries({ hockey_boxscores: boxscores, hockey_matchups: matchupsByPeriod }, leagueId);
+  const save = () => setStoredEntries({ hockey_boxscores: boxscores }, leagueId);
 
   // Which matchup each team was in, for each period
+  const matchupsByPeriod = {};
   for (const period of periods) {
-    if (period.ordinal === scoreboard.currentOrdinal) {
-      matchupsByPeriod[period.ordinal] = scoreboard.matchups.map(({ gameId, awayId, homeId }) => ({ gameId, awayId, homeId }));
-    } else if (!matchupsByPeriod[period.ordinal]) {
-      try {
-        const response = await getLeagueScoreboard(leagueId, period.firstDay);
-        matchupsByPeriod[period.ordinal] = (response?.games || []).map(game => ({
-          gameId: game.id, awayId: game.away?.id, homeId: game.home?.id,
-        }));
-      } catch (err) {
-        console.error(err);
-        failed++;
-      }
+    const matchups = await loadPeriodMatchups(leagueId, scoreboard, period.ordinal, { now });
+    if (matchups) {
+      matchupsByPeriod[period.ordinal] = matchups;
+    } else {
+      failed++;
     }
   }
 
@@ -161,7 +157,7 @@ export const loadTeamDays = async (leagueId, { scoreboard, teamIds, range = 'mat
     }
   }
   onProgress?.(toFetch.length, toFetch.length);
-  if (toFetch.length || Object.keys(matchupsByPeriod).length !== Object.keys(storedMatchups).length) {
+  if (toFetch.length) {
     await save();
   }
 

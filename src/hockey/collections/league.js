@@ -53,6 +53,17 @@ const convertRules = (rules) => ({
     .map(position => ({ label: position.label, eligibility: position.eligibility || [], count: position.start })),
 });
 
+const convertMatchups = (games) => (games || []).map(game => ({
+  // For box scores
+  gameId: game.id,
+  awayId: game.away?.id,
+  homeId: game.home?.id,
+  awayScore: game.awayScore?.score?.formatted ?? null,
+  homeScore: game.homeScore?.score?.formatted ?? null,
+  inProgress: !!game.isInProgress,
+  final: !!game.isFinalScore,
+}));
+
 // Matchup periods run from the start of their first day to the start of the next period
 const convertScoreboard = (scoreboard) => {
   const periods = (scoreboard.eligibleSchedulePeriods || [])
@@ -71,15 +82,7 @@ const convertScoreboard = (scoreboard) => {
     periods,
     currentOrdinal: scoreboard.schedulePeriod?.ordinal,
     // This period's head-to-head matchups
-    matchups: (scoreboard.games || []).map(game => ({
-      // For box scores
-      gameId: game.id,
-      awayId: game.away?.id,
-      homeId: game.home?.id,
-      awayScore: game.awayScore?.score?.formatted ?? null,
-      homeScore: game.homeScore?.score?.formatted ?? null,
-      inProgress: !!game.isInProgress,
-    })),
+    matchups: convertMatchups(scoreboard.games),
   };
 };
 
@@ -174,6 +177,40 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
   }
 };
 
+// Other weeks' matchups can change only until they're final
+const PERIOD_MATCHUPS_MAX_AGE = HOUR;
+
+/**
+ * The matchups in any matchup period, like the scoreboard's: final scores for past periods, pairings
+ * for future ones. Final periods are stored for good. Null if they can't be loaded.
+ */
+export const loadPeriodMatchups = async (leagueId, scoreboard, ordinal, { now = Date.now() } = {}) => {
+  if (ordinal === scoreboard?.currentOrdinal) {
+    return scoreboard.matchups;
+  }
+  const stored = (await getStored('hockey_periods', leagueId)) || {};
+  const entry = stored[ordinal];
+  if (entry && (entry.final || now - entry.fetchedAt < PERIOD_MATCHUPS_MAX_AGE)) {
+    return entry.matchups;
+  }
+  const period = scoreboard?.periods.find(candidate => candidate.ordinal === ordinal);
+  if (!period) {
+    return null;
+  }
+  try {
+    const response = await getLeagueScoreboard(leagueId, period.firstDay);
+    const matchups = convertMatchups(response?.games);
+    const final = matchups.length > 0 && matchups.every(matchup => matchup.final);
+    // Read again, another load may have stored a period meanwhile
+    const latest = (await getStored('hockey_periods', leagueId)) || {};
+    await setStored('hockey_periods', { ...latest, [ordinal]: { matchups, fetchedAt: now, final } }, leagueId);
+    return matchups;
+  } catch (err) {
+    console.error(err);
+    return entry?.matchups || null;
+  }
+};
+
 const convertRoster = (roster) => (roster.groups || []).map(group => ({
   // Fleaflicker leaves out the bench's group
   group: group.group || ROSTER_GROUPS.bench,
@@ -196,6 +233,45 @@ const newestActivityFor = (teamId, activityItems) => Math.max(
   0,
   ...activityItems.filter(item => item.teamId === teamId).map(item => item.time)
 );
+
+// Owners can change lineups for today and later days at any time
+const DAY_ROSTER_MAX_AGE = 15 * MINUTE;
+
+/**
+ * The lineups teams have set for the given days (fleaflicker's day ordinals), as
+ * { [teamId]: { [day]: groups } } like loadTeamRosters' groups. Stored for a few minutes.
+ * Days that couldn't be loaded are left out.
+ */
+export const loadDayRosters = async (leagueId, teamIds, days, { now = Date.now() } = {}) => {
+  const stored = (await getStored('hockey_dayRosters', leagueId)) || {};
+  const minDay = Math.min(...days);
+  // Earlier days are over, their lineups aren't needed again
+  const kept = Object.fromEntries(Object.entries(stored).filter(([key]) => Number(key.split(':')[1]) >= minDay));
+  let changed = Object.keys(kept).length !== Object.keys(stored).length;
+
+  for (const teamId of teamIds) {
+    for (const day of days) {
+      const key = `${teamId}:${day}`;
+      if (kept[key] && now - kept[key].fetchedAt < DAY_ROSTER_MAX_AGE) continue;
+      try {
+        const roster = await getTeamRoster(leagueId, teamId, day);
+        if (roster) {
+          kept[key] = { groups: convertRoster(roster), fetchedAt: now };
+          changed = true;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+  if (changed) {
+    await setStored('hockey_dayRosters', kept, leagueId);
+  }
+
+  return Object.fromEntries(teamIds.map(teamId => [teamId, Object.fromEntries(days
+    .filter(day => kept[`${teamId}:${day}`])
+    .map(day => [day, kept[`${teamId}:${day}`].groups]))]));
+};
 
 /**
  * Every team's roster, keyed by team id. A team's stored roster is used until the activity log

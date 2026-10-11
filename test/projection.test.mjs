@@ -55,22 +55,22 @@ test('the best lineup beats filling slots in order', () => {
   assert.deepEqual(bestLineup([], slots), [null, null, null]);
 });
 
-test('a team projection starts the best lineup each remaining day', () => {
+test("a team projection uses each day's set lineup, and calls out bench points", () => {
   const rosterPlayer = (id, team, position = 'C') => ({ id, name: `P${id}`, team, position });
-  const roster = {
-    groups: [
-      {
-        group: 'START',
-        slots: [
-          { label: 'C', player: rosterPlayer(1, 'SEA') },
-          { label: 'C', player: rosterPlayer(2, 'EDM') },
-          { label: 'G', player: rosterPlayer(5, 'SEA', 'G') },
-        ],
-      },
-      { group: 'BENCH', slots: [{ label: 'BN', player: rosterPlayer(3, 'SEA') }, { label: 'BN', player: rosterPlayer(4, 'SEA') }] },
-      { group: 'INJURED', slots: [{ label: 'IR', player: rosterPlayer(6, 'SEA') }] },
-    ],
-  };
+  const p1 = rosterPlayer(1, 'SEA');
+  const p2 = rosterPlayer(2, 'EDM');
+  const p3 = rosterPlayer(3, 'SEA');
+  const p4 = rosterPlayer(4, 'SEA');
+  const p5 = rosterPlayer(5, 'SEA', 'G');
+  const lineup = (starters, bench) => [
+    { group: 'START', slots: starters.map(([label, player]) => ({ label, player })) },
+    { group: 'BENCH', slots: bench.map(player => ({ label: 'BN', player })) },
+    { group: 'INJURED', slots: [{ label: 'IR', player: rosterPlayer(6, 'SEA') }] },
+  ];
+  const today = lineup([['C', p1], ['C', p2], ['G', p5]], [p3, p4]);
+  const tomorrow = lineup([['C', p3], ['C', p2], ['G', p5]], [p1, p4]);
+  const lineups = { 9: today, 10: tomorrow, 11: tomorrow, 12: tomorrow };
+
   const stats = (id, avg, more = {}) => [id, { id, avg, gamesPlayed: 10, positions: ['C'], ...more }];
   const playersById = new Map([
     stats(1, 3),
@@ -95,7 +95,7 @@ test('a team projection starts the best lineup each remaining day', () => {
   }];
 
   const projection = projectTeam({
-    roster,
+    lineupFor: day => lineups[day] || null,
     playersById,
     startSlots: [{ label: 'C', eligibility: ['C'], count: 2 }, { label: 'G', eligibility: ['G'], count: 1 }],
     schedule,
@@ -105,18 +105,22 @@ test('a team projection starts the best lineup each remaining day', () => {
     scoreAsOf: DAY_9,
   });
 
-  // Today P2 is locked into a C slot, so only one is open: P1 (3) plus the goalie (5 at a 50% start rate).
-  // Tomorrow both C slots are open: P2 (4) and P1 (3), plus the goalie.
-  assert.deepEqual(projection.days.map(day => [day.date, day.expected]), [
-    ['2026-10-07', 5.5], ['2026-10-08', 9.5], ['2026-10-09', 0], ['2026-10-10', 0], ['2026-10-11', 0],
+  // Today: P1 (3) and the goalie (5 at a 50% start rate) start, P3 (2) sits. P2's game has begun.
+  // Tomorrow the owner started P3 over P1: the best lineup would score 1 more.
+  // Day 13's lineup isn't known.
+  assert.deepEqual(projection.days.map(day => [day.date, day.expected, day.bench, day.best, day.hasLineup]), [
+    ['2026-10-07', 5.5, 2, 5.5, true],
+    ['2026-10-08', 8.5, 3, 9.5, true],
+    ['2026-10-09', 0, 0, 0, true],
+    ['2026-10-10', 0, 0, 0, true],
+    ['2026-10-11', 0, 0, 0, false],
   ]);
-  assert.equal(projection.expected, 15);
+  assert.deepEqual([projection.expected, projection.bench, projection.best], [14, 5, 15]);
   const byId = Object.fromEntries(projection.players.map(player => [player.id, player]));
-  assert.equal(byId[1].games, 2);
-  assert.equal(byId[3].games, 0);
+  assert.deepEqual([byId[1].games, byId[1].benchGames, byId[1].expected, byId[1].benchExpected], [1, 1, 3, 3]);
   // Injured players, DTD included, aren't expected to play. Players on IR aren't counted at all.
   assert.equal(byId[4].injured, true);
-  assert.equal(byId[4].expected, 0);
+  assert.equal(byId[4].benchExpected, 0);
   assert.equal(byId[6], undefined);
   assert.ok(projection.variance > 0);
 });
