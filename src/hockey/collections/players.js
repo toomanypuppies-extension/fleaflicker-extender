@@ -1,6 +1,6 @@
 import { getLocalStorage, clearLocalStorage } from "../../utils/storage";
 import { getStored, setStoredEntries } from "../../utils/db";
-import { convertEpochToTimeString } from "../../utils/util";
+import { convertEpochToTimeString, easternDay } from "../../utils/util";
 import { getAllHockeyPlayers } from "../../utils/flea";
 import { syncActivity, ACTIVITY_KINDS } from "./activity";
 
@@ -115,8 +115,6 @@ const MAX_ACTIVITY_PAGES = 5;
 // up to 5 min old (see TTL_BY_ENDPOINT in the proxy) and drift between our clock and flea's.
 // Re-applying activity is harmless, it just sets players to their current owner again.
 const ACTIVITY_OVERLAP = 6 * MINUTE;
-
-const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
 
 // Stats only change while NHL games are being played. Flea's requestedGames (todaysGame)
 // and numGamesInSchedulePeriod also roll over daily, so always refresh once per day.

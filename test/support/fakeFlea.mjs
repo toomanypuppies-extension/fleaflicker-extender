@@ -32,6 +32,12 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
     // Newest first, like fleaflicker
     activity: [],
     teams: ['Team A', 'Team B'],
+    // Responses for league endpoints, set by tests that need them
+    standings: null,
+    rules: null,
+    scoreboard: null,
+    // team id to FetchRoster response
+    rosters: {},
     calls: [],
     // (endpoint, params) => undefined | status code | 'network'
     fail: null,
@@ -67,7 +73,13 @@ export const createFakeFlea = ({ withPoints = 75, withoutPoints = 45 } = {}) => 
           resultTotal: fake.activity.length,
         };
       case 'FetchLeagueStandings':
-        return { divisions: [{ teams: fake.teams.map(name => ({ name })) }] };
+        return fake.standings || { divisions: [{ teams: fake.teams.map(name => ({ name })) }] };
+      case 'FetchLeagueRules':
+        return fake.rules;
+      case 'FetchLeagueScoreboard':
+        return fake.scoreboard;
+      case 'FetchRoster':
+        return fake.rosters[params?.team_id] || null;
       default:
         return null;
     }

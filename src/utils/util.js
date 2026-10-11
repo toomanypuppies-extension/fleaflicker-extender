@@ -12,6 +12,9 @@ export const getSport = () => {
   return matches && matches[0].split("/")[0];
 }
 
+// The calendar day in the NHL's and fleaflicker's time zone, e.g. "1/5/2026"
+export const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
+
 export const convertEpochToTimeString = (epoch) => {
   return new Date(parseInt(epoch, 10)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

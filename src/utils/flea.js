@@ -146,3 +146,25 @@ export const getLeagueOwners = async (leagueId) => {
 
   return teams.map(team => team.name);
 }
+const fetchLeagueEndpoint = async (endpoint, leagueId, params = {}) => {
+  if (!leagueId) {
+    console.error('No league id provided. Failing call');
+    return;
+  }
+  const response = await fleaClient.get(buildUrl(endpoint), {
+    params: { sport: 'NHL', league_id: leagueId, ...params },
+  });
+  return response.data;
+}
+
+// Roster rules: positions (including IR spots), maxActive and maxRosterSize
+// Ex https://www.fleaflicker.com/api/FetchLeagueRules?sport=NHL&league_id=12089
+export const getLeagueRules = (leagueId) => fetchLeagueEndpoint('FetchLeagueRules', leagueId);
+
+// The current matchup period (schedulePeriod) and the season's others (eligibleSchedulePeriods)
+// Ex https://www.fleaflicker.com/api/FetchLeagueScoreboard?sport=NHL&league_id=12089
+export const getLeagueScoreboard = (leagueId) => fetchLeagueEndpoint('FetchLeagueScoreboard', leagueId);
+
+// A team's current roster, grouped into starters, bench, IR and taxi
+// Ex https://www.fleaflicker.com/api/FetchRoster?sport=NHL&league_id=12089&team_id=63133
+export const getTeamRoster = (leagueId, teamId) => fetchLeagueEndpoint('FetchRoster', leagueId, { team_id: teamId });
