@@ -86,8 +86,6 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
   }
 }
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
   let playersList = [];
   let offset = 0;
@@ -117,9 +115,6 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
       console.log('local env, exiting getAllHockeyPlayers early')
       morePlayersLeft = false;
     }
-
-    // slow down fetch players to try to stay under 90/min limit
-    await sleep(750);
   }
 
   return playersList;
