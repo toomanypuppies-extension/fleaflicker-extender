@@ -525,6 +525,56 @@
         },
         "value": 182
       }
+    ],
+    "games": [
+      {
+        "id": "3603193",
+        "away": {
+          "id": 63145,
+          "name": "Chicken and Raffls"
+        },
+        "home": {
+          "id": 63134,
+          "name": "Hellbuycky Barnes"
+        },
+        "awayScore": {
+          "score": {
+            "value": 216.99998,
+            "formatted": "217"
+          }
+        },
+        "homeScore": {
+          "score": {
+            "value": 117.00001,
+            "formatted": "117"
+          }
+        },
+        "isInProgress": true
+      },
+      {
+        "id": "3603195",
+        "away": {
+          "id": 63154,
+          "name": "Celebrini Dion"
+        },
+        "home": {
+          "id": 63141,
+          "name": "I Really Like Slop!"
+        },
+        "awayScore": {
+          "score": {
+            "value": 225.60002,
+            "formatted": "225.6"
+          }
+        },
+        "homeScore": {
+          "score": {
+            "value": 194.65,
+            "formatted": "194.65"
+          }
+        },
+        "isInProgress": true
+      }
     ]
   },
   "roster": {

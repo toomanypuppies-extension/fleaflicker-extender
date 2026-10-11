@@ -61,6 +61,27 @@ const convertScoreboard = (scoreboard) => {
   return {
     periods,
     currentOrdinal: scoreboard.schedulePeriod?.ordinal,
+    // This period's head-to-head matchups
+    matchups: (scoreboard.games || []).map(game => ({
+      awayId: game.away?.id,
+      homeId: game.home?.id,
+      awayScore: game.awayScore?.score?.formatted ?? null,
+      homeScore: game.homeScore?.score?.formatted ?? null,
+      inProgress: !!game.isInProgress,
+    })),
+  };
+};
+
+// A team's current opponent and the score, from the team's side: { opponentId, score, opponentScore, inProgress }
+export const currentMatchup = (scoreboard, teamId) => {
+  const matchup = scoreboard?.matchups?.find(m => m.awayId === teamId || m.homeId === teamId);
+  if (!matchup) return null;
+  const home = matchup.homeId === teamId;
+  return {
+    opponentId: home ? matchup.awayId : matchup.homeId,
+    score: home ? matchup.homeScore : matchup.awayScore,
+    opponentScore: home ? matchup.awayScore : matchup.homeScore,
+    inProgress: matchup.inProgress,
   };
 };
 

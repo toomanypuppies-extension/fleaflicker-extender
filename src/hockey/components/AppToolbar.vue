@@ -14,6 +14,7 @@
     </div>
 
     <div class="toolbarActions">
+      <span v-if="addsLeft" class="addsLeft" title="Your team's adds and claims left this matchup">{{ addsLeft }}</span>
       <span class="freshness" :title="updatedTitle">{{ freshness }}</span>
       <button type="button" class="toolbarButton" :disabled="loading" aria-label="Refresh"
         title="Check fleaflicker for changes now" @click="$emit('refresh')">
@@ -43,6 +44,8 @@ export default {
     loading: Boolean,
     // When the players' stats were fetched
     updatedAt: Number,
+    // Your team's adds left this matchup, like "4 of 7 adds left"
+    addsLeft: String,
   },
   emits: ["update:activeTab", "refresh", "openHelp", "openSettings"],
   data() {
@@ -124,6 +127,14 @@ export default {
   margin-left: auto;
 }
 
+.addsLeft {
+  font-weight: 700;
+  padding: 0.15em 0.6em;
+  border-radius: 1em;
+  background: var(--teamSecondaryColor30Opacity);
+  white-space: nowrap;
+}
+
 .freshness {
   font-size: 0.85em;
   opacity: 0.8;
@@ -163,7 +174,15 @@ export default {
     display: none;
   }
 
-  .freshness {
+  .addsLeft {
+  font-weight: 700;
+  padding: 0.15em 0.6em;
+  border-radius: 1em;
+  background: var(--teamSecondaryColor30Opacity);
+  white-space: nowrap;
+}
+
+.freshness {
     display: none;
   }
 }

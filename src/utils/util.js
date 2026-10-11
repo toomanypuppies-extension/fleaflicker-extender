@@ -109,3 +109,18 @@ export const changeTimeZone = (date, timeZone) => {
     }),
   );
 }
+
+/**
+ * In the extension, the user's team from fleaflicker's top menu, whose Team item links to it when
+ * signed in (it's disabled when signed out). Null if it isn't there.
+ */
+export const findMyTeamIdOnPage = (leagueId) => {
+  const links = typeof document === 'undefined' ? [] : document.querySelectorAll('.navbar-nav a[href]');
+  for (const link of links) {
+    const match = link.getAttribute('href').match(/\/leagues\/(\d+)\/teams\/(\d+)/);
+    if (match && match[1] === String(leagueId) && link.textContent.trim() === 'Team') {
+      return parseInt(match[2], 10);
+    }
+  }
+  return null;
+};

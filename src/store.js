@@ -29,6 +29,11 @@ const initState = {
   statFilters: [],
   // Columns picked in the column chooser, empty for the defaults
   visibleColumnKeys: [],
+  // The user's team in this league, picked on the League tab or found on fleaflicker's page
+  myTeamId: null,
+  // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
+  timelineTeamId: null,
+  timelineFilters: [],
   owners: [],
   ownership: "",
   gamesByMatchup: null,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit,
+  loadLeagueInfo, loadTeamRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup,
 } from '../src/hockey/collections/league.js';
 import { ACTIVITY_KINDS } from '../src/hockey/collections/activity.js';
 
@@ -206,4 +206,12 @@ test('adds and claims in the matchup period count as acquisitions', () => {
 
   assert.equal(countAcquisitions(items, 1, period), 2);
   assert.equal(countAcquisitions(items, 1, undefined), 0);
+});
+
+test('the current matchup from either team', async () => {
+  const league = await info();
+
+  assert.deepEqual(currentMatchup(league.scoreboard, 63145), { opponentId: 63134, score: '217', opponentScore: '117', inProgress: true });
+  assert.deepEqual(currentMatchup(league.scoreboard, 63134), { opponentId: 63145, score: '117', opponentScore: '217', inProgress: true });
+  assert.equal(currentMatchup(league.scoreboard, 1), null);
 });

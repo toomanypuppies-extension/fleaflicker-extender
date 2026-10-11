@@ -3,6 +3,7 @@
     v-model:activeTab="activeTab"
     :loading="loading"
     :updatedAt="playersSavedAt"
+    :addsLeft="myAddsLeft"
     @refresh="refreshAll"
     @openHelp="setKey('openHelp', true)"
     @openSettings="setKey('openSettings', true)"
@@ -13,11 +14,13 @@
     <Filter />
     <PlayerList sport="nhl" :loading="loading" :players="tablePlayers" :gamesByTeam="gamesByTeam"
       :availabilityKnown="!!waiverSettings" @playerSelected="(player) => selectPlayer(player)" />
-    <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
-      @clearSelectedPlayer="clearSelectedPlayer" />
   </template>
   <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" />
-  <LeagueView v-else-if="activeTab === 'league'" />
+  <LeagueView v-else-if="activeTab === 'league'" :leagueId="leagueId" :league="league" :players="tablePlayers"
+    :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
+
+  <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
+    @clearSelectedPlayer="clearSelectedPlayer" />
 
   <SettingsModal @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
   <HelpModal />
@@ -25,7 +28,7 @@
 
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME, TABS } from "./constants";
-import { getLeagueId } from "../utils/util";
+import { getLeagueId, findMyTeamIdOnPage } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
 import Filter from "./components/Filter.vue";
@@ -38,9 +41,9 @@ import { loadHockeyPlayers, LOAD_ERRORS } from "./collections/players";
 import { clearAllStored } from "../utils/db";
 import { mapState } from "vuex";
 import { getGamesThisWeek } from "./api/nhlv2";
-import { loadLeagueInfo } from "./collections/league";
+import { loadLeagueInfo, currentPeriod, acquisitionLimit, countAcquisitions } from "./collections/league";
 import { recordLeagueVisit } from "../utils/recentLeagues";
-import { getActivityLog } from "./collections/activity";
+import { getActivityLog, syncActivity } from "./collections/activity";
 import { latestDrops, waiverStatus, availabilityLabel, availabilityOrder } from "./collections/waivers";
 import { loadLastSeasonStats, lastSeasonFields } from "./collections/lastSeason";
 import { usesLastSeason } from "./collections/columns";
@@ -64,6 +67,8 @@ export default {
       // The NHL's next four weeks, see convertSchedule
       schedule: null,
       activityItems: [],
+      // Back to when the stored activity is complete
+      activityCoveredFrom: null,
       // Last season's stats by player id, loaded when a last season column is shown
       lastSeasonById: null,
       now: Date.now(),
@@ -115,8 +120,28 @@ export default {
       }
     },
     async loadActivity() {
-      // Kept up to date by the player load, which reads new activity for ownership changes
-      this.activityItems = (await getActivityLog(this.leagueId)).items;
+      // The player load reads new activity for ownership changes. Counting your team's adds also needs
+      // it back to the start of the matchup.
+      const period = currentPeriod(this.league?.scoreboard, Date.now());
+      let log = null;
+      if (this.$store.state.myTeamId && period) {
+        try {
+          log = await syncActivity(this.leagueId, { since: period.start, maxPages: 10 });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      this.setActivityLog(log || await getActivityLog(this.leagueId));
+    },
+    setActivityLog(log) {
+      this.activityItems = log.items;
+      this.activityCoveredFrom = log.coveredFrom;
+    },
+    openPlayerById(playerId) {
+      const player = this.tablePlayers.find(candidate => candidate.id === playerId);
+      if (player) {
+        this.setKey('selectedPlayer', player);
+      }
     },
     async loadLastSeasonIfShown() {
       if (this.lastSeasonById || !usesLastSeason(this.$store.state.visibleColumnKeys)) {
@@ -130,6 +155,9 @@ export default {
         this.league = league;
         // For the Ownership filter
         this.setKey('owners', league.teams.map(team => team.name));
+        if (this.players.length) {
+          this.loadActivity();
+        }
       }
       recordLeagueVisit({ id: this.leagueId, name: league?.name, sport: "nhl" });
     },
@@ -170,6 +198,13 @@ export default {
   created() {
     this.leagueId = getLeagueId();
     // The standalone site keeps the tab in the URL, so it can be linked to
+    // In the extension, fleaflicker's menu links to the signed in user's team
+    if (!process.env.STANDALONE && !this.$store.state.myTeamId) {
+      const myTeamId = findMyTeamIdOnPage(this.leagueId);
+      if (myTeamId) {
+        this.setKey('myTeamId', myTeamId);
+      }
+    }
     const tabFromUrl = this.$route?.query?.tab;
     if (TABS.some(tab => tab.key === tabFromUrl)) {
       this.activeTab = tabFromUrl;
@@ -199,6 +234,17 @@ export default {
     },
     drops() {
       return latestDrops(this.activityItems);
+    },
+    // Like "4 of 7 adds left", once the activity back to the matchup's start has been read
+    myAddsLeft() {
+      const myTeamId = this.$store.state.myTeamId;
+      const limit = acquisitionLimit(this.league?.settings);
+      const period = currentPeriod(this.league?.scoreboard, this.now);
+      if (!myTeamId || limit === null || !period || this.activityCoveredFrom === null || this.activityCoveredFrom > period.start) {
+        return null;
+      }
+      const left = Math.max(limit - countAcquisitions(this.activityItems, myTeamId, period), 0);
+      return `${left} of ${limit} adds left`;
     },
     // Players with availability and last season's stats, for the table
     tablePlayers() {
