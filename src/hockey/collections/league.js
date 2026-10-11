@@ -240,9 +240,9 @@ const DAY_ROSTER_MAX_AGE = 15 * MINUTE;
 /**
  * The lineups teams have set for the given days (fleaflicker's day ordinals), as
  * { [teamId]: { [day]: groups } } like loadTeamRosters' groups. Stored for a few minutes.
- * Days that couldn't be loaded are left out.
+ * Days that couldn't be loaded are left out, and with `fetch` false only stored ones are returned.
  */
-export const loadDayRosters = async (leagueId, teamIds, days, { now = Date.now() } = {}) => {
+export const loadDayRosters = async (leagueId, teamIds, days, { now = Date.now(), fetch = true } = {}) => {
   const stored = (await getStored('hockey_dayRosters', leagueId)) || {};
   const minDay = Math.min(...days);
   // Earlier days are over, their lineups aren't needed again
@@ -253,6 +253,10 @@ export const loadDayRosters = async (leagueId, teamIds, days, { now = Date.now()
     for (const day of days) {
       const key = `${teamId}:${day}`;
       if (kept[key] && now - kept[key].fetchedAt < DAY_ROSTER_MAX_AGE) continue;
+      if (!fetch) {
+        delete kept[key];
+        continue;
+      }
       try {
         const roster = await getTeamRoster(leagueId, teamId, day);
         if (roster) {

@@ -5,38 +5,57 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span> All matchups
       </button>
       <h2>{{ teamName(teamIds[0]) }} vs {{ teamName(teamIds[1]) }}</h2>
+      <span class="periodLabel">Matchup {{ period.ordinal }}: {{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }}</span>
     </div>
 
     <section class="projectionSection containerColor" aria-labelledby="projectionHeading">
       <div class="sectionHeader">
-        <h3 id="projectionHeading">Projection</h3>
-        <label class="methodPicker">
+        <h3 id="projectionHeading">{{ phase === 'past' ? 'Result' : 'Projection' }}</h3>
+        <label v-if="phase !== 'past'" class="methodPicker">
           Points per game from
           <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
             <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
           </select>
         </label>
       </div>
-      <p class="note">
-        {{ methods[method].description }}
-        Each team is expected to start its best lineup each remaining day. Goalies count for the share of
-        their team's games they've started. Injured players, day to day included, count as zero.
-      </p>
-      <p class="note">
-        <template v-if="loadingLive">Updating scores…</template>
-        <template v-else>Scores as of {{ formatTime(scoreAsOf) }}. Games already under way count only what they've scored so far.</template>
-      </p>
+      <template v-if="phase !== 'past'">
+        <p class="note">
+          {{ methods[method].description }}
+          Only starters in the lineup each team has set for each day count. Goalies count for the share of
+          their team's games they've started. Injured players, day to day included, count as zero.
+        </p>
+        <p v-if="loadingLineups" class="note">Loading the lineups set for each day, using today's until then…</p>
+        <p v-else-if="missingLineups" class="note">Some days' lineups couldn't be loaded, today's lineup is used for them.</p>
+        <p v-if="phase === 'current'" class="note">
+          <template v-if="loadingLive">Updating scores…</template>
+          <template v-else>Scores as of {{ formatTime(scoreAsOf) }}. Games already under way count only what they've scored so far.</template>
+        </p>
+      </template>
 
       <div class="scoreboard">
         <div v-for="(teamId, index) in teamIds" :key="teamId" class="teamScore" :class="{ right: index === 1 }">
           <span class="scoreTeam"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</span>
-          <span class="finalScore">{{ format(projectedFinal[index]) }}</span>
-          <span class="scoreParts">{{ format(scores[index]) }} now + {{ format(projections[index].expected) }} to come</span>
-          <span class="scoreParts">{{ gamesLeft(projections[index]) }}</span>
+          <template v-if="phase === 'past'">
+            <span class="finalScore">{{ format(scores[index]) }}</span>
+            <span class="scoreParts">final</span>
+          </template>
+          <template v-else>
+            <span class="finalScore">{{ format(projectedFinal[index]) }}</span>
+            <span class="scoreParts">
+              <template v-if="phase === 'current'">{{ format(scores[index]) }} now + </template>{{ format(projections[index].expected) }} projected
+            </span>
+            <span class="scoreParts">{{ lineupGames(projections[index]) }}</span>
+            <span v-if="projections[index].bench > 0" class="callout">
+              {{ format(projections[index].bench) }} projected points on the bench
+            </span>
+            <span v-if="projections[index].best - projections[index].expected >= 0.1" class="callout">
+              Best lineup each day: +{{ format(projections[index].best - projections[index].expected) }}
+            </span>
+          </template>
         </div>
       </div>
 
-      <div class="winChance">
+      <div v-if="phase !== 'past'" class="winChance">
         <div class="meter" role="img" :aria-label="`Win chance: ${teamName(teamIds[0])} ${chance(win)}, ${teamName(teamIds[1])} ${chance(1 - win)}`">
           <span :style="{ width: percent(win), background: seriesColor(0) }"></span>
           <span :style="{ width: percent(1 - win), background: seriesColor(1) }"></span>
@@ -47,23 +66,24 @@
         </div>
       </div>
 
-      <BarChart v-if="dayRows.length" class="chart" title="Expected points by day" rowHeading="Day"
+      <BarChart v-if="dayRows.length" class="chart" title="Points by day" rowHeading="Day"
         :series="chartSeries(teamIds)" :rows="dayRows" />
 
-      <div class="playerTables">
+      <div v-if="phase !== 'past'" class="playerTables">
         <div v-for="(teamId, index) in teamIds" :key="teamId" class="playerTable">
           <h4><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</h4>
           <table>
             <thead>
               <tr>
                 <th scope="col">Player</th>
-                <th scope="col" title="Games they're expected to start">Games</th>
+                <th scope="col" title="Games left in the lineup">Starts</th>
                 <th scope="col">Pts/game</th>
                 <th scope="col">Expected</th>
+                <th scope="col" title="Games left on the bench, and their expected points">Bench</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="player in projections[index].players" :key="player.id" :class="{ idle: !player.games }">
+              <tr v-for="player in projections[index].players" :key="player.id" :class="{ idle: !player.games && !player.benchGames }">
                 <th scope="row">
                   <button type="button" class="playerButton" @click="$emit('openPlayer', player.id)">{{ player.name }}</button>
                   <span class="playerMeta">
@@ -75,6 +95,7 @@
                 <td>{{ player.games }}</td>
                 <td>{{ format(player.rate) }}</td>
                 <td>{{ format(player.expected) }}</td>
+                <td>{{ player.benchGames ? `${player.benchGames} (${format(player.benchExpected)})` : '' }}</td>
               </tr>
             </tbody>
           </table>
@@ -100,7 +121,11 @@
             @click="setKey('compareRange', key)">{{ range.label }}</button>
         </span>
       </div>
-      <p class="note">Only points that counted: starters' points, not the bench's.</p>
+      <p class="note">
+        Only points that counted: starters' points, not the bench's.
+        <template v-if="phase === 'future'">This matchup hasn't started, so ranges end at the current one.</template>
+        <template v-else-if="compareRange !== 'matchup'">Ranges end at this matchup.</template>
+      </p>
       <p v-if="loadingCompare" class="note" role="status">
         Loading box scores{{ compareProgress.total ? ` ${compareProgress.done} of ${compareProgress.total}` : '' }}…
         <template v-if="compareProgress.total > 40">The first load of a long range takes a while, after that it's quick.</template>
@@ -132,10 +157,14 @@
 import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
 import {
-  projectTeam, teamGamesPlayed, winChance, gamesLeft, formatChance, PROJECTION_METHODS,
+  projectTeam, teamGamesPlayed, winChance, formatChance, PROJECTION_METHODS,
 } from "../collections/projection";
-import { loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, COMPARE_RANGES } from "../collections/boxscores";
+import {
+  loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, dayOrdinalAt, dayDate, COMPARE_RANGES,
+} from "../collections/boxscores";
+import { loadDayRosters } from "../collections/league";
 import { seriesColor } from "../chartColors";
+
 // Players shown in each team's chart
 const TOP_PLAYERS = 12;
 
@@ -144,9 +173,11 @@ export default {
   props: {
     leagueId: String,
     league: Object,
-    // From groupByMatchup: { matchup, teams: [summary, summary] }, your team first
+    // From groupByMatchup: { matchup, teams: [{ teamId, name }, ...] }, your team first
     group: Object,
+    // The matchup's period (week)
     period: Object,
+    // Today's rosters, used for days whose lineup isn't loaded
     rosters: Object,
     // The table's players
     players: Array,
@@ -161,11 +192,15 @@ export default {
       // This matchup's days so far for both teams, for up to date scores
       liveDays: null,
       liveLoadedAt: null,
-      loadingLive: false,
+      // Loading starts on mount, saying so from the start avoids showing empty totals first
+      loadingLive: true,
+      // { [teamId]: { [day]: groups } }, the lineups set for the days left
+      dayLineups: null,
+      loadingLineups: false,
       compareDays: null,
       compareProgress: { done: 0, total: 0 },
       compareFailed: 0,
-      loadingCompare: false,
+      loadingCompare: true,
       // Only the latest comparison load is shown
       compareLoadId: 0,
     };
@@ -180,6 +215,11 @@ export default {
     teamIds() {
       return this.group.teams.map(team => team.teamId);
     },
+    // past, current or future
+    phase() {
+      if (this.period.end <= this.now) return 'past';
+      return this.period.start > this.now ? 'future' : 'current';
+    },
     compareTeams() {
       return this.compareTeamIds.length === 2 ? this.compareTeamIds : this.teamIds;
     },
@@ -191,6 +231,9 @@ export default {
     },
     // Box scores are up to date within minutes, the scoreboard within the hour
     scores() {
+      if (this.phase === 'future') {
+        return [0, 0];
+      }
       if (this.liveDays) {
         return this.teamIds.map(teamId => totalPoints(this.liveDays[teamId] || []));
       }
@@ -198,15 +241,26 @@ export default {
       return this.teamIds.map(teamId => parseFloat(teamId === matchup.homeId ? matchup.homeScore : matchup.awayScore) || 0);
     },
     scoreAsOf() {
+      if (this.phase === 'future') return this.now;
       return this.liveDays ? this.liveLoadedAt : this.league.fetchedAt;
+    },
+    // The days left to project
+    remainingDays() {
+      if (this.phase === 'past') return [];
+      const days = [];
+      for (let day = dayOrdinalAt(this.period, this.scoreAsOf); day <= this.period.lastDay; day++) days.push(day);
+      return days;
+    },
+    missingLineups() {
+      return !!this.dayLineups && this.teamIds.some(teamId => this.remainingDays.some(day => !this.dayLineups[teamId]?.[day]));
     },
     projections() {
       return this.teamIds.map(teamId => projectTeam({
-        roster: this.rosters[teamId],
+        lineupFor: day => this.dayLineups?.[teamId]?.[day] || this.rosters[teamId]?.groups || null,
         playersById: this.playersById,
         startSlots: this.league.rules?.startSlots,
         schedule: this.schedule,
-        period: this.period,
+        period: this.phase === 'past' ? null : this.period,
         method: this.method,
         teamGames: this.teamGames,
         scoreAsOf: this.scoreAsOf,
@@ -218,13 +272,30 @@ export default {
     win() {
       return winChance(this.scores[0], this.projections[0], this.scores[1], this.projections[1]);
     },
+    // Each day of the matchup: points scored, then projected for the days left
     dayRows() {
-      const [first, second] = this.projections;
-      return first.days.map((day, index) => ({
-        key: day.date,
-        label: this.dayLabel(day.date),
-        values: [day.expected, second.days[index]?.expected ?? 0],
-      }));
+      const rows = [];
+      for (let day = this.period.firstDay; day <= this.period.lastDay; day++) {
+        const parts = this.teamIds.map((teamId, index) => ({
+          scored: this.liveDays?.[teamId]?.find(entry => entry.day === day)?.points,
+          projected: this.projections[index].days.find(entry => entry.day === day)?.expected,
+        }));
+        const hasScored = parts.some(part => part.scored !== undefined);
+        const hasProjected = parts.some(part => part.projected !== undefined);
+        if (!hasScored && !hasProjected) continue;
+        const date = dayDate(this.period, day);
+        const suffix = hasProjected ? (hasScored ? ' (so far + projected)' : ' (projected)') : '';
+        rows.push({
+          key: date,
+          label: `${this.dayLabel(date)}${suffix}`,
+          values: parts.map(part => (part.scored ?? 0) + (part.projected ?? 0)),
+          details: parts.map(part => [
+            part.scored !== undefined && `${this.format(part.scored)} scored`,
+            part.projected !== undefined && `${this.format(part.projected)} projected`,
+          ].filter(Boolean).join(', ')),
+        });
+      }
+      return rows;
     },
     compareTotals() {
       return this.compareTeams.map(teamId => totalPoints(this.compareDays?.[teamId] || []));
@@ -284,31 +355,45 @@ export default {
       return `${Math.round(fraction * 100)}%`;
     },
     chance(fraction) {
-      return formatChance(fraction, this.projections.some(projection => gamesLeft(projection) > 0));
+      return formatChance(fraction, this.projections.some(projection => projection.players.some(player => player.games)));
     },
-    gamesLeft(projection) {
-      const games = gamesLeft(projection);
-      return games === 1 ? '1 game left to start' : `${games} games left to start`;
+    lineupGames(projection) {
+      const games = projection.players.reduce((total, player) => total + player.games, 0);
+      return games === 1 ? '1 game left in the lineup' : `${games} games left in the lineup`;
+    },
+    formatDay(time) {
+      return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     },
     formatTime(time) {
       return time ? new Date(time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'unknown';
     },
     dayLabel(date) {
       const [year, month, day] = date.split('-').map(Number);
-      const label = new Date(year, month - 1, day).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
       const today = new Date(this.now);
-      const isToday = today.getFullYear() === year && today.getMonth() === month - 1 && today.getDate() === day;
-      return isToday ? `Today` : label;
+      if (today.getFullYear() === year && today.getMonth() === month - 1 && today.getDate() === day) {
+        return 'Today';
+      }
+      return new Date(year, month - 1, day).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     },
     async loadLive() {
+      if (this.phase === 'future') {
+        this.loadingLive = false;
+        return;
+      }
       this.loadingLive = true;
       const loadedAt = Date.now();
       const { days } = await loadTeamDays(this.leagueId, {
-        scoreboard: this.league.scoreboard, teamIds: this.teamIds, range: 'matchup', now: loadedAt,
+        scoreboard: this.league.scoreboard, teamIds: this.teamIds, range: 'matchup', endPeriod: this.period.ordinal, now: loadedAt,
       });
       this.liveDays = days;
       this.liveLoadedAt = loadedAt;
       this.loadingLive = false;
+    },
+    async loadLineups() {
+      if (!this.remainingDays.length) return;
+      this.loadingLineups = true;
+      this.dayLineups = await loadDayRosters(this.leagueId, this.teamIds, this.remainingDays, { now: Date.now() });
+      this.loadingLineups = false;
     },
     async loadCompare() {
       const loadId = ++this.compareLoadId;
@@ -318,6 +403,7 @@ export default {
         scoreboard: this.league.scoreboard,
         teamIds: this.compareTeams,
         range: this.compareRange,
+        endPeriod: this.period.ordinal,
         now: Date.now(),
         onProgress: (done, total) => {
           if (loadId === this.compareLoadId) this.compareProgress = { done, total };
@@ -340,8 +426,9 @@ export default {
     },
   },
   async mounted() {
-    // The live scores first, the comparison's first range shares their box scores
+    // Scores first: they decide which days are left. The comparison's first range shares their box scores.
     await this.loadLive();
+    await this.loadLineups();
     this.loadCompare();
   },
 };
@@ -478,6 +565,16 @@ select {
 
 .scoreParts {
   font-size: 0.85em;
+  opacity: 0.85;
+}
+
+.callout {
+  font-size: 0.85em;
+  font-weight: 700;
+}
+
+.periodLabel {
+  font-size: 0.9em;
   opacity: 0.85;
 }
 

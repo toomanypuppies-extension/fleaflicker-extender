@@ -2,24 +2,33 @@
   <div class="leagueView">
     <p v-if="!league" class="notice containerColor">League info couldn't be loaded. Use Refresh to try again.</p>
 
-    <MatchupView v-else-if="openGroup" :leagueId="leagueId" :league="league" :group="openGroup" :period="period"
-      :rosters="rosters" :players="players" :schedule="schedule" :now="now"
-      @close="openMatchup(null)" @openPlayer="openPlayer" />
-
     <template v-else>
+      <div class="leagueBar containerColor">
+        <div class="sectionTabs" role="group" aria-label="League section">
+          <button v-for="(label, key) in sections" :key="key" type="button" class="sectionTab"
+            :class="{ active: section === key }" :aria-pressed="section === key"
+            @click="setKey('leagueSection', key)">{{ label }}</button>
+        </div>
+        <label class="myTeamPicker">
+          Your team
+          <select :value="myTeamId ?? ''" @change="setMyTeam($event.target.value)">
+            <option value="">Not picked</option>
+            <option v-for="team in league.teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+          </select>
+        </label>
+      </div>
+
+      <MatchupsSection v-if="section === 'matchups'" :leagueId="leagueId" :league="league" :rosters="rosters"
+        :loadingRosters="loadingRosters" :players="players" :schedule="schedule" :now="now" @openPlayer="openPlayer" />
+
+      <template v-else>
       <section class="teamsSection containerColor" aria-labelledby="teamsHeading">
         <div class="sectionHeader">
-          <h2 id="teamsHeading">Teams</h2>
-          <label class="myTeamPicker">
-            Your team
-            <select :value="myTeamId ?? ''" @change="setMyTeam($event.target.value)">
-              <option value="">Not picked</option>
-              <option v-for="team in league.teams" :key="team.id" :value="team.id">{{ team.name }}</option>
-            </select>
-          </label>
+          <h2 id="teamsHeading">Teams now</h2>
         </div>
         <p v-if="period" class="periodNote">
-          Matchup {{ period.ordinal }}: {{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }}.
+          Adds are counted since this matchup started on {{ formatDay(period.start) }}.
+          Pick a team to see only its moves below.
           <template v-if="acquisitionLimit === null && !league.settings">
             The league's add limit couldn't be loaded.
           </template>
@@ -31,30 +40,9 @@
             :class="{ myMatchup: group.teams.some(team => team.teamId === myTeamId) }"
             :aria-label="group.matchup ? group.teams.map(team => team.name).join(' vs ') : 'No matchup this period'">
           <h3 class="matchupHeader">
-            <template v-if="group.matchup">
-              <span class="matchupSide">
-                <span class="matchupTeam">{{ group.teams[0].name }}</span>
-                <span v-if="group.matchup.awayScore !== null" class="matchupScore">{{ scoreFor(group, 0) }}</span>
-              </span>
-              <span class="matchupVs">{{ group.matchup.inProgress ? 'vs' : 'final' }}</span>
-              <span class="matchupSide right">
-                <span v-if="group.matchup.homeScore !== null" class="matchupScore">{{ scoreFor(group, 1) }}</span>
-                <span class="matchupTeam">{{ group.teams[1]?.name }}</span>
-              </span>
-            </template>
-            <template v-else>No matchup this period</template>
+            <template v-if="group.matchup">{{ group.teams.map(team => team.name).join(' vs ') }}</template>
+            <template v-else>No matchup this week</template>
           </h3>
-          <div v-if="group.matchup" class="matchupProjection">
-            <span v-if="projectionFor(group)">
-              Projected <strong>{{ projectionFor(group).finals[0] }}</strong> to <strong>{{ projectionFor(group).finals[1] }}</strong>
-              · {{ projectionFor(group).winLabel }}
-            </span>
-            <span v-else-if="loadingRosters">Projecting…</span>
-            <span v-else-if="rosters[group.teams[0].teamId]">No games left to project</span>
-            <button type="button" class="detailsButton" @click="openMatchup(group.matchup.gameId)">
-              Details <span class="material-icons" aria-hidden="true">chevron_right</span>
-            </button>
-          </div>
           <div class="teamCards">
           <button v-for="summary in group.teams" :key="summary.teamId" type="button" class="teamCard"
             :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId, selected: summary.teamId === timelineTeamId }"
@@ -140,6 +128,7 @@
           </li>
         </ol>
       </section>
+      </template>
     </template>
   </div>
 </template>
@@ -152,8 +141,12 @@ import {
 } from "../collections/league";
 import { buildTimeline, TIMELINE_FILTERS } from "../collections/timeline";
 import PlayerName from "./PlayerName.vue";
-import MatchupView from "./MatchupView.vue";
-import { projectTeam, teamGamesPlayed, winChance, gamesLeft, formatChance } from "../collections/projection";
+import MatchupsSection from "./MatchupsSection.vue";
+
+const SECTIONS = {
+  matchups: 'Matchups',
+  activity: 'League activity',
+};
 
 const PLAYER_VERBS = {
   add: 'added',
@@ -164,7 +157,7 @@ const PLAYER_VERBS = {
 };
 
 export default {
-  components: { PlayerName, MatchupView },
+  components: { PlayerName, MatchupsSection },
   props: {
     leagueId: String,
     // From loadLeagueInfo
@@ -187,6 +180,7 @@ export default {
       activityError: false,
       playerVerbs: PLAYER_VERBS,
       timelineFilterOptions: TIMELINE_FILTERS,
+      sections: SECTIONS,
     };
   },
   computed: {
@@ -194,45 +188,8 @@ export default {
       myTeamId: state => state.myTeamId,
       timelineTeamId: state => state.timelineTeamId,
       timelineFilters: state => state.timelineFilters,
-      openMatchupId: state => state.openMatchupId,
-      projectionMethod: state => state.projectionMethod,
+      section: state => state.leagueSection,
     }),
-    // The open matchup, if it's still in this period's scoreboard
-    openGroup() {
-      return this.openMatchupId ? this.matchupGroups.find(group => group.matchup?.gameId === this.openMatchupId) : null;
-    },
-    // Each matchup's projected final scores and win chance, by game id
-    projections() {
-      const startSlots = this.league?.rules?.startSlots;
-      if (!startSlots || !this.players?.length || !this.schedule || !this.period) {
-        return {};
-      }
-      const teamGames = teamGamesPlayed(this.players);
-      const projections = {};
-      for (const group of this.matchupGroups) {
-        if (!group.matchup || group.teams.some(team => !this.rosters[team.teamId])) continue;
-        const scores = group.teams.map((_, index) => parseFloat(this.scoreFor(group, index)) || 0);
-        const [first, second] = group.teams.map(team => projectTeam({
-          roster: this.rosters[team.teamId],
-          playersById: this.playersById,
-          startSlots,
-          schedule: this.schedule,
-          period: this.period,
-          method: this.projectionMethod,
-          teamGames,
-          scoreAsOf: this.league.fetchedAt,
-        }));
-        // Nothing to project once the matchup's games are over
-        if (gamesLeft(first) + gamesLeft(second) === 0) continue;
-        const chance = winChance(scores[0], first, scores[1], second);
-        const leader = chance >= 0.5 ? 0 : 1;
-        projections[group.matchup.gameId] = {
-          finals: [scores[0] + first.expected, scores[1] + second.expected].map(score => score.toFixed(1)),
-          winLabel: `${group.teams[leader].name} ${formatChance(Math.max(chance, 1 - chance), true)} to win`,
-        };
-      }
-      return projections;
-    },
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
     },
@@ -297,19 +254,8 @@ export default {
       this.rosters = await loadTeamRosters(this.leagueId, this.league.teams.map(team => team.id), this.activityItems, { now: this.now });
       this.loadingRosters = false;
     },
-    // A team's score in its matchup, groups list your team first, which may be the home team
-    scoreFor(group, index) {
-      const { matchup } = group;
-      return group.teams[index]?.teamId === matchup.homeId ? matchup.homeScore : matchup.awayScore;
-    },
-    projectionFor(group) {
-      return this.projections[group.matchup.gameId];
-    },
-    openMatchup(gameId) {
-      this.$store.commit('setKeyValue', { key: 'openMatchupId', value: gameId });
-      // Compare the matchup's teams until others are picked
-      this.$store.commit('setKeyValue', { key: 'compareTeamIds', value: [] });
-      this.$el?.scrollTo?.({ top: 0 });
+    setKey(key, value) {
+      this.$store.commit('setKeyValue', { key, value });
     },
     setMyTeam(value) {
       this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
@@ -367,6 +313,42 @@ export default {
   overflow-y: auto;
   min-height: 0;
   flex: 1 1 auto;
+}
+
+.leagueBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em 1em;
+  padding: 0.5em 1em;
+}
+
+.sectionTabs {
+  display: flex;
+  gap: 0.25em;
+}
+
+.sectionTab {
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.35em 0.6em;
+  min-height: 36px;
+  cursor: pointer;
+  opacity: 0.75;
+
+  &.active {
+    opacity: 1;
+    border-bottom-color: var(--teamSecondaryColor);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
 }
 
 .notice {
@@ -442,64 +424,6 @@ select {
   font-size: 0.95em;
   font-weight: 700;
   margin: 0 0 0.5em;
-}
-
-.matchupSide {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  min-width: 0;
-
-  &.right {
-    justify-content: flex-end;
-    text-align: right;
-  }
-}
-
-.matchupTeam {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.matchupProjection {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25em 0.75em;
-  font-size: 0.9em;
-  margin: -0.25em 0 0.5em;
-}
-
-.detailsButton {
-  display: inline-flex;
-  align-items: center;
-  margin-left: auto;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 1px solid rgba(127, 127, 127, 0.6);
-  border-radius: 4px;
-  padding: 0.15em 0.25em 0.15em 0.6em;
-  min-height: 32px;
-  cursor: pointer;
-
-  .material-icons {
-    font-size: 1.2em;
-  }
-}
-
-.matchupScore {
-  font-size: 1.15em;
-}
-
-.matchupVs {
-  font-size: 0.8em;
-  font-weight: normal;
-  opacity: 0.7;
-  text-transform: uppercase;
 }
 
 // minmax(0, ...) lets long team names shrink instead of widening the grid

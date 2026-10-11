@@ -287,6 +287,15 @@ test("the lineups teams set for each day are kept for a few minutes", async () =
   // Only the day that couldn't be loaded is tried again
   assert.equal(flea.callsTo('FetchRoster'), 1);
 
+  // Without fetching, only lineups that are still fresh
+  flea.calls = [];
+  const stored = await settle(loadDayRosters(LEAGUE, [1, 2], [9, 10, 11], { now: now + 5 * MINUTE, fetch: false }));
+  assert.deepEqual(Object.keys(stored[1]), ['9', '10']);
+  assert.deepEqual(stored[2], {});
+  assert.deepEqual(flea.calls, []);
+  const expired = await settle(loadDayRosters(LEAGUE, [1], [9, 10], { now: now + 20 * MINUTE, fetch: false }));
+  assert.deepEqual(expired[1], {});
+
   flea.calls = [];
   await settle(loadDayRosters(LEAGUE, [1], [10, 11], { now: now + 20 * MINUTE }));
   assert.equal(flea.callsTo('FetchRoster'), 2);

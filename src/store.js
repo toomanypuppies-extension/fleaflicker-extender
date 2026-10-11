@@ -37,6 +37,10 @@ const initState = {
   // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
   timelineTeamId: null,
   timelineFilters: [],
+  // League tab section: matchups or activity
+  leagueSection: 'matchups',
+  // The matchup period (week) shown, null for the current one
+  selectedPeriod: null,
   // The matchup open on the League tab (its box score game id), or null for the list
   openMatchupId: null,
   // PROJECTION_METHODS key
@@ -50,8 +54,9 @@ const initState = {
   weekStartDates: null,
 }
 
-// Open dialogs and the open player card aren't saved, so a reload doesn't reopen them
-const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null };
+// Open dialogs and the open player card aren't saved, so a reload doesn't reopen them.
+// A picked week isn't either, so the League tab opens on the current one.
+const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null, selectedPeriod: null };
 const TRANSIENT_KEYS = Object.keys(TRANSIENT_DEFAULTS);
 
 // The state for the league in the URL: its saved state over the defaults

@@ -123,6 +123,7 @@ test("a team projection uses each day's set lineup, and calls out bench points",
   assert.equal(byId[4].benchExpected, 0);
   assert.equal(byId[6], undefined);
   assert.ok(projection.variance > 0);
+  assert.ok(projection.bestVariance > projection.variance);
 });
 
 test('win chance', () => {

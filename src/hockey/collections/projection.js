@@ -178,7 +178,7 @@ const round = (value) => Math.round(value * 100) / 100;
 
 /**
  * Expected points a team adds over the rest of a matchup period with the lineups it has set:
- * { expected, bench, best, variance, days: [{ day, date, expected, bench, best, hasLineup }], players }.
+ * { expected, bench, best, variance, bestVariance, days: [{ day, date, expected, bench, best, hasLineup }], players }.
  * Only starters' points count. `bench` is what benched players with games are expected to score,
  * `best` what the best possible lineup each day would score instead. Injured players, DTD too,
  * are expected to score nothing. Games that started before `scoreAsOf` are left out, their points
@@ -230,6 +230,7 @@ export const projectTeam = ({
   const firstDay = dayOrdinalAt(period, scoreAsOf);
   const days = [];
   let variance = 0;
+  let bestVariance = 0;
 
   for (let day = firstDay; day <= period.lastDay; day++) {
     const date = dayDate(period, day);
@@ -283,7 +284,9 @@ export const projectTeam = ({
       .map(playerFor)
       .filter(player => player.gameValue > 0);
     const lineup = bestLineup(candidates.map(player => ({ value: player.gameValue, positions: player.positions })), openSlots);
-    const best = lineup.reduce((total, index) => total + (index === null ? 0 : candidates[index].gameValue), 0);
+    const chosen = lineup.filter(index => index !== null).map(index => candidates[index]);
+    const best = chosen.reduce((total, player) => total + player.gameValue, 0);
+    bestVariance += chosen.reduce((total, player) => total + player.gameVariance, 0);
 
     days.push({ day, date, expected: round(expected), bench: round(bench), best: round(best), hasLineup: true });
   }
@@ -294,6 +297,7 @@ export const projectTeam = ({
     bench: sum('bench'),
     best: sum('best'),
     variance,
+    bestVariance,
     days,
     players: [...players.values()]
       .map(player => ({ ...player, expected: round(player.expected), benchExpected: round(player.benchExpected) }))
