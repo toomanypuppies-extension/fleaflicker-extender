@@ -72,6 +72,8 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
     return games;
   } catch (err) {
     console.error(err)
+    // Last week's games would show on the wrong days, so only fall back to this week's
+    return storedThisWeek && storedGames ? storedGames : null;
   }
 }
 

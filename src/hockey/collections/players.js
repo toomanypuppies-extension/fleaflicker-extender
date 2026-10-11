@@ -53,8 +53,6 @@ export const convertPlayerObjects = (players) => {
       hasGameToday,
       expandedData: {
         image: player.proPlayer?.headshotUrl,
-        proTeam: player.proPlayer.proTeam,
-        rankFantasy: player.rankFantasy,
         news: player.proPlayer?.news?.[0],
       }
     }
@@ -106,15 +104,18 @@ const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints);
   const finalPlayers = convertPlayerObjects(players);
 
-  setLocalStorage('hockey_players', finalPlayers);
-  setLocalStorage('hockey_playersMeta', {
-    stopIfNoPoints,
-    statsEpoch: fetchStart,
-    activityEpoch: fetchStart - ACTIVITY_OVERLAP,
-    activityCheckedEpoch: fetchStart,
-  });
+  // If the players can't be stored (storage full), still show them, and leave any older
+  // stored players paired with their own metadata
+  if (setLocalStorage('hockey_players', finalPlayers)) {
+    setLocalStorage('hockey_playersMeta', {
+      stopIfNoPoints,
+      statsEpoch: fetchStart,
+      activityEpoch: fetchStart - ACTIVITY_OVERLAP,
+      activityCheckedEpoch: fetchStart,
+    });
+  }
 
-  return finalPlayers;
+  return { players: finalPlayers, savedAt: fetchStart };
 }
 
 // Applies league activity since the last check to the stored players.
@@ -146,23 +147,40 @@ const applyOwnershipChanges = async (leagueId, players, meta, now) => {
   });
 
   const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => parseInt(item.timeEpochMilli, 10)));
-  setLocalStorage('hockey_players', players);
-  setLocalStorage('hockey_playersMeta', {
-    ...meta,
-    activityEpoch: newestActivityEpoch,
-    activityCheckedEpoch: now,
-  });
+  if (setLocalStorage('hockey_players', players)) {
+    setLocalStorage('hockey_playersMeta', {
+      ...meta,
+      activityEpoch: newestActivityEpoch,
+      activityCheckedEpoch: now,
+    });
+  }
 
   return true;
 }
 
+// Why the latest players couldn't be loaded, shown to the user
+export const LOAD_ERRORS = {
+  noLeague: 'noLeague',
+  leagueNotFound: 'leagueNotFound',
+  unavailable: 'unavailable',
+};
+
+/**
+ * @returns {Promise<{ players: Array, savedAt?: number, error?: string }>}
+ *   savedAt is when the players' stats were fetched, error is one of LOAD_ERRORS
+ */
 export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false) => {
   // Keep a snapshot of all players and only update what could have changed:
   // - stats, only when NHL games have been played since the last fetch (full fetch)
   // - ownership, from the league activity feed (usually a single call)
+  if (!leagueId) {
+    return { players: [], error: LOAD_ERRORS.noLeague };
+  }
+
   const storedPlayers = getLocalStorage('hockey_players');
   const meta = getLocalStorage('hockey_playersMeta');
   const now = new Date().getTime();
+  const stored = { players: storedPlayers, savedAt: meta?.statsEpoch };
 
   try {
     if (
@@ -175,17 +193,22 @@ export const loadHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRe
     }
 
     if (!forceRefresh && now - meta.activityCheckedEpoch < ACTIVITY_CHECK_INTERVAL) {
-      return storedPlayers;
+      return stored;
     }
 
     const applied = await applyOwnershipChanges(leagueId, storedPlayers, meta, now);
     if (!applied) {
       return await fetchAllPlayers(leagueId, stopIfNoPoints);
     }
-    return storedPlayers;
+    return stored;
   } catch (err) {
     // Most likely throttled, stale players are better than none
     console.error(err);
-    return storedPlayers || [];
+    const error = err.response?.status === 404 ? LOAD_ERRORS.leagueNotFound : LOAD_ERRORS.unavailable;
+    // Stored players from the same settings are still worth showing
+    if (storedPlayers && meta?.stopIfNoPoints === stopIfNoPoints) {
+      return { ...stored, error };
+    }
+    return { players: [], error };
   }
 }

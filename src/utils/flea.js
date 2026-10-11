@@ -24,6 +24,8 @@ export const getRecentHockeyActivity = async (sport = 'NHL', leagueId, offset = 
     return response.data;
   } catch (err) {
     console.error(err);
+    // Rethrown so callers can tell a missing league (404) from being throttled
+    throw err;
   }
 }
 
@@ -117,6 +119,8 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
     return response.data;
   } catch (err) {
     console.error(err);
+    // Rethrown so callers can tell a missing league (404) from being throttled
+    throw err;
   }
 }
 

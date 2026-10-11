@@ -116,7 +116,8 @@ export default {
         this.selectedPlayer.team !== "FA"
       ) {
         const teamAbbr = this.selectedPlayer.team;
-        return this.gamesByMatchup[teamAbbr];
+        // Teams with no games in the next 4 weeks (eliminated, off-season) aren't in the schedule
+        return this.gamesByMatchup?.[teamAbbr] || {};
       } else {
         return {};
       }
