@@ -127,6 +127,34 @@ export const currentPeriod = (scoreboard, now) => (
   scoreboard?.periods.find(period => period.ordinal === scoreboard.currentOrdinal)
 );
 
+// The period under way at `now` when the scoreboard's matchups are another one's. Fleaflicker's
+// scoreboard keeps showing last week's on Monday morning after the new week has begun.
+const periodScoreboardMissed = (scoreboard, now) => {
+  const period = scoreboard?.periods.find(candidate => candidate.start <= now && now < candidate.end);
+  return period && period.ordinal !== scoreboard.currentOrdinal ? period : null;
+};
+
+/**
+ * The scoreboard with the matchups of the period under way, fetching them when fleaflicker's
+ * default scoreboard is still on the week before. Left as it was if they can't be loaded.
+ */
+const withCurrentMatchups = async (leagueId, scoreboard, now) => {
+  const period = periodScoreboardMissed(scoreboard, now);
+  if (!period) {
+    return scoreboard;
+  }
+  try {
+    const response = await getLeagueScoreboard(leagueId, period.firstDay);
+    if (!response?.games) {
+      return scoreboard;
+    }
+    return { ...scoreboard, currentOrdinal: period.ordinal, matchups: convertMatchups(response.games) };
+  } catch (err) {
+    console.error(err);
+    return scoreboard;
+  }
+};
+
 /**
  * The league's name, teams, roster rules, matchup periods, and settings from the rules page
  * (transaction limit and waiver timing, missing if they couldn't be loaded).
@@ -140,8 +168,10 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
     forceRefresh || !fetchedAt || now - fetchedAt >= maxAge || easternDay(fetchedAt) !== easternDay(now)
   );
 
-  // Refresh asks for the scoreboard and standings again, rules and settings rarely change
-  const infoStale = refreshScores || stale(stored?.fetchedAt, LEAGUE_INFO_MAX_AGE);
+  // Refresh asks for the scoreboard and standings again, rules and settings rarely change. A new
+  // matchup week means new matchups.
+  const infoStale = refreshScores || stale(stored?.fetchedAt, LEAGUE_INFO_MAX_AGE)
+    || !!periodScoreboardMissed(stored?.scoreboard, now);
   const rulesStale = stale(stored?.rulesFetchedAt, RULES_MAX_AGE);
   // Settings that couldn't be loaded are tried again sooner
   const settingsStale = stored?.settings
@@ -167,7 +197,7 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
       format: LEAGUE_INFO_FORMAT,
       ...(infoStale && {
         ...convertStandings(standings),
-        scoreboard: convertScoreboard(scoreboard),
+        scoreboard: await withCurrentMatchups(leagueId, convertScoreboard(scoreboard), now),
         fetchedAt: now,
       }),
       ...(rulesStale && { rules: convertRules(rules), rulesFetchedAt: now }),

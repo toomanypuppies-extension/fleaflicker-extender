@@ -318,3 +318,23 @@ test('refreshing scores fetches the scoreboard and standings only', async () => 
 
   assert.deepEqual(flea.calls.sort(), ['FetchLeagueScoreboard', 'FetchLeagueStandings']);
 });
+
+test("on a new week's first morning the scoreboard's matchups are fetched for it", async () => {
+  // Monday 8am Eastern, period 3 has begun but the scoreboard still shows period 2
+  const MONDAY = Date.parse('2026-10-12T12:00:00Z');
+  const game = (id, away, home) => ({ id, away: { id: away }, home: { id: home } });
+  flea.scoreboardsByDay[14] = { games: [game('p3', 1, 3)] };
+
+  const league = await info({ now: MONDAY });
+
+  assert.equal(league.scoreboard.currentOrdinal, 3);
+  assert.deepEqual(league.scoreboard.matchups.map(matchup => matchup.gameId), ['p3']);
+
+  // Stored at 5:50am, before the week began: fetched again at 6:30 though it's under an hour old
+  await resetStorage();
+  await info({ now: Date.parse('2026-10-12T09:50:00Z') });
+  flea.calls = [];
+  const later = await info({ now: Date.parse('2026-10-12T10:30:00Z') });
+  assert.equal(later.scoreboard.currentOrdinal, 3);
+  assert.ok(flea.calls.includes('FetchLeagueScoreboard'));
+});
