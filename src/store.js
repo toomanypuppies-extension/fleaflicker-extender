@@ -18,8 +18,9 @@ const merge = (target, source) => mergeWith(target, source, (_, value) => (Array
 // What the Players tab's filters start as, and go back to with Clear filters
 export const FILTER_DEFAULTS = { ownership: 'Free Agent', injurySelections: ['HEALTHY'] };
 // Bumped when defaults change that saved state should take once (saved as filterDefaultsVersion):
-// 1 the filters' defaults (FILTER_DEFAULTS), 2 the app's own colors instead of the favorite team's
-const FILTER_DEFAULTS_VERSION = 2;
+// 1 the filters' defaults (FILTER_DEFAULTS), 2 the app's own colors instead of the favorite team's,
+// 3 every player loaded, those without points too
+const FILTER_DEFAULTS_VERSION = 3;
 
 const initState = {
   sport: 'nhl',
@@ -36,7 +37,8 @@ const initState = {
   openSettings: false,
   openHelp: false,
   favoriteTeam: "Seattle Kraken",
-  excludeIfNoPoints: true,
+  // Settings' "Only show players that have points this season"
+  excludeIfNoPoints: false,
   selectedPlayer: null,
   filter: "",
   teamSelections: [],
@@ -115,6 +117,9 @@ const createState = () => {
   }
   if (savedDefaultsVersion < 2) {
     defaultState.settings.colorTheme = 'default';
+  }
+  if (savedDefaultsVersion < 3) {
+    defaultState.excludeIfNoPoints = false;
   }
   defaultState.filterDefaultsVersion = FILTER_DEFAULTS_VERSION;
 

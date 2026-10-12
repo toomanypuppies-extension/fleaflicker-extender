@@ -103,6 +103,12 @@ test('filters start on healthy free agents, saved filters get that once, and Cle
   assert.equal(store.state.settings.colorTheme, 'default');
   load('605', { settings: { colorTheme: 'team' }, filterDefaultsVersion: 2 });
   assert.equal(store.state.settings.colorTheme, 'team');
+  // Every player is loaded unless Settings says otherwise: saved settings switch once, then stay
+  assert.equal(load('606') && store.state.excludeIfNoPoints, false);
+  load('607', { excludeIfNoPoints: true, filterDefaultsVersion: 2 });
+  assert.equal(store.state.excludeIfNoPoints, false);
+  load('608', { excludeIfNoPoints: true, filterDefaultsVersion: 3 });
+  assert.equal(store.state.excludeIfNoPoints, true);
 
   store.commit('clearFilters');
   assert.deepEqual([store.state.ownership, store.state.injurySelections], ['Free Agent', ['HEALTHY']]);
