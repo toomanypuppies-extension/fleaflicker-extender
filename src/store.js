@@ -2,6 +2,7 @@ import lodash from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
+import { teamSeriesColors } from './hockey/chartColors';
 
 // lodash is CommonJS, which node (tests) can't import names from
 const { set, debounce, merge, get, cloneDeep } = lodash;
@@ -144,6 +145,10 @@ export const store = createStore({
     },
     teamSecondaryColor(state) {
       return getColors(state)?.secondary;
+    },
+    // Two chart series colors from the favorite team's, adjusted to be readable in the theme
+    chartColors(state) {
+      return teamSeriesColors(getColors(state), state.settings.darkMode ? 'dark' : 'light');
     }
   }
 })

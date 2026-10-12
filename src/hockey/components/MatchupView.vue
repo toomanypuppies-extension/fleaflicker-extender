@@ -169,7 +169,8 @@
       </div>
       <p class="note">
         Only points that counted: starters' points, not the bench's.
-        <template v-if="phase === 'future'">This matchup hasn't started, so ranges end at the current one.</template>
+        <template v-if="phase !== 'past'">The lighter part of each bar is what's projected for the rest of this matchup.</template>
+        <template v-if="phase === 'future'">This matchup hasn't started: longer ranges count points scored up to now.</template>
         <template v-else-if="compareRange !== 'matchup'">Ranges end at this matchup.</template>
       </p>
       <p v-if="loadingCompare" class="note" role="status">
@@ -184,15 +185,18 @@
             <span class="totalLabel"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</span>
             <span class="totalValue">{{ format(compareTotals[index]) }}</span>
             <span class="totalMeta">points over {{ compareDayCounts[index] }} days</span>
+            <span v-if="compareProjections" class="totalMeta">+ {{ format(compareProjections[index].expected) }} projected this matchup</span>
           </div>
         </div>
 
-        <BarChart class="chart" title="By position" rowHeading="Position" :series="chartSeries(compareTeams)" :rows="positionRows" />
+        <BarChart class="chart" title="By position" rowHeading="Position" :series="chartSeries(compareTeams)" :rows="positionRows"
+          :stacked="!!compareProjections" />
 
         <div class="playerCharts">
           <BarChart v-for="(teamId, index) in compareTeams" :key="teamId" class="chart"
             :title="`By player: ${teamName(teamId)}`" rowHeading="Player"
-            :series="[{ name: teamName(teamId) }]" :rows="playerRows[index]" :colorOffset="index" />
+            :series="[{ name: teamName(teamId) }]" :rows="playerRows[index]" :colorOffset="index"
+            :stacked="!!compareProjections" />
         </div>
       </div>
     </section>
@@ -211,10 +215,11 @@ import {
 import { loadDayRosters } from "../collections/league";
 import { primaryPosition, POSITIONS } from "../collections/boxscores";
 import { periodDates } from "../collections/scheduleWeeks";
-import { seriesColor } from "../chartColors";
 
 // Players shown in each team's chart
 const TOP_PLAYERS = 12;
+// Players named in the tooltip of the rest
+const OTHERS_NAMED = 4;
 
 export default {
   components: { BarChart },
@@ -266,7 +271,6 @@ export default {
       drawerExpanded: state => state.drawerExpanded,
       compareRange: state => state.compareRange,
       compareTeamIds: state => state.compareTeamIds,
-      darkMode: state => state.settings.darkMode,
     }),
     teamIds() {
       return this.group.teams.map(team => team.teamId);
@@ -311,7 +315,18 @@ export default {
       return !!this.dayLineups && this.teamIds.some(teamId => this.remainingDays.some(day => !this.dayLineups[teamId]?.[day]));
     },
     projections() {
-      return this.teamIds.map(teamId => projectTeam({
+      return this.teamIds.map(this.projectionFor);
+    },
+    // The compared teams' projections for the rest of this matchup, null when it's over
+    compareProjections() {
+      if (this.phase === 'past') return null;
+      return this.compareTeams.map(teamId => {
+        const index = this.teamIds.indexOf(teamId);
+        return index >= 0 ? this.projections[index] : this.projectionFor(teamId);
+      });
+    },
+    projectionFor() {
+      return (teamId) => projectTeam({
         // The best lineup only needs who's on the roster
         lineupFor: day => (this.lineupChoice === 'set' && this.dayLineups?.[teamId]?.[day]) || this.rosters[teamId]?.groups || null,
         lineup: this.lineupChoice,
@@ -322,7 +337,7 @@ export default {
         method: this.method,
         teamGames: this.teamGames,
         scoreAsOf: this.scoreAsOf,
-      }));
+      });
     },
     projectedFinal() {
       return this.teamIds.map((_, index) => this.scores[index] + this.projections[index].expected);
@@ -404,27 +419,71 @@ export default {
       return this.compareTeams.map(teamId => (this.compareDays?.[teamId] || []).length);
     },
     positionRows() {
-      const [first, second] = this.compareTeams.map(teamId => pointsByPosition(this.compareDays?.[teamId] || []));
-      return first.map((position, index) => ({
-        key: position.position,
-        label: position.position,
-        values: [position.points, second[index].points],
-        details: [first, second].map(totals => `${totals[index].games} games started`),
+      const scored = this.compareTeams.map(teamId => pointsByPosition(this.compareDays?.[teamId] || []));
+      const projected = (this.compareProjections || []).map(projection => {
+        const byPosition = Object.fromEntries(POSITIONS.map(position => [position, { points: 0, games: 0 }]));
+        for (const player of projection.players) {
+          const total = byPosition[primaryPosition(player.position, player.positions)];
+          if (total) {
+            total.points += player.expected;
+            total.games += player.games;
+          }
+        }
+        return byPosition;
+      });
+      return POSITIONS.map((position, index) => ({
+        key: position,
+        label: position,
+        values: scored.map((totals, team) => (this.compareProjections
+          ? [totals[index].points, projected[team][position].points]
+          : totals[index].points)),
+        details: scored.map((totals, team) => (this.compareProjections
+          ? [`${totals[index].games} games started`, `${projected[team][position].games} starts left`]
+          : `${totals[index].games} games started`)),
       }));
     },
+    // Each compared team's players by points, scored and projected for the rest of this matchup
     playerRows() {
-      return this.compareTeams.map(teamId => {
-        const players = pointsByPlayer(this.compareDays?.[teamId] || []);
-        const rows = players.slice(0, TOP_PLAYERS).map(player => ({
-          key: player.playerId,
-          label: player.name,
-          values: [player.points],
-          details: [`${player.position} · ${player.games} games started · ${this.format(player.points / player.games)} per game`],
-        }));
+      return this.compareTeams.map((teamId, team) => {
+        const byId = new Map();
+        const playerFor = (id, name, position) => {
+          if (!byId.has(id)) byId.set(id, { id, name, position, scored: 0, games: 0, projected: 0, starts: 0 });
+          return byId.get(id);
+        };
+        for (const player of pointsByPlayer(this.compareDays?.[teamId] || [])) {
+          Object.assign(playerFor(player.playerId, player.name, player.position), { scored: player.points, games: player.games });
+        }
+        for (const player of this.compareProjections?.[team].players || []) {
+          if (player.expected > 0) {
+            Object.assign(playerFor(player.id, player.name, player.position), { projected: player.expected, starts: player.games });
+          }
+        }
+        const players = [...byId.values()].sort((a, b) => (b.scored + b.projected) - (a.scored + a.projected));
+        const stacked = !!this.compareProjections;
+        const rows = players.slice(0, TOP_PLAYERS).map(player => {
+          const scoredDetail = `${player.position} · ${player.games} games started`
+            + (player.games ? ` · ${this.format(player.scored / player.games)} per game` : '');
+          const projectedDetail = `${player.starts} ${player.starts === 1 ? 'start' : 'starts'} left`;
+          return {
+            key: player.id,
+            label: player.name,
+            values: [stacked ? [player.scored, player.projected] : player.scored],
+            details: [stacked ? [scoredDetail, projectedDetail] : scoredDetail],
+          };
+        });
         const rest = players.slice(TOP_PLAYERS);
         if (rest.length) {
-          const points = rest.reduce((total, player) => total + player.points, 0);
-          rows.push({ key: 'others', label: `${rest.length} others`, values: [points], details: [rest.map(player => player.name).join(', ')] });
+          const sum = (key) => rest.reduce((total, player) => total + player[key], 0);
+          // A few names, a long list makes a tooltip taller than the chart
+          const names = rest.slice(0, OTHERS_NAMED).map(player => player.name).join(', ');
+          const more = rest.length > OTHERS_NAMED ? ` and ${rest.length - OTHERS_NAMED} more` : '';
+          const detail = `${names}${more}`;
+          rows.push({
+            key: 'others',
+            label: `${rest.length} others`,
+            values: [stacked ? [sum('scored'), sum('projected')] : sum('scored')],
+            details: [stacked ? [detail, detail] : detail],
+          });
         }
         return rows;
       });
@@ -455,7 +514,7 @@ export default {
       return this.league.teams.find(team => team.id === teamId)?.name || 'Team';
     },
     seriesColor(index) {
-      return seriesColor(index, this.darkMode);
+      return this.$store.getters.chartColors[index];
     },
     chartSeries(teamIds) {
       return teamIds.map(teamId => ({ name: this.teamName(teamId) }));
@@ -504,14 +563,17 @@ export default {
     async loadLineups() {
       if (!this.remainingDays.length || this.lineupChoice !== 'set' || this.dayLineups) return;
       this.loadingLineups = true;
-      this.dayLineups = await loadDayRosters(this.leagueId, this.teamIds, this.remainingDays, { now: Date.now() });
+      const teamIds = [...new Set([...this.teamIds, ...this.compareTeams])];
+      this.dayLineups = await loadDayRosters(this.leagueId, teamIds, this.remainingDays, { now: Date.now() });
       this.loadingLineups = false;
     },
     async loadCompare() {
       const loadId = ++this.compareLoadId;
       this.loadingCompare = true;
       this.compareProgress = { done: 0, total: 0 };
-      const { days, failed } = await loadTeamDays(this.leagueId, {
+      // A matchup that hasn't started has nothing scored yet
+      const nothingScored = this.phase === 'future' && this.compareRange === 'matchup';
+      const { days, failed } = nothingScored ? { days: {}, failed: 0 } : await loadTeamDays(this.leagueId, {
         scoreboard: this.league.scoreboard,
         teamIds: this.compareTeams,
         range: this.compareRange,
@@ -534,7 +596,13 @@ export default {
       this.loadLineups();
     },
     compareTeams(teams, previous) {
-      if (teams.join() !== previous.join()) this.loadCompare();
+      if (teams.join() === previous.join()) return;
+      this.loadCompare();
+      // Their set lineups too, for their projections
+      if (this.lineupChoice === 'set') {
+        this.dayLineups = null;
+        this.loadLineups();
+      }
     },
     compareRange() {
       this.loadCompare();

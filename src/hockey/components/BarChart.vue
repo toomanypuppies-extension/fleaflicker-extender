@@ -7,23 +7,40 @@
       </button>
     </figcaption>
 
-    <ul v-if="series.length > 1" class="legend">
-      <li v-for="(item, index) in series" :key="item.name">
+    <ul v-if="series.length > 1 || stacked" class="legend">
+      <li v-for="(item, index) in series" v-show="series.length > 1" :key="item.name">
         <span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ item.name }}
       </li>
+      <template v-if="stacked">
+        <li v-for="(label, part) in partLabels" :key="label">
+          <span class="swatch partSwatch" :class="{ projected: part === 1 }"></span>{{ label }}
+        </li>
+      </template>
     </ul>
 
     <table v-if="showTable" class="chartTable">
       <thead>
         <tr>
           <th scope="col">{{ rowHeading }}</th>
-          <th v-for="item in series" :key="item.name" scope="col">{{ item.name }}</th>
+          <template v-for="item in series" :key="item.name">
+            <template v-if="stacked">
+              <th v-for="label in partLabels" :key="label" scope="col">
+                {{ series.length > 1 ? `${item.name}: ` : '' }}{{ label }}
+              </th>
+            </template>
+            <th v-else scope="col">{{ item.name }}</th>
+          </template>
         </tr>
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="row.key">
           <th scope="row">{{ row.label }}</th>
-          <td v-for="(value, index) in row.values" :key="index">{{ format(value) }}</td>
+          <template v-for="(value, index) in row.values" :key="index">
+            <template v-if="stacked">
+              <td v-for="(part, partIndex) in parts(value)" :key="partIndex">{{ format(part) }}</td>
+            </template>
+            <td v-else>{{ format(value) }}</td>
+          </template>
         </tr>
       </tbody>
     </table>
@@ -34,19 +51,26 @@
         <span class="track">
           <span class="baseline" :style="{ left: percent(zeroAt) }"></span>
           <span v-for="(value, index) in row.values" :key="index" class="barLine">
-            <span class="bar" tabindex="0" role="img"
-              :class="{ negative: value < 0, active: isHovered(row, index) }"
-              :style="barStyle(value, index)"
-              :aria-label="`${series[index].name}, ${row.label}: ${format(value)}`"
-              @pointerenter="hover(row, index, $event)" @focus="hover(row, index, $event)" @blur="hovered = null"></span>
-            <span class="value" :style="valueStyle(value)">{{ format(value) }}</span>
+            <template v-for="(segment, part) in segments(value)" :key="part">
+              <span v-if="segment.value !== 0 || part === 0" class="bar" tabindex="0" role="img"
+                :class="{
+                  negative: segment.value < 0,
+                  projected: part === 1,
+                  inner: part === 0 && segments(value)[1]?.value > 0,
+                  active: isHovered(row, index, part),
+                }"
+                :style="segmentStyle(segment, index)"
+                :aria-label="`${series[index].name}, ${row.label}: ${format(segment.value)}${stacked ? ` ${partLabels[part].toLowerCase()}` : ''}`"
+                @pointerenter="hover(row, index, part, $event)" @focus="hover(row, index, part, $event)" @blur="hovered = null"></span>
+            </template>
+            <span class="value" :style="valueStyle(total(value))">{{ format(total(value)) }}</span>
           </span>
         </span>
       </div>
-      <div v-if="hovered" class="tooltip" role="status" :style="{ top: `${hovered.top}px` }">
+      <div v-if="hovered" class="tooltip" role="status" :style="hovered.position">
         <strong>{{ format(hovered.value) }}</strong>
-        <span class="tooltipKey" :style="{ background: seriesColor(hovered.index) }"></span>
-        {{ series[hovered.index].name }} · {{ hovered.row.label }}
+        <span class="tooltipKey" :class="{ projected: hovered.part === 1 }" :style="{ background: seriesColor(hovered.index) }"></span>
+        {{ series[hovered.index].name }} · {{ hovered.row.label }}<template v-if="stacked"> · {{ partLabels[hovered.part].toLowerCase() }}</template>
         <span v-if="hovered.detail" class="tooltipDetail">{{ hovered.detail }}</span>
       </div>
     </div>
@@ -54,9 +78,6 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
-import { seriesColor } from "../chartColors";
-
 export default {
   props: {
     title: String,
@@ -64,8 +85,11 @@ export default {
     rowHeading: { type: String, default: '' },
     // [{ name }], at most two
     series: Array,
-    // [{ key, label, values: [number per series], details: [string per series] }]
+    // [{ key, label, values: [one per series], details: [string per series] }]. A value is a number,
+    // or with `stacked` a [scored, projected] pair drawn as one bar, the projected part lighter.
     rows: Array,
+    stacked: Boolean,
+    partLabels: { type: Array, default: () => ['Scored', 'Projected'] },
     digits: { type: Number, default: 1 },
     // Colors start from this series slot, so a chart of only the second team uses its color
     colorOffset: { type: Number, default: 0 },
@@ -77,14 +101,11 @@ export default {
     };
   },
   computed: {
-    ...mapState({
-      darkMode: state => state.settings.darkMode,
-    }),
-    // Bars grow from zero, left for negative values
+    // Bars grow from zero, left for negative values. Stacked parts follow each other.
     domain() {
-      const values = this.rows.flatMap(row => row.values);
-      const min = Math.min(0, ...values);
-      const max = Math.max(0, ...values);
+      const ends = this.rows.flatMap(row => row.values.flatMap(value => this.segments(value).map(segment => segment.end)));
+      const min = Math.min(0, ...ends);
+      const max = Math.max(0, ...ends);
       return { min, max, span: max - min || 1 };
     },
     zeroAt() {
@@ -93,7 +114,22 @@ export default {
   },
   methods: {
     seriesColor(index) {
-      return seriesColor(index + this.colorOffset, this.darkMode);
+      return this.$store.getters.chartColors[index + this.colorOffset];
+    },
+    parts(value) {
+      return Array.isArray(value) ? value : [value, 0];
+    },
+    total(value) {
+      return this.parts(value).reduce((sum, part) => sum + (part || 0), 0);
+    },
+    // Each part from where the one before it ended: [{ value, start, end }]
+    segments(value) {
+      let start = 0;
+      return (this.stacked ? this.parts(value) : [value]).map(part => {
+        const segment = { value: part || 0, start, end: start + (part || 0) };
+        start = segment.end;
+        return segment;
+      });
     },
     format(value) {
       return value === null || value === undefined ? '–' : value.toFixed(this.digits);
@@ -101,29 +137,38 @@ export default {
     percent(fraction) {
       return `${fraction * 100}%`;
     },
-    barStyle(value, index) {
-      const width = Math.abs(value) / this.domain.span;
-      const left = value < 0 ? this.zeroAt - width : this.zeroAt;
+    position(value) {
+      return (value - this.domain.min) / this.domain.span;
+    },
+    segmentStyle(segment, index) {
+      const [from, to] = [segment.start, segment.end].map(this.position).sort((a, b) => a - b);
       return {
-        left: this.percent(left),
-        width: this.percent(width),
+        left: this.percent(from),
+        width: this.percent(to - from),
         background: this.seriesColor(index),
       };
     },
     // The value sits past the bar's end: right of positive bars, left of negative ones
     valueStyle(value) {
-      const width = Math.abs(value) / this.domain.span;
-      return value < 0
-        ? { right: this.percent(1 - (this.zeroAt - width)) }
-        : { left: this.percent(this.zeroAt + width) };
+      const end = this.position(value);
+      return value < 0 ? { right: this.percent(1 - end) } : { left: this.percent(end) };
     },
-    hover(row, index, event) {
+    hover(row, index, part, event) {
       const plot = event.target.closest('.plot');
-      const top = event.target.getBoundingClientRect().bottom - plot.getBoundingClientRect().top + 4;
-      this.hovered = { row, index, value: row.values[index], detail: row.details?.[index], top };
+      const plotBox = plot.getBoundingClientRect();
+      const bar = event.target.getBoundingClientRect();
+      // Below bars in the top half, above those in the bottom half, so the tooltip stays over the
+      // chart. One that hung past the bottom could make the page scroll, move the bar away from the
+      // pointer and flicker.
+      const position = bar.top - plotBox.top < plotBox.height / 2
+        ? { top: `${bar.bottom - plotBox.top + 4}px` }
+        : { bottom: `${plotBox.bottom - bar.top + 4}px` };
+      const value = this.stacked ? this.parts(row.values[index])[part] : row.values[index];
+      const detail = this.stacked ? row.details?.[index]?.[part] : row.details?.[index];
+      this.hovered = { row, index, part, value, detail, position };
     },
-    isHovered(row, index) {
-      return this.hovered?.row.key === row.key && this.hovered.index === index;
+    isHovered(row, index, part) {
+      return this.hovered?.row.key === row.key && this.hovered.index === index && this.hovered.part === part;
     },
   },
 };
@@ -173,6 +218,11 @@ export default {
     gap: 0.4em;
     min-width: 0;
   }
+}
+
+// Scored and projected apply to every series, so their key is neutral
+.partSwatch {
+  background: currentColor;
 }
 
 .swatch {
@@ -267,6 +317,7 @@ export default {
   align-items: center;
   gap: 0.2em 0.5em;
   max-width: min(22em, 100%);
+  overflow-wrap: anywhere;
   padding: 0.4em 0.6em;
   font-size: 0.85em;
   color: var(--themeAccentColor);
@@ -284,6 +335,23 @@ export default {
 .tooltipKey {
   width: 12px;
   height: 2px;
+}
+
+// A stacked bar's first part ends square against the next, which starts after a 2px gap
+.bar.inner {
+  border-radius: 0;
+}
+
+.bar.projected {
+  border-left: 2px solid var(--themeBaseColor);
+  background-clip: padding-box;
+}
+
+// Projected points: the series' color, lighter, so the scored part reads first
+.bar.projected,
+.swatch.projected,
+.tooltipKey.projected {
+  opacity: 0.45;
 }
 
 .tooltipDetail {
