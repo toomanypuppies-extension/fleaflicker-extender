@@ -1,6 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { getStored, setStoredEntries } from '../src/utils/db.js';
 import { createFakeFlea, startClock, stopClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
   convertBoxscore, dayOrdinalAt, dayDate, periodsInRange, loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, startsBySlot,
@@ -83,6 +84,17 @@ test("a box score's starters add up to the points fleaflicker counted", () => {
   assert.ok(box.away.every(s => s.playerId && s.name && s.position));
 });
 
+test("games that haven't started yet aren't starts", () => {
+  const slot = (status) => ({
+    position: { label: 'C' },
+    home: { proPlayer: { id: 1, nameFull: 'A', position: 'C' }, requestedGames: [{ game: { id: 9, ...(status && { status }) } }] },
+  });
+  const box = convertBoxscore({ lineups: [{ group: 'START', slots: [slot(null), slot('IN_PROGRESS'), slot('FINAL_SCORE'), slot('POSTPONED')] }] });
+
+  assert.deepEqual(box.home.map(s => s.games), [0, 1, 1, 0]);
+  assert.deepEqual(startsBySlot([{ lineup: box.home }]), { C: 2 });
+});
+
 test('days are counted from 6am Eastern', () => {
   assert.equal(dayOrdinalAt(PERIOD_2, Date.parse('2026-10-05T10:00:00Z')), 7);
   assert.equal(dayOrdinalAt(PERIOD_2, Date.parse('2026-10-06T09:59:00Z')), 7);
@@ -124,6 +136,17 @@ test("past days are kept, today's are refetched after a few minutes", async () =
   assert.equal(flea.callsTo('FetchLeagueBoxscore'), 2);
   flea.calls = [];
   await load({ now: DAY_9 + DAY + 10 * MINUTE });
+  assert.equal(flea.callsTo('FetchLeagueBoxscore'), 1);
+});
+
+test("today's box score saved in an older format is fetched again, finished days aren't", async () => {
+  await load();
+  const stored = await getStored('hockey_boxscores', LEAGUE);
+  for (const box of Object.values(stored)) delete box.format;
+  await setStoredEntries({ hockey_boxscores: stored }, LEAGUE);
+  flea.calls = [];
+
+  await load({ now: DAY_9 + MINUTE });
   assert.equal(flea.callsTo('FetchLeagueBoxscore'), 1);
 });
 

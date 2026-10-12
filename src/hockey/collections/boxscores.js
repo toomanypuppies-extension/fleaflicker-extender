@@ -10,6 +10,9 @@ const DAY = 24 * HOUR;
 const SCORING_DAY_START_HOUR = 6;
 // Box scores for today change while games are played. Earlier days are kept for good.
 const LIVE_BOXSCORE_MAX_AGE = 5 * MINUTE;
+// Bumped when what's kept from a box score changes. Days that aren't over are fetched again.
+// 2: games that haven't started aren't counted
+const BOXSCORE_FORMAT = 2;
 // Save fetched box scores every so often, so a long first load isn't lost if the page closes
 const SAVE_EVERY = 10;
 
@@ -24,12 +27,16 @@ export const POSITIONS = ['C', 'LW', 'RW', 'D', 'G'];
 
 const round = (value) => Math.round(value * 100) / 100;
 
+// Fleaflicker lists the day's games before they start, without a status until they do
+const started = (requestedGame) => !!requestedGame.game?.status && !/POSTPONED|CANCELED|CANCELLED/.test(requestedGame.game.status);
+
 const convertSide = (lineups, side) => lineups.flatMap(lineup => (lineup.slots || []).map(slot => {
   const proPlayer = slot[side]?.proPlayer;
   if (!proPlayer) {
     return null;
   }
-  const games = slot[side].requestedGames || [];
+  // Games played or under way
+  const games = (slot[side].requestedGames || []).filter(started);
   return {
     // Fleaflicker leaves out the bench's group
     group: lineup.group || ROSTER_GROUPS.bench,
@@ -136,7 +143,7 @@ export const loadTeamDays = async (leagueId, {
 
   const toFetch = wanted.filter(({ key }) => {
     const box = boxscores[key];
-    return !box || (!box.final && now - box.fetchedAt >= LIVE_BOXSCORE_MAX_AGE);
+    return !box || (!box.final && (box.format !== BOXSCORE_FORMAT || now - box.fetchedAt >= LIVE_BOXSCORE_MAX_AGE));
   });
 
   // One at a time, fleaClient spaces out the calls anyway
@@ -145,7 +152,7 @@ export const loadTeamDays = async (leagueId, {
     try {
       const response = await getLeagueBoxscore(leagueId, gameId, day);
       if (response) {
-        boxscores[key] = { ...convertBoxscore(response), day, final, fetchedAt: now };
+        boxscores[key] = { ...convertBoxscore(response), day, final, fetchedAt: now, format: BOXSCORE_FORMAT };
       }
     } catch (err) {
       // Keep what was stored, if anything
