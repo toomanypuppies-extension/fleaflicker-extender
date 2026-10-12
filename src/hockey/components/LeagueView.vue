@@ -199,8 +199,9 @@ export default {
     },
   },
   watch: {
-    league(league, previous) {
-      if (league && !previous) {
+    // Loaded, or refreshed: activity and rosters only fetch what's changed
+    'league.fetchedAt'(fetchedAt, previous) {
+      if (fetchedAt && fetchedAt !== previous) {
         this.load();
       }
     },

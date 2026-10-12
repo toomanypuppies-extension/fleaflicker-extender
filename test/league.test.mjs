@@ -309,3 +309,12 @@ test('places by points for, ties sharing one', () => {
 
   assert.deepEqual(pointsForRanks(teams), { 2: 1, 1: 2, 3: 2, 4: 4 });
 });
+
+test('refreshing scores fetches the scoreboard and standings only', async () => {
+  await info();
+  flea.calls = [];
+
+  await info({ refreshScores: true });
+
+  assert.deepEqual(flea.calls.sort(), ['FetchLeagueScoreboard', 'FetchLeagueStandings']);
+});

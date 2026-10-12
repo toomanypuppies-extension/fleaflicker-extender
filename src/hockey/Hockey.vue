@@ -113,10 +113,14 @@ export default {
       this.$store.commit('setKeyValue', { key: 'gamesByMatchup', value: result.gamesByMatchup })
       this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },
-    async loadPlayers(forceRefresh) {
+    // keepShown leaves the current players in the table while the load runs (Refresh), skipActivity
+    // leaves reading league activity to the caller
+    async loadPlayers(forceRefresh, { keepShown = false, skipActivity = false } = {}) {
       // Only show the result of the most recent load, e.g. after toggling a setting twice
       const loadId = ++this.latestLoadId;
-      this.players = [];
+      if (!keepShown) {
+        this.players = [];
+      }
       this.loading = true;
       const result = await loadHockeyPlayers(
         this.leagueId,
@@ -131,7 +135,9 @@ export default {
       this.loadError = result.error;
       this.loading = false;
       if (this.players.length) {
-        this.loadActivity();
+        if (!skipActivity) {
+          this.loadActivity();
+        }
         this.loadLastSeasonIfNeeded();
       }
     },
@@ -167,13 +173,13 @@ export default {
       }
       this.lastSeasonById = await loadLastSeasonStats(this.leagueId);
     },
-    async loadLeague(forceRefresh) {
-      const league = await loadLeagueInfo(this.leagueId, { forceRefresh });
+    async loadLeague({ forceRefresh = false, refreshScores = false, skipActivity = false } = {}) {
+      const league = await loadLeagueInfo(this.leagueId, { forceRefresh, refreshScores });
       if (league) {
         this.league = league;
         // For the Ownership filter
         this.setKey('owners', league.teams.map(team => team.name));
-        if (this.players.length) {
+        if (this.players.length && !skipActivity) {
           this.loadActivity();
         }
       }
@@ -195,11 +201,18 @@ export default {
         this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })
       }
     },
-    refreshAll() {
-      this.loadPlayers(true);
-      this.loadGames(true);
-      if (this.leagueId) {
-        this.loadLeague(true);
+    /**
+     * Refresh: what changes during the day. Players' stats (only if games have been played since
+     * they were fetched) and owners, the scoreboard and standings, then league activity once.
+     * The NHL schedule, roster rules and league settings rarely change and keep their own expiry.
+     */
+    async refreshAll() {
+      await Promise.all([
+        this.loadPlayers(true, { keepShown: true, skipActivity: true }),
+        this.leagueId ? this.loadLeague({ refreshScores: true, skipActivity: true }) : null,
+      ]);
+      if (this.players.length) {
+        this.loadActivity();
       }
     },
     async resetApp() {

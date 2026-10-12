@@ -132,7 +132,7 @@ export const currentPeriod = (scoreboard, now) => (
  * (transaction limit and waiver timing, missing if they couldn't be loaded).
  * Returns what's stored when fleaflicker can't be reached, with error set.
  */
-export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh = false } = {}) => {
+export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh = false, refreshScores = false } = {}) => {
   const saved = await getStored('hockey_league', leagueId);
   // Stored by an older version without fields added since, refetch everything
   const stored = !saved || saved.format === LEAGUE_INFO_FORMAT ? saved : { ...saved, fetchedAt: 0, rulesFetchedAt: 0 };
@@ -140,7 +140,8 @@ export const loadLeagueInfo = async (leagueId, { now = Date.now(), forceRefresh 
     forceRefresh || !fetchedAt || now - fetchedAt >= maxAge || easternDay(fetchedAt) !== easternDay(now)
   );
 
-  const infoStale = stale(stored?.fetchedAt, LEAGUE_INFO_MAX_AGE);
+  // Refresh asks for the scoreboard and standings again, rules and settings rarely change
+  const infoStale = refreshScores || stale(stored?.fetchedAt, LEAGUE_INFO_MAX_AGE);
   const rulesStale = stale(stored?.rulesFetchedAt, RULES_MAX_AGE);
   // Settings that couldn't be loaded are tried again sooner
   const settingsStale = stored?.settings
