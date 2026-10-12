@@ -14,7 +14,7 @@
         </div>
         <p class="legend">
           <span class="lightSwatch"></span>
-          Light night
+          <span class="legendText">Light night</span>
           <HelpTip label="light nights">
             {{ lightNightMax }} or fewer games, so fewer fantasy players compete for lineup spots: a good night to stream.
           </HelpTip>
@@ -300,13 +300,17 @@ export default {
   }
 }
 
+// No opacity here: it would keep the help panel under the grid's sticky headers
 .legend {
   display: flex;
   align-items: center;
   gap: 0.4em;
   font-size: 0.9em;
-  opacity: 0.85;
   margin: 0;
+}
+
+.legendText {
+  opacity: 0.85;
 }
 
 .lightSwatch {
