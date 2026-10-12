@@ -40,67 +40,48 @@
         <span class="titleWithHelp">
           <h3 id="rosterHeading">Roster</h3>
           <HelpTip label="the roster">
-            <p>
-              Today's lineup. Starts, projected and bench points are for the rest of this matchup<template v-if="period">
-              ({{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }})</template>.
-            </p>
-            <p>{{ lineups[lineupChoice].description }} {{ methods[method].description }}</p>
-            <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+            <p>Today's lineup, with each player's stats this season. Games are what's left of this week.</p>
+            <p>Arrows mark recent games well above or below a player's usual. Pos rank is Fleaflicker's fantasy rank at their position.</p>
+            <p>Players without points this season aren't loaded unless Settings includes them, so they show without stats.</p>
           </HelpTip>
         </span>
-        <div class="pickers">
-          <label>
-            Projected lineups
-            <select :value="lineupChoice" @change="setKey('projectionLineup', $event.target.value)">
-              <option v-for="(option, key) in lineups" :key="key" :value="key">{{ option.label }}</option>
-            </select>
-          </label>
-          <label>
-            Points per game from
-            <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
-              <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
-            </select>
-          </label>
-        </div>
       </div>
-      <p v-if="period" class="note">
-        This matchup: {{ format(projection.expected) }} projected<template v-if="projection.bench > 0">,
-        {{ format(projection.bench) }} on the bench</template>.
-      </p>
       <p v-if="!roster" class="note">The roster couldn't be loaded. Use Refresh to try again.</p>
       <div v-else class="tableScroller">
         <table class="rosterTable">
           <thead>
             <tr>
               <th scope="col">Slot</th>
-              <th scope="col">Player</th>
-              <th scope="col">Pts/game</th>
-              <th scope="col" title="Games left in the lineup this matchup">Starts</th>
-              <th scope="col">Projected</th>
-              <th scope="col" title="Games left on the bench, and their expected points">Bench</th>
+              <th scope="col" class="playerColumn">Player</th>
+              <th scope="col">Today</th>
+              <th scope="col" title="Games left this week">Games</th>
+              <th v-for="column in statColumns" :key="column.key" scope="col" :title="column.title">{{ column.short || column.name }}</th>
             </tr>
           </thead>
           <tbody v-for="group in rosterGroups" :key="group.key">
-            <tr class="groupRow"><th colspan="6" scope="rowgroup">{{ group.label }}</th></tr>
+            <tr class="groupRow"><th :colspan="4 + statColumns.length" scope="rowgroup">{{ group.label }}</th></tr>
             <tr v-for="(slot, index) in group.slots" :key="`${group.key}-${index}`" :class="{ empty: !slot.player }">
               <td class="slot">{{ slot.label }}</td>
-              <th scope="row">
+              <th scope="row" class="playerColumn">
                 <template v-if="slot.player">
                   <button type="button" class="playerButton" @click="$emit('openPlayer', slot.player.id)">{{ slot.player.name }}</button>
                   <span class="playerMeta">
                     {{ slot.player.position }} · {{ slot.player.team }}
-                    <template v-if="slot.player.injury"> · {{ slot.player.injury }}</template>
-                    <template v-if="projected(slot.player.id)?.startRate < 1 && !projected(slot.player.id)?.injured">
-                      · starts {{ percent(projected(slot.player.id).startRate) }}
-                    </template>
+                    <span v-if="slot.player.injury" class="injury">{{ slot.player.injury }}</span>
                   </span>
                 </template>
                 <span v-else class="playerMeta">Empty</span>
               </th>
-              <td>{{ slot.player ? format(projected(slot.player.id)?.rate ?? stats(slot.player.id)?.avg) : '' }}</td>
-              <td>{{ projected(slot.player?.id)?.games ?? '' }}</td>
-              <td>{{ projected(slot.player?.id) ? format(projected(slot.player.id).expected) : '' }}</td>
-              <td>{{ benchCell(slot.player?.id) }}</td>
+              <td class="textCell">{{ stats(slot.player?.id)?.todaysGame || '' }}</td>
+              <td>{{ stats(slot.player?.id)?.gamesThisWeek ?? '' }}</td>
+              <td v-for="column in statColumns" :key="column.key">
+                <template v-if="stats(slot.player?.id)">
+                  {{ statText(column, stats(slot.player.id)) }}<span v-if="column.trendField && stats(slot.player.id)[column.trendField]"
+                    class="material-icons trend" :class="stats(slot.player.id)[column.trendField]"
+                    :title="stats(slot.player.id)[column.trendField] === 'hot' ? 'Well above their usual' : 'Well below their usual'">{{
+                      stats(slot.player.id)[column.trendField] === 'hot' ? 'trending_up' : 'trending_down' }}</span>
+                </template>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -112,8 +93,7 @@
         <span class="titleWithHelp">
           <h3 id="pointsHeading">Where the points come from</h3>
           <HelpTip label="where the points come from">
-            <p>Only points that counted: starters' points, not the bench's.</p>
-            <p v-if="period">The lighter part of each bar is what's projected for the rest of this matchup.</p>
+            <p>Only points that counted: starters' points, not the bench's. Projections are on the matchup page.</p>
           </HelpTip>
         </span>
         <span class="rangeButtons" role="group" aria-label="Range">
@@ -123,7 +103,7 @@
         </span>
       </div>
       <p class="note">
-        {{ format(totalPoints) }} points over {{ days.length }} days<template v-if="period"> + {{ format(projection.expected) }} projected</template>.
+        {{ format(totalPoints) }} points over {{ days.length }} days.
       </p>
       <p v-if="loadingDays" class="note" role="status">
         Loading box scores{{ progress.total ? ` ${progress.done} of ${progress.total}` : '' }}…
@@ -132,7 +112,7 @@
       <div class="charts" :class="{ stale: loadingDays }">
         <div class="chart">
           <BarChart title="By player" rowHeading="Player" :series="[{ name: team.name }]"
-            :rows="playerRows" :stacked="!!period" />
+            :rows="playerRows" />
           <div v-if="breakdownPlayers.length > topPlayers" class="moreButtons">
             <button v-if="hiddenPlayers > 0" type="button" class="filterButton" @click="shownPlayers += morePlayers">
               Show {{ Math.min(morePlayers, hiddenPlayers) }} more
@@ -143,7 +123,7 @@
           </div>
         </div>
         <BarChart class="chart" title="By position" rowHeading="Position" :series="[{ name: team.name }]"
-          :rows="positionRows" :stacked="!!period" />
+          :rows="positionRows" />
       </div>
     </section>
 
@@ -157,17 +137,32 @@ import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
 import HelpTip from "./HelpTip.vue";
-import { ROSTER_GROUPS, loadDayRosters } from "../collections/league";
-import { loadTeamDays, totalPoints, dayOrdinalAt, COMPARE_RANGES } from "../collections/boxscores";
-import { periodDates } from "../collections/scheduleWeeks";
+import { ROSTER_GROUPS } from "../collections/league";
+import { loadTeamDays, totalPoints, COMPARE_RANGES } from "../collections/boxscores";
+import { COLUMNS_BY_KEY, cellText } from "../collections/columns";
 import {
   playerBreakdown, positionBreakdown, playerChartRows, positionChartRows, TOP_PLAYERS,
 } from "../collections/breakdowns";
 
 // Players added to the chart by each "Show more"
 const MORE_PLAYERS = 10;
-import { projectTeam, teamGamesPlayed, PROJECTION_METHODS, PROJECTION_LINEUPS } from "../collections/projection";
 import { ordinal } from "../../utils/util";
+
+// The Players tab's stat columns shown for each player, with shorter headings where they're long
+const STAT_COLUMNS = [
+  { key: 'gamesPlayed' },
+  { key: 'points', short: 'Pts' },
+  { key: 'avg' },
+  { key: 'last5', short: 'L5' },
+  { key: 'last10', short: 'L10' },
+  { key: 'goals' },
+  { key: 'assists' },
+  { key: 'goalsAgainst' },
+  { key: 'savePct' },
+  { key: 'positionRank' },
+  { key: 'percentOwned', short: 'Own%' },
+  { key: 'lastSeasonAvg' },
+].map(column => ({ ...COLUMNS_BY_KEY[column.key], ...column }));
 
 const GROUP_LABELS = {
   [ROSTER_GROUPS.start]: 'Starters',
@@ -177,13 +172,11 @@ const GROUP_LABELS = {
 };
 
 /**
- * One team: its status, roster with this matchup's projections, where its points come from and
- * its recent moves.
+ * One team: its status, roster with each player's stats, where its points come from and its
+ * recent moves. Projections are on the matchup page.
  */
 export default {
   components: { BarChart, ActivityTimeline, HelpTip },
-  // From Hockey, loads schedule weeks
-  inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
     leagueId: String,
     league: Object,
@@ -196,7 +189,6 @@ export default {
     period: Object,
     // The table's players
     players: Array,
-    schedule: Array,
     now: Number,
     activityItems: Array,
     activityLoaded: Boolean,
@@ -208,11 +200,8 @@ export default {
   emits: ['close', 'openPlayer'],
   data() {
     return {
-      methods: PROJECTION_METHODS,
-      lineups: PROJECTION_LINEUPS,
       ranges: COMPARE_RANGES,
-      // { [day]: groups }, the lineups set for the days left, for "As set" projections
-      dayLineups: null,
+      statColumns: STAT_COLUMNS,
       days: [],
       failed: 0,
       loadingDays: true,
@@ -227,8 +216,6 @@ export default {
   },
   computed: {
     ...mapState({
-      method: state => state.projectionMethod,
-      lineupChoice: state => state.projectionLineup,
       teamRange: state => state.teamRange,
       drawerExpanded: state => state.drawerExpanded,
     }),
@@ -237,29 +224,6 @@ export default {
     },
     playersById() {
       return new Map((this.players || []).map(player => [player.id, player]));
-    },
-    remainingDays() {
-      if (!this.period) return [];
-      const days = [];
-      for (let day = dayOrdinalAt(this.period, this.league.fetchedAt); day <= this.period.lastDay; day++) days.push(day);
-      return days;
-    },
-    projection() {
-      return projectTeam({
-        // The best lineup only needs who's on the roster
-        lineupFor: day => (this.lineupChoice === 'set' && this.dayLineups?.[day]) || this.roster?.groups || null,
-        lineup: this.lineupChoice,
-        playersById: this.playersById,
-        startSlots: this.league.rules?.startSlots,
-        schedule: this.schedule,
-        period: this.period,
-        method: this.method,
-        teamGames: teamGamesPlayed(this.players || []),
-        scoreAsOf: this.league.fetchedAt,
-      });
-    },
-    projectedById() {
-      return new Map(this.projection.players.map(player => [player.id, player]));
     },
     rosterGroups() {
       const order = [ROSTER_GROUPS.start, ROSTER_GROUPS.bench, ROSTER_GROUPS.injured, ROSTER_GROUPS.taxi];
@@ -275,17 +239,17 @@ export default {
       return totalPoints(this.days);
     },
     breakdownPlayers() {
-      return playerBreakdown(this.days, this.period ? this.projection : null);
+      return playerBreakdown(this.days);
     },
     // Players folded into the "others" row
     hiddenPlayers() {
       return Math.max(this.breakdownPlayers.length - this.shownPlayers, 0);
     },
     playerRows() {
-      return playerChartRows(this.breakdownPlayers, { stacked: !!this.period, shown: this.shownPlayers });
+      return playerChartRows(this.breakdownPlayers, { shown: this.shownPlayers });
     },
     positionRows() {
-      return positionChartRows([positionBreakdown(this.days, this.period ? this.projection : null)], { stacked: !!this.period });
+      return positionChartRows([positionBreakdown(this.days)]);
     },
     fleaTarget() {
       return process.env.STANDALONE ? '_blank' : '_self';
@@ -301,18 +265,11 @@ export default {
     stats(playerId) {
       return this.playersById.get(playerId);
     },
-    projected(playerId) {
-      return playerId ? this.projectedById.get(playerId) : undefined;
-    },
-    benchCell(playerId) {
-      const player = this.projected(playerId);
-      return player?.benchGames ? `${player.benchGames} (${this.format(player.benchExpected)})` : '';
+    statText(column, player) {
+      return cellText(column, player);
     },
     format(value) {
       return (value ?? 0).toFixed(1);
-    },
-    percent(fraction) {
-      return `${Math.round(fraction * 100)}%`;
     },
     ordinal,
     formatDay(time) {
@@ -343,26 +300,14 @@ export default {
       this.failed = failed;
       this.loadingDays = false;
     },
-    async loadLineups() {
-      if (this.lineupChoice !== 'set' || !this.remainingDays.length || this.dayLineups) return;
-      const lineups = await loadDayRosters(this.leagueId, [this.teamId], this.remainingDays, { now: Date.now() });
-      this.dayLineups = lineups[this.teamId] || {};
-    },
   },
   watch: {
     teamRange() {
       this.loadDays();
     },
-    lineupChoice() {
-      this.loadLineups();
-    },
   },
   mounted() {
-    if (this.period) {
-      this.ensureSchedule(periodDates(this.period));
-    }
     this.loadDays();
-    this.loadLineups();
   },
 };
 </script>
@@ -498,21 +443,6 @@ export default {
   gap: 0.15em;
 }
 
-.pickers {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5em 1.5em;
-
-  label {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5em;
-    font-weight: normal;
-    margin: 0;
-  }
-}
-
 select {
   font: inherit;
   color: inherit;
@@ -553,8 +483,13 @@ select {
     font-size: 0.85em;
   }
 
-  thead th:nth-child(-n + 2) {
+  thead th:nth-child(-n + 3),
+  .textCell {
     text-align: left;
+  }
+
+  .textCell {
+    white-space: nowrap;
   }
 
   .groupRow th {
@@ -563,9 +498,12 @@ select {
     padding-top: 0.75em;
   }
 
-  .slot {
+  .slot,
+  thead th:first-child {
     width: 3.5em;
-    opacity: 0.8;
+    min-width: 3.5em;
+    max-width: 3.5em;
+    box-sizing: border-box;
   }
 
   .empty {
@@ -589,6 +527,53 @@ select {
   display: block;
   font-size: 0.85em;
   opacity: 0.8;
+  white-space: nowrap;
+}
+
+.playerColumn {
+  min-width: 10em;
+}
+
+// Slot and player stay put while the stats scroll sideways
+.rosterTable .slot,
+.rosterTable thead th:first-child,
+.rosterTable .playerColumn {
+  position: sticky;
+  z-index: 1;
+  background: var(--themeBaseColor);
+}
+
+.rosterTable .slot,
+.rosterTable thead th:first-child {
+  left: 0;
+}
+
+.rosterTable .playerColumn {
+  left: 3.5em;
+  box-shadow: 1px 0 0 rgba(127, 127, 127, 0.3);
+}
+
+.injury {
+  margin-left: 0.3em;
+  padding: 0 0.3em;
+  border-radius: 3px;
+  font-weight: 700;
+  color: #fff;
+  background: #c62828;
+}
+
+.trend {
+  font-size: 1em;
+  vertical-align: -2px;
+  margin-left: 0.15em;
+
+  &.hot {
+    color: #4caf50;
+  }
+
+  &.cold {
+    color: #ef5350;
+  }
 }
 
 .rangeButtons {

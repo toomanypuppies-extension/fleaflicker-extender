@@ -12,7 +12,7 @@
       </div>
 
       <TeamView v-if="openTeam" :key="openTeam.teamId" :leagueId="leagueId" :league="league" :teamId="openTeam.teamId"
-        :roster="rosters[openTeam.teamId]" :summary="openTeam" :period="period" :players="players" :schedule="schedule"
+        :roster="rosters[openTeam.teamId]" :summary="openTeam" :period="period" :players="players"
         :now="now" :activityItems="activityItems" :activityLoaded="activityLoaded" :activityLoading="loadingActivity"
         :activityError="activityError" :myTeamId="myTeamId" :opponentId="opponentId"
         @close="openTeamPage(null)" @openPlayer="openPlayer" />
