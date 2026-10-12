@@ -2,7 +2,11 @@ import lodash from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
-import { teamSeriesColors } from './hockey/chartColors';
+import { teamSeriesColors, FALLBACK_COLORS } from './hockey/chartColors';
+
+// The app's own colors, when the favorite team's aren't wanted
+export const DEFAULT_THEME_COLORS = { primary: '#17202b', secondary: '#58a6ff' };
+const themeColors = (state) => (state.settings.colorTheme === 'default' ? DEFAULT_THEME_COLORS : getColors(state));
 
 // lodash is CommonJS, which node (tests) can't import names from
 const { set, debounce, merge, get, cloneDeep } = lodash;
@@ -14,6 +18,8 @@ const initState = {
   loading: true,
   settings: {
     darkMode: true,
+    // 'team' for the favorite team's colors, 'default' for the app's own (DEFAULT_THEME_COLORS)
+    colorTheme: 'team',
   },
   // A TABS key
   activeTab: 'players',
@@ -149,14 +155,15 @@ export const store = createStore({
       return state.settings.darkMode ? "#e2e2e2" : "#333333";
     },
     teamMainColor(state) {
-      return getColors(state)?.primary;
+      return themeColors(state)?.primary;
     },
     teamSecondaryColor(state) {
-      return getColors(state)?.secondary;
+      return themeColors(state)?.secondary;
     },
     // Two chart series colors from the favorite team's, adjusted to be readable in the theme
     chartColors(state) {
-      return teamSeriesColors(getColors(state), state.settings.darkMode ? 'dark' : 'light');
+      const mode = state.settings.darkMode ? 'dark' : 'light';
+      return state.settings.colorTheme === 'default' ? FALLBACK_COLORS[mode] : teamSeriesColors(getColors(state), mode);
     }
   }
 })

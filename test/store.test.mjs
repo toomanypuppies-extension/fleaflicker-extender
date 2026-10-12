@@ -60,3 +60,19 @@ test('the old League tab opens on its new tab', async () => {
     assert.equal(store.state.leagueSection, undefined);
   }
 });
+
+test('the default theme replaces the favorite team colors, charts included', async () => {
+  storage.reset();
+  setLeague('600');
+  const { store, DEFAULT_THEME_COLORS } = await import('../src/store.js');
+  const { FALLBACK_COLORS } = await import('../src/hockey/chartColors.js');
+  store.commit('loadLeagueState');
+  const teamColors = [store.getters.teamMainColor, store.getters.teamSecondaryColor];
+
+  store.commit('setKeyValue', { key: 'settings.colorTheme', value: 'default' });
+  assert.deepEqual([store.getters.teamMainColor, store.getters.teamSecondaryColor], [DEFAULT_THEME_COLORS.primary, DEFAULT_THEME_COLORS.secondary]);
+  assert.deepEqual(store.getters.chartColors, FALLBACK_COLORS.dark);
+
+  store.commit('setKeyValue', { key: 'settings.colorTheme', value: 'team' });
+  assert.deepEqual([store.getters.teamMainColor, store.getters.teamSecondaryColor], teamColors);
+});

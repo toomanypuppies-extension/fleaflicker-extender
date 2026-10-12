@@ -10,6 +10,18 @@
     :background-color="themeBaseColor"
   >
     <div class="settingsBody" :style="{ color: themeAccentColor }">
+      <div>
+        <va-select
+          label="Colors"
+          :options="colorThemeOptions"
+          text-by="text"
+          value-by="value"
+          :color="themeAccentColor"
+          v-model="colorTheme"
+        />
+        <p class="hint">Your favorite team's colors, or the app's default ones.</p>
+      </div>
+
       <va-select
         label="Favorite team"
         :options="favoriteTeamOptions"
@@ -17,7 +29,7 @@
         v-model="favoriteTeam"
         maxHeight="300px"
       />
-      <p class="hint">Sets the app's colors.</p>
+      <p class="hint">{{ colorTheme === 'team' ? "Sets the app's colors." : 'Used when Colors is set to team colors.' }}</p>
 
       <va-checkbox v-model="darkMode" :color="themeAccentColor" label="Dark mode" />
 
@@ -60,6 +72,20 @@ export default {
       'themeBaseColor',
       'themeAccentColor'
     ]),
+    colorThemeOptions() {
+      return [
+        { text: 'Favorite team colors', value: 'team' },
+        { text: 'Default', value: 'default' },
+      ];
+    },
+    colorTheme: {
+      get() {
+        return this.$store.state.settings.colorTheme || 'team';
+      },
+      set(value) {
+        this.$store.commit('setKeyValue', { key: 'settings.colorTheme', value });
+      },
+    },
     favoriteTeamOptions() {
       return HOCKEY_TEAM_LIST.filter((t) => t !== "Free Agent");
     },
