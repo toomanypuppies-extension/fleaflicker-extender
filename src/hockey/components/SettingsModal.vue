@@ -20,7 +20,7 @@
           :color="themeAccentColor"
           v-model="colorTheme"
         />
-        <p class="hint">Your favorite team's colors, or the app's default ones.</p>
+        <p class="hint">The app's own colors, or your favorite team's.</p>
       </div>
 
       <va-select
@@ -76,13 +76,13 @@ export default {
     ]),
     colorThemeOptions() {
       return [
-        { text: 'Favorite team colors', value: 'team' },
         { text: 'Default', value: 'default' },
+        { text: 'Favorite team colors', value: 'team' },
       ];
     },
     colorTheme: {
       get() {
-        return this.$store.state.settings.colorTheme || 'team';
+        return this.$store.state.settings.colorTheme || 'default';
       },
       set(value) {
         this.$store.commit('setKeyValue', { key: 'settings.colorTheme', value });

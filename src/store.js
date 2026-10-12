@@ -17,8 +17,9 @@ const merge = (target, source) => mergeWith(target, source, (_, value) => (Array
 
 // What the Players tab's filters start as, and go back to with Clear filters
 export const FILTER_DEFAULTS = { ownership: 'Free Agent', injurySelections: ['HEALTHY'] };
-// Bumped when FILTER_DEFAULTS change, so saved filters from before get them once
-const FILTER_DEFAULTS_VERSION = 1;
+// Bumped when defaults change that saved state should take once (saved as filterDefaultsVersion):
+// 1 the filters' defaults (FILTER_DEFAULTS), 2 the app's own colors instead of the favorite team's
+const FILTER_DEFAULTS_VERSION = 2;
 
 const initState = {
   sport: 'nhl',
@@ -27,8 +28,8 @@ const initState = {
   loading: true,
   settings: {
     darkMode: true,
-    // 'team' for the favorite team's colors, 'default' for the app's own (DEFAULT_THEME_COLORS)
-    colorTheme: 'team',
+    // 'default' for the app's own colors (DEFAULT_THEME_COLORS), 'team' for the favorite team's
+    colorTheme: 'default',
   },
   // A TABS key
   activeTab: 'players',
@@ -107,11 +108,15 @@ const createState = () => {
   }
   delete defaultState.leagueSection;
 
-  // Saved before the filters had defaults: start them from the defaults once, after that what the
-  // user picks stays, an empty Injury (any) included
-  if (savedDefaultsVersion < FILTER_DEFAULTS_VERSION) {
-    Object.assign(defaultState, cloneDeep(FILTER_DEFAULTS), { filterDefaultsVersion: FILTER_DEFAULTS_VERSION });
+  // Saved before these defaults: take them once, after that what the user picks stays (an empty
+  // Injury, meaning any, or team colors)
+  if (savedDefaultsVersion < 1) {
+    Object.assign(defaultState, cloneDeep(FILTER_DEFAULTS));
   }
+  if (savedDefaultsVersion < 2) {
+    defaultState.settings.colorTheme = 'default';
+  }
+  defaultState.filterDefaultsVersion = FILTER_DEFAULTS_VERSION;
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;

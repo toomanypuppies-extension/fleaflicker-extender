@@ -67,6 +67,9 @@ test('the default theme replaces the favorite team colors, charts included', asy
   const { store, DEFAULT_THEME_COLORS } = await import('../src/store.js');
   const { FALLBACK_COLORS } = await import('../src/hockey/chartColors.js');
   store.commit('loadLeagueState');
+  // The app's own colors to start with
+  assert.equal(store.state.settings.colorTheme, 'default');
+  store.commit('setKeyValue', { key: 'settings.colorTheme', value: 'team' });
   const teamColors = [store.getters.teamMainColor, store.getters.teamSecondaryColor];
 
   store.commit('setKeyValue', { key: 'settings.colorTheme', value: 'default' });
@@ -95,6 +98,11 @@ test('filters start on healthy free agents, saved filters get that once, and Cle
   // Saved since: any injury (empty) and All stay
   assert.deepEqual(load('602', { ownership: 'All', injurySelections: [], filterDefaultsVersion: 1 }), ['All', []]);
   assert.deepEqual(load('603', { injurySelections: ['DTD'], filterDefaultsVersion: 1 }), ['Free Agent', ['DTD']]);
+  // Team colors saved before the app's own became the default switch once, after that they stay
+  load('604', { settings: { colorTheme: 'team' }, filterDefaultsVersion: 1 });
+  assert.equal(store.state.settings.colorTheme, 'default');
+  load('605', { settings: { colorTheme: 'team' }, filterDefaultsVersion: 2 });
+  assert.equal(store.state.settings.colorTheme, 'team');
 
   store.commit('clearFilters');
   assert.deepEqual([store.state.ownership, store.state.injurySelections], ['Free Agent', ['HEALTHY']]);
