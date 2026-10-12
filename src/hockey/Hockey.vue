@@ -15,7 +15,7 @@
     <PlayerList sport="nhl" :loading="loading" :players="tablePlayers" :gamesByTeam="gamesByTeam"
       :availabilityKnown="!!waiverSettings" @playerSelected="(player) => selectPlayer(player)" />
   </template>
-  <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" />
+  <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" :league="league" />
   <LeagueView v-else-if="activeTab === 'league'" :leagueId="leagueId" :league="league" :players="tablePlayers"
     :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
 
@@ -47,11 +47,16 @@ import { getActivityLog, syncActivity } from "./collections/activity";
 import { latestDrops, waiverStatus, availabilityLabel, availabilityOrder } from "./collections/waivers";
 import { loadLastSeasonStats, lastSeasonFields } from "./collections/lastSeason";
 import { usesLastSeason } from "./collections/columns";
+import { loadScheduleWeeks, mergeScheduleWeeks } from "./collections/scheduleWeeks";
 
 // Waiver status depends on the time, so it's worked out again this often
 const CLOCK_INTERVAL = 60 * 1000;
 
 export default {
+  // Views ask for the schedule weeks they show, it starts with the next 4
+  provide() {
+    return { ensureSchedule: this.ensureSchedule };
+  },
   data() {
     return {
       teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
@@ -86,6 +91,14 @@ export default {
     LeagueView,
   },
   methods: {
+    // Loads the schedule weeks covering `dates` (YYYY-MM-DD) that aren't loaded yet
+    async ensureSchedule(dates) {
+      const loaded = new Set((this.schedule || []).flatMap(week => week.days.map(day => day.date)));
+      const missing = dates.filter(date => !loaded.has(date));
+      if (!missing.length) return;
+      const weeks = await loadScheduleWeeks(missing);
+      this.schedule = mergeScheduleWeeks(this.schedule, weeks);
+    },
     async loadGames(forceRefresh) {
       this.gamesByTeam = {};
       const result = await getGamesThisWeek(forceRefresh);
@@ -93,7 +106,8 @@ export default {
         return;
       }
       this.gamesByTeam = result.gamesByTeam;
-      this.schedule = result.schedule;
+      // Keeps weeks loaded on demand
+      this.schedule = mergeScheduleWeeks(this.schedule, result.schedule);
       this.$store.commit('setKeyValue', { key: 'gamesByMatchup', value: result.gamesByMatchup })
       this.$store.commit('setKeyValue', { key: 'weekStartDates', value: result.weekStartDates })
     },

@@ -191,7 +191,7 @@ export default {
 
 .row {
   display: grid;
-  grid-template-columns: minmax(4em, 9em) minmax(0, 1fr);
+  grid-template-columns: minmax(4em, 13em) minmax(0, 1fr);
   align-items: center;
   gap: 0.5em;
 }

@@ -16,6 +16,19 @@ export const PROJECTION_METHODS = {
 };
 export const DEFAULT_PROJECTION_METHOD = 'mix';
 
+// Who's expected to start each day, picked in the app
+export const PROJECTION_LINEUPS = {
+  best: {
+    label: 'Best possible',
+    description: 'Each day the lineup is filled with the players expected to score the most.',
+  },
+  set: {
+    label: 'As set',
+    description: 'Each day only the starters in the lineup the team has set count.',
+  },
+};
+export const DEFAULT_PROJECTION_LINEUP = 'best';
+
 // In the mix, last season's average counts like this many games of this season's
 const LAST_SEASON_WEIGHT_GAMES = 10;
 const RECENT_FORM_WEIGHT = 0.3;
@@ -177,17 +190,20 @@ const groupSlots = (groups, group) => (groups || []).filter(g => g.group === gro
 const round = (value) => Math.round(value * 100) / 100;
 
 /**
- * Expected points a team adds over the rest of a matchup period with the lineups it has set:
+ * Expected points a team adds over the rest of a matchup period:
  * { expected, bench, best, variance, bestVariance, days: [{ day, date, expected, bench, best, hasLineup }], players }.
- * Only starters' points count. `bench` is what benched players with games are expected to score,
- * `best` what the best possible lineup each day would score instead. Injured players, DTD too,
- * are expected to score nothing. Games that started before `scoreAsOf` are left out, their points
- * are already in the score.
- * @param lineupFor (day) => that day's roster groups, like loadTeamRosters', or null if not known
+ * Only starters' points count: with `lineup` 'best', the players expected to score the most each day,
+ * with 'set', the starters in the lineup the team set (PROJECTION_LINEUPS). `bench` is what players
+ * with games who don't start are expected to score, `best` what the best lineup would score.
+ * Injured players, DTD too, are expected to score nothing. Games that started before `scoreAsOf` are
+ * left out, their points are already in the score.
+ * @param lineupFor (day) => that day's roster groups, like loadTeamRosters', or null if not known.
+ *   The best lineup only needs who's on the roster, so today's roster does for every day.
  * @param playersById the player table's players, for averages
  */
 export const projectTeam = ({
   lineupFor, playersById, startSlots = [], schedule, period, method = DEFAULT_PROJECTION_METHOD, teamGames = {}, scoreAsOf = Date.now(),
+  lineup: lineupChoice = DEFAULT_PROJECTION_LINEUP,
 }) => {
   if (!period) {
     return { expected: 0, bench: 0, best: 0, variance: 0, days: [], players: [] };
@@ -248,26 +264,8 @@ export const projectTeam = ({
 
     const starterSlots = groupSlots(groups, ROSTER_GROUPS.start).filter(slot => slot.player);
     const benched = groupSlots(groups, ROSTER_GROUPS.bench).map(slot => slot.player).filter(Boolean);
-    let expected = 0;
-    let bench = 0;
-
-    for (const slot of starterSlots) {
-      if (!playsLater(slot.player)) continue;
-      const player = playerFor(slot.player);
-      player.games += 1;
-      player.expected += player.gameValue;
-      expected += player.gameValue;
-      variance += player.gameVariance;
-    }
-    for (const rosterPlayer of benched) {
-      const player = playerFor(rosterPlayer);
-      if (!playsLater(rosterPlayer) || player.gameValue <= 0) continue;
-      player.benchGames += 1;
-      player.benchExpected += player.gameValue;
-      bench += player.gameValue;
-    }
-    // Starters not playing later today still show in the player list
-    starterSlots.forEach(slot => playerFor(slot.player));
+    // Everyone on the roster shows in the player list, games or not
+    [...starterSlots.map(slot => slot.player), ...benched].forEach(playerFor);
 
     // The best lineup from everyone with a game still to come. Starters whose game has begun are
     // locked in, their slots can't be used again.
@@ -287,6 +285,27 @@ export const projectTeam = ({
     const chosen = lineup.filter(index => index !== null).map(index => candidates[index]);
     const best = chosen.reduce((total, player) => total + player.gameValue, 0);
     bestVariance += chosen.reduce((total, player) => total + player.gameVariance, 0);
+
+    // Who starts: the lineup as set, or the best one
+    const starting = lineupChoice === 'set'
+      ? starterSlots.map(slot => slot.player).filter(playsLater).map(playerFor)
+      : chosen;
+    const startingIds = new Set(starting.map(player => player.id));
+    const sitting = candidates.filter(player => !startingIds.has(player.id));
+
+    let expected = 0;
+    let bench = 0;
+    for (const player of starting) {
+      player.games += 1;
+      player.expected += player.gameValue;
+      expected += player.gameValue;
+      variance += player.gameVariance;
+    }
+    for (const player of sitting) {
+      player.benchGames += 1;
+      player.benchExpected += player.gameValue;
+      bench += player.gameValue;
+    }
 
     days.push({ day, date, expected: round(expected), bench: round(bench), best: round(best), hasLineup: true });
   }

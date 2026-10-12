@@ -1,30 +1,30 @@
 <template>
   <MatchupView v-if="openGroup" :key="openGroup.matchup.gameId" :leagueId="leagueId" :league="league" :group="openGroup"
     :period="selectedPeriod" :rosters="rosters" :players="players" :schedule="schedule" :now="now"
-    @close="openMatchup(null)" @openPlayer="$emit('openPlayer', $event)" />
+    :previousPeriod="previousPeriod" :nextPeriod="nextPeriod"
+    @close="openMatchup(null)" @page="pageMatchup" @openPlayer="$emit('openPlayer', $event)" />
 
   <section v-else class="matchupsSection containerColor" aria-labelledby="matchupsHeading">
     <h2 id="matchupsHeading" class="visuallyHidden">Matchups</h2>
-    <div class="weekBar">
-      <span class="weekPicker">
-      <button type="button" class="iconButton" :disabled="!previousPeriod" aria-label="Previous week"
-        @click="selectPeriod(previousPeriod.ordinal)">
-        <span class="material-icons" aria-hidden="true">chevron_left</span>
-      </button>
-      <select :value="selectedPeriod?.ordinal" aria-label="Week" @change="selectPeriod(parseInt($event.target.value, 10))">
-        <option v-for="period in periods" :key="period.ordinal" :value="period.ordinal">{{ periodLabel(period) }}</option>
-      </select>
-      <button type="button" class="iconButton" :disabled="!nextPeriod" aria-label="Next week"
-        @click="selectPeriod(nextPeriod.ordinal)">
-        <span class="material-icons" aria-hidden="true">chevron_right</span>
-      </button>
-      </span>
-      <button v-if="selectedPeriod && selectedPeriod.ordinal !== currentOrdinal" type="button" class="textButton"
-        @click="selectPeriod(null)">Back to this week</button>
-    </div>
+    <WeekPicker :periods="periods" :selected="selectedPeriod" :currentOrdinal="currentOrdinal" @select="selectPeriod" />
 
+    <div class="projectionControls">
+      <label>
+        Projected lineups
+        <select :value="projectionLineup" @change="setKey('projectionLineup', $event.target.value)">
+          <option v-for="(option, key) in lineupOptions" :key="key" :value="key">{{ option.label }}</option>
+        </select>
+      </label>
+      <label>
+        Points per game from
+        <select :value="projectionMethod" @change="setKey('projectionMethod', $event.target.value)">
+          <option v-for="(option, key) in methodOptions" :key="key" :value="key">{{ option.label }}</option>
+        </select>
+      </label>
+    </div>
     <p class="note">{{ weekNote }}</p>
     <p v-if="loadingMatchups" class="note" role="status">Loading matchups…</p>
+    <p v-else-if="phase !== 'past' && !scheduleReady" class="note" role="status">Loading the NHL schedule for this week…</p>
     <p v-else-if="!matchups" class="note">This week's matchups couldn't be loaded. Use Refresh to try again.</p>
 
     <div class="matchups">
@@ -47,7 +47,7 @@
             <span v-if="projectionFor(group)">
               Projected <strong>{{ projectionFor(group).finals[0] }}</strong> to <strong>{{ projectionFor(group).finals[1] }}</strong>
               · {{ projectionFor(group).winLabel }}
-              <span v-if="!projectionFor(group).setLineups" class="basis"
+              <span v-if="projectionFor(group).fallback" class="basis"
                 title="These teams' lineups for the days left aren't loaded yet. Details loads them.">(best lineups)</span>
             </span>
             <span v-else-if="phase !== 'past' && loadingRosters">Projecting…</span>
@@ -66,12 +66,18 @@
 <script>
 import { mapState } from "vuex";
 import MatchupView from "./MatchupView.vue";
+import WeekPicker from "./WeekPicker.vue";
+import { periodDates, coversPeriod } from "../collections/scheduleWeeks";
 import { currentPeriod, groupByMatchup, loadPeriodMatchups, loadDayRosters } from "../collections/league";
 import { dayOrdinalAt } from "../collections/boxscores";
-import { projectTeam, teamGamesPlayed, winChance, gamesLeft, formatChance } from "../collections/projection";
+import {
+  projectTeam, teamGamesPlayed, winChance, gamesLeft, formatChance, PROJECTION_LINEUPS, PROJECTION_METHODS,
+} from "../collections/projection";
 
 export default {
-  components: { MatchupView },
+  components: { MatchupView, WeekPicker },
+  // From Hockey, loads schedule weeks
+  inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
     leagueId: String,
     league: Object,
@@ -90,6 +96,8 @@ export default {
       // { [teamId]: { [day]: groups } }: lineups set for the days left, for your matchup and any
       // matchup whose Details loaded them in the last few minutes
       dayLineups: {},
+      lineupOptions: PROJECTION_LINEUPS,
+      methodOptions: PROJECTION_METHODS,
     };
   },
   computed: {
@@ -98,6 +106,7 @@ export default {
       selectedOrdinal: state => state.selectedPeriod,
       openMatchupId: state => state.openMatchupId,
       projectionMethod: state => state.projectionMethod,
+      projectionLineup: state => state.projectionLineup,
     }),
     periods() {
       return this.league.scoreboard?.periods || [];
@@ -140,6 +149,10 @@ export default {
     openGroup() {
       return this.openMatchupId ? this.groups.find(group => group.matchup?.gameId === this.openMatchupId) : null;
     },
+    // The NHL schedule has every day of the week, so projections are complete
+    scheduleReady() {
+      return !!this.selectedPeriod && coversPeriod(this.schedule, this.selectedPeriod);
+    },
     // The days left to project, from the score's time
     remainingDays() {
       if (this.phase === 'past' || !this.selectedPeriod) return [];
@@ -153,15 +166,17 @@ export default {
     },
     weekNote() {
       if (this.phase === 'past') return 'Final scores.';
-      const lineups = 'Projections use the lineups teams have set for each day: always for your matchup, for others once '
-        + "you've opened their Details. Until then they assume each team's best lineup.";
+      const lineups = this.projectionLineup === 'set'
+        ? 'Projections use the lineups teams have set for each day: always for your matchup, for others once '
+          + "you've opened their Details. Until then they assume each team's best lineup."
+        : PROJECTION_LINEUPS.best.description;
       if (this.phase === 'future') return `Starts ${this.formatDay(this.selectedPeriod.start)}. ${lineups}`;
       return `Scores as of ${this.formatTime(this.league.fetchedAt)}. ${lineups}`;
     },
     // Each matchup's projected final scores and who's favored, by game id
     projections() {
       const startSlots = this.league.rules?.startSlots;
-      if (this.phase === 'past' || !startSlots || !this.players?.length || !this.schedule) {
+      if (this.phase === 'past' || !startSlots || !this.players?.length || !this.scheduleReady) {
         return {};
       }
       const teamGames = teamGamesPlayed(this.players);
@@ -172,8 +187,10 @@ export default {
       for (const group of this.groups) {
         if (!group.matchup || group.teams.some(team => !this.rosters[team.teamId])) continue;
         const scores = group.teams.map((_, index) => this.phase === 'future' ? 0 : parseFloat(this.scoreFor(group, index)) || 0);
-        // Both teams on the same basis: the lineups they've set if both are loaded, else their best
-        const setLineups = group.teams.every(team => this.remainingDays.every(day => this.dayLineups[team.teamId]?.[day]));
+        // Both teams on the same basis: the lineups they've set if asked for and both are loaded,
+        // else their best
+        const setLineups = this.projectionLineup === 'set'
+          && group.teams.every(team => this.remainingDays.every(day => this.dayLineups[team.teamId]?.[day]));
         const [first, second] = group.teams.map(team => projectTeam({
           lineupFor: day => (setLineups && this.dayLineups[team.teamId][day]) || this.rosters[team.teamId].groups,
           playersById,
@@ -183,27 +200,44 @@ export default {
           method: this.projectionMethod,
           teamGames,
           scoreAsOf,
+          lineup: setLineups ? 'set' : 'best',
         }));
         // Nothing to project once the matchup's games are over
         if (gamesLeft(first) + gamesLeft(second) === 0) continue;
-        // The projection to use, the set lineups' or the best lineups'
-        const basis = (projection) => setLineups
-          ? projection
-          : { expected: projection.best, variance: projection.bestVariance };
-        const [firstBasis, secondBasis] = [basis(first), basis(second)];
-        const [firstExpected, secondExpected] = [firstBasis.expected, secondBasis.expected];
-        const chance = winChance(scores[0], firstBasis, scores[1], secondBasis);
+        const [firstExpected, secondExpected] = [first.expected, second.expected];
+        const chance = winChance(scores[0], first, scores[1], second);
         const leader = chance >= 0.5 ? 0 : 1;
         projections[group.matchup.gameId] = {
           finals: [scores[0] + firstExpected, scores[1] + secondExpected].map(score => score.toFixed(1)),
           winLabel: `${group.teams[leader].name} ${formatChance(Math.max(chance, 1 - chance), true)} to win`,
-          setLineups,
+          // Set lineups were asked for but aren't loaded
+          fallback: this.projectionLineup === 'set' && !setLineups,
         };
       }
       return projections;
     },
   },
   methods: {
+    setKey(key, value) {
+      this.$store.commit('setKeyValue', { key, value });
+    },
+    // From a matchup's Details, the same team's matchup a week earlier or later
+    async pageMatchup({ teamId, delta }) {
+      const target = delta < 0 ? this.previousPeriod : this.nextPeriod;
+      if (!target) return;
+      const matchups = await loadPeriodMatchups(this.leagueId, this.league.scoreboard, target.ordinal, { now: Date.now() });
+      const matchup = matchups?.find(m => m.awayId === teamId || m.homeId === teamId);
+      // Shown right away, rather than the week's list while its matchups load again
+      this.periodMatchups = target.ordinal === this.league.scoreboard?.currentOrdinal ? null : matchups;
+      this.selectPeriod(target.ordinal);
+      this.$store.commit('setKeyValue', { key: 'openMatchupId', value: matchup?.gameId ?? null });
+    },
+    // Projections need the week's games
+    loadSchedule() {
+      if (this.selectedPeriod && this.phase !== 'past') {
+        this.ensureSchedule(periodDates(this.selectedPeriod));
+      }
+    },
     selectPeriod(ordinal) {
       this.$store.commit('setKeyValue', { key: 'selectedPeriod', value: ordinal === this.currentOrdinal ? null : ordinal });
     },
@@ -230,10 +264,6 @@ export default {
       const winner = group.teams[first > second ? 0 : 1].name;
       return `${winner} won by ${Math.abs(first - second).toFixed(1)}`;
     },
-    periodLabel(period) {
-      const dates = `${this.formatDay(period.start)} to ${this.formatDay(period.lastDayStart)}`;
-      return `Matchup ${period.ordinal}: ${dates}${period.ordinal === this.currentOrdinal ? ' (this week)' : ''}`;
-    },
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     },
@@ -242,7 +272,7 @@ export default {
     },
     async loadLineups() {
       const days = this.remainingDays;
-      if (!days.length) {
+      if (!days.length || this.projectionLineup !== 'set') {
         this.dayLineups = {};
         return;
       }
@@ -274,6 +304,7 @@ export default {
   watch: {
     'selectedPeriod.ordinal'() {
       this.loadMatchups();
+      this.loadSchedule();
     },
     // Back from Details, which may have loaded lineups; or a different team picked as yours
     openMatchupId(id) {
@@ -282,9 +313,13 @@ export default {
     myTeamId() {
       this.loadLineups();
     },
+    projectionLineup() {
+      this.loadLineups();
+    },
   },
   mounted() {
     this.loadMatchups();
+    this.loadSchedule();
   },
 };
 </script>
@@ -304,67 +339,6 @@ export default {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-
-.weekBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5em;
-
-  select {
-    flex: 0 1 auto;
-    min-width: 0;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    font: inherit;
-    font-weight: 700;
-    color: inherit;
-    background: var(--themeBaseColor);
-    border: 1px solid currentColor;
-    border-radius: 4px;
-    padding: 0.3em 0.5em;
-    min-height: 36px;
-  }
-}
-
-// The arrows stay beside the week on phones, the week's name shrinks instead
-.weekPicker {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.iconButton {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 1px solid rgba(127, 127, 127, 0.6);
-  border-radius: 4px;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-}
-
-.textButton {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  text-decoration: underline;
-  cursor: pointer;
-  padding: 0.25em;
 }
 
 .note {
@@ -471,6 +445,31 @@ export default {
   justify-content: space-between;
   gap: 0.25em 0.75em;
   font-size: 0.9em;
+}
+
+.projectionControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.5em;
+
+  label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    font-weight: normal;
+    margin: 0;
+  }
+
+  select {
+    font: inherit;
+    color: inherit;
+    background: var(--themeBaseColor);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0.3em 0.5em;
+    min-height: 32px;
+  }
 }
 
 .basis {

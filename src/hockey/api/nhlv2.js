@@ -82,6 +82,14 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
 }
 
 /**
+ * The NHL's schedule for the 7 days from `startDate` (YYYY-MM-DD), like one convertSchedule week
+ */
+export const getScheduleWeek = async (startDate) => {
+  const response = await axios.get(buildUrl(`schedule/${startDate}`));
+  return convertSchedule([response.data])[0];
+};
+
+/**
  * Every game in the given weeks of the NHL's schedule:
  * [{ startDate: '2026-10-12', days: [{ date, dayAbbrev: 'MON', games: [{ away: 'VAN', home: 'SEA', start }] }] }]
  * Team abbreviations are fleaflicker's.

@@ -43,8 +43,9 @@ const initState = {
   selectedPeriod: null,
   // The matchup open on the League tab (its box score game id), or null for the list
   openMatchupId: null,
-  // PROJECTION_METHODS key
+  // PROJECTION_METHODS and PROJECTION_LINEUPS keys
   projectionMethod: 'mix',
+  projectionLineup: 'best',
   // Teams compared in the open matchup, empty for the matchup's two teams, and a COMPARE_RANGES key
   compareTeamIds: [],
   compareRange: 'matchup',

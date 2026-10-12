@@ -5,27 +5,54 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span> All matchups
       </button>
       <h2>{{ teamName(teamIds[0]) }} vs {{ teamName(teamIds[1]) }}</h2>
-      <span class="periodLabel">Matchup {{ period.ordinal }}: {{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }}</span>
+      <a class="fleaLink" :href="matchupLink" :target="fleaTarget" @click="leavingForFleaflicker">
+        Matchup on Fleaflicker <span class="material-icons" aria-hidden="true">open_in_new</span>
+      </a>
+    </div>
+
+    <div class="weekPager">
+      <button type="button" class="pageButton" :disabled="!previousPeriod" @click="page(-1)">
+        <span class="material-icons" aria-hidden="true">chevron_left</span>
+        <span>Week {{ previousPeriod?.ordinal ?? '' }}</span>
+      </button>
+      <span class="periodLabel">
+        Matchup {{ period.ordinal }}: {{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }}
+        <span class="pagerNote">{{ teamName(teamIds[0]) }}, week by week</span>
+      </span>
+      <button type="button" class="pageButton" :disabled="!nextPeriod" @click="page(1)">
+        <span>Week {{ nextPeriod?.ordinal ?? '' }}</span>
+        <span class="material-icons" aria-hidden="true">chevron_right</span>
+      </button>
     </div>
 
     <section class="projectionSection containerColor" aria-labelledby="projectionHeading">
       <div class="sectionHeader">
         <h3 id="projectionHeading">{{ phase === 'past' ? 'Result' : 'Projection' }}</h3>
-        <label v-if="phase !== 'past'" class="methodPicker">
-          Points per game from
-          <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
-            <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
-          </select>
-        </label>
+        <div v-if="phase !== 'past'" class="pickers">
+          <label class="methodPicker">
+            Projected lineups
+            <select :value="lineupChoice" @change="setKey('projectionLineup', $event.target.value)">
+              <option v-for="(option, key) in lineups" :key="key" :value="key">{{ option.label }}</option>
+            </select>
+          </label>
+          <label class="methodPicker">
+            Points per game from
+            <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
+              <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
+            </select>
+          </label>
+        </div>
       </div>
       <template v-if="phase !== 'past'">
         <p class="note">
-          {{ methods[method].description }}
-          Only starters in the lineup each team has set for each day count. Goalies count for the share of
-          their team's games they've started. Injured players, day to day included, count as zero.
+          {{ lineups[lineupChoice].description }} {{ methods[method].description }}
+          Goalies count for the share of their team's games they've started. Injured players, day to day
+          included, count as zero.
         </p>
-        <p v-if="loadingLineups" class="note">Loading the lineups set for each day, using today's until then…</p>
-        <p v-else-if="missingLineups" class="note">Some days' lineups couldn't be loaded, today's lineup is used for them.</p>
+        <template v-if="lineupChoice === 'set'">
+          <p v-if="loadingLineups" class="note">Loading the lineups set for each day, using today's until then…</p>
+          <p v-else-if="missingLineups" class="note">Some days' lineups couldn't be loaded, today's lineup is used for them.</p>
+        </template>
         <p v-if="phase === 'current'" class="note">
           <template v-if="loadingLive">Updating scores…</template>
           <template v-else>Scores as of {{ formatTime(scoreAsOf) }}. Games already under way count only what they've scored so far.</template>
@@ -34,7 +61,8 @@
 
       <div class="scoreboard">
         <div v-for="(teamId, index) in teamIds" :key="teamId" class="teamScore" :class="{ right: index === 1 }">
-          <span class="scoreTeam"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</span>
+          <a class="scoreTeam" :href="teamLink(teamId)" :target="fleaTarget" :title="`${teamName(teamId)} on Fleaflicker`"
+            @click="leavingForFleaflicker"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</a>
           <template v-if="phase === 'past'">
             <span class="finalScore">{{ format(scores[index]) }}</span>
             <span class="scoreParts">final</span>
@@ -48,12 +76,30 @@
             <span v-if="projections[index].bench > 0" class="callout">
               {{ format(projections[index].bench) }} projected points on the bench
             </span>
-            <span v-if="projections[index].best - projections[index].expected >= 0.1" class="callout">
+            <span v-if="lineupChoice === 'set' && projections[index].best - projections[index].expected >= 0.1" class="callout">
               Best lineup each day: +{{ format(projections[index].best - projections[index].expected) }}
             </span>
           </template>
         </div>
       </div>
+
+      <table class="startsTable">
+        <caption>Starts{{ phase === 'current' ? ': so far + left' : phase === 'past' ? '' : ' left' }}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Position</th>
+            <th v-for="(teamId, index) in teamIds" :key="teamId" scope="col">
+              <span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in startRows" :key="row.position" :class="{ totalRow: row.position === 'Total' }">
+            <th scope="row">{{ row.position }}</th>
+            <td v-for="(cell, index) in row.cells" :key="index">{{ cell }}</td>
+          </tr>
+        </tbody>
+      </table>
 
       <div v-if="phase !== 'past'" class="winChance">
         <div class="meter" role="img" :aria-label="`Win chance: ${teamName(teamIds[0])} ${chance(win)}, ${teamName(teamIds[1])} ${chance(1 - win)}`">
@@ -157,12 +203,14 @@
 import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
 import {
-  projectTeam, teamGamesPlayed, winChance, formatChance, PROJECTION_METHODS,
+  projectTeam, teamGamesPlayed, winChance, formatChance, PROJECTION_METHODS, PROJECTION_LINEUPS,
 } from "../collections/projection";
 import {
   loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, dayOrdinalAt, dayDate, COMPARE_RANGES,
 } from "../collections/boxscores";
 import { loadDayRosters } from "../collections/league";
+import { primaryPosition, POSITIONS } from "../collections/boxscores";
+import { periodDates } from "../collections/scheduleWeeks";
 import { seriesColor } from "../chartColors";
 
 // Players shown in each team's chart
@@ -170,6 +218,8 @@ const TOP_PLAYERS = 12;
 
 export default {
   components: { BarChart },
+  // From Hockey, loads schedule weeks
+  inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
     leagueId: String,
     league: Object,
@@ -179,15 +229,19 @@ export default {
     period: Object,
     // Today's rosters, used for days whose lineup isn't loaded
     rosters: Object,
+    // The weeks before and after, for paging through the first team's matchups
+    previousPeriod: Object,
+    nextPeriod: Object,
     // The table's players
     players: Array,
     schedule: Array,
     now: Number,
   },
-  emits: ['close', 'openPlayer'],
+  emits: ['close', 'page', 'openPlayer'],
   data() {
     return {
       methods: PROJECTION_METHODS,
+      lineups: PROJECTION_LINEUPS,
       ranges: COMPARE_RANGES,
       // This matchup's days so far for both teams, for up to date scores
       liveDays: null,
@@ -208,6 +262,8 @@ export default {
   computed: {
     ...mapState({
       method: state => state.projectionMethod,
+      lineupChoice: state => state.projectionLineup,
+      drawerExpanded: state => state.drawerExpanded,
       compareRange: state => state.compareRange,
       compareTeamIds: state => state.compareTeamIds,
       darkMode: state => state.settings.darkMode,
@@ -256,7 +312,9 @@ export default {
     },
     projections() {
       return this.teamIds.map(teamId => projectTeam({
-        lineupFor: day => this.dayLineups?.[teamId]?.[day] || this.rosters[teamId]?.groups || null,
+        // The best lineup only needs who's on the roster
+        lineupFor: day => (this.lineupChoice === 'set' && this.dayLineups?.[teamId]?.[day]) || this.rosters[teamId]?.groups || null,
+        lineup: this.lineupChoice,
         playersById: this.playersById,
         startSlots: this.league.rules?.startSlots,
         schedule: this.schedule,
@@ -297,6 +355,48 @@ export default {
       }
       return rows;
     },
+    // Starts by position for each team: so far from the box scores, left from the projection
+    startRows() {
+      const emptyCounts = () => Object.fromEntries(POSITIONS.map(position => [position, 0]));
+      const soFar = this.teamIds.map(teamId => {
+        const counts = emptyCounts();
+        for (const day of this.liveDays?.[teamId] || []) {
+          for (const slot of day.lineup) {
+            const position = primaryPosition(slot.position, slot.eligibility);
+            if (slot.group === 'START' && slot.games > 0 && position in counts) counts[position] += slot.games;
+          }
+        }
+        return counts;
+      });
+      const left = this.projections.map(projection => {
+        const counts = emptyCounts();
+        for (const player of projection.players) {
+          const position = primaryPosition(player.position, player.positions);
+          if (position in counts) counts[position] += player.games;
+        }
+        return counts;
+      });
+      const total = (counts, position) => (position === 'Total'
+        ? Object.values(counts).reduce((sum, count) => sum + count, 0)
+        : counts[position]);
+      const cell = (index, position) => {
+        const done = total(soFar[index], position);
+        const toCome = total(left[index], position);
+        if (this.phase === 'past') return String(done);
+        if (this.phase === 'future') return String(toCome);
+        return `${done} + ${toCome} = ${done + toCome}`;
+      };
+      return [...POSITIONS, 'Total'].map(position => ({
+        position,
+        cells: this.teamIds.map((_, index) => cell(index, position)),
+      }));
+    },
+    fleaTarget() {
+      return process.env.STANDALONE ? '_blank' : '_self';
+    },
+    matchupLink() {
+      return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/scores/${this.group.matchup.gameId}`;
+    },
     compareTotals() {
       return this.compareTeams.map(teamId => totalPoints(this.compareDays?.[teamId] || []));
     },
@@ -334,6 +434,18 @@ export default {
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
     },
+    teamLink(teamId) {
+      return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/teams/${teamId}`;
+    },
+    // In the extension links open in this tab, so close the panel to show fleaflicker's page
+    leavingForFleaflicker() {
+      if (!process.env.STANDALONE && this.drawerExpanded) {
+        this.$store.commit('toggleDrawer');
+      }
+    },
+    page(delta) {
+      this.$emit('page', { teamId: this.teamIds[0], delta });
+    },
     setCompareTeam(index, value) {
       const teams = [...this.compareTeams];
       teams[index] = parseInt(value, 10);
@@ -359,7 +471,7 @@ export default {
     },
     lineupGames(projection) {
       const games = projection.players.reduce((total, player) => total + player.games, 0);
-      return games === 1 ? '1 game left in the lineup' : `${games} games left in the lineup`;
+      return games === 1 ? '1 start left' : `${games} starts left`;
     },
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
@@ -390,7 +502,7 @@ export default {
       this.loadingLive = false;
     },
     async loadLineups() {
-      if (!this.remainingDays.length) return;
+      if (!this.remainingDays.length || this.lineupChoice !== 'set' || this.dayLineups) return;
       this.loadingLineups = true;
       this.dayLineups = await loadDayRosters(this.leagueId, this.teamIds, this.remainingDays, { now: Date.now() });
       this.loadingLineups = false;
@@ -418,6 +530,9 @@ export default {
     },
   },
   watch: {
+    lineupChoice() {
+      this.loadLineups();
+    },
     compareTeams(teams, previous) {
       if (teams.join() !== previous.join()) this.loadCompare();
     },
@@ -426,6 +541,10 @@ export default {
     },
   },
   async mounted() {
+    // Weeks far ahead aren't in the schedule loaded at start
+    if (this.phase !== 'past') {
+      this.ensureSchedule(periodDates(this.period));
+    }
     // Scores first: they decide which days are left. The comparison's first range shares their box scores.
     await this.loadLive();
     await this.loadLineups();
@@ -566,6 +685,97 @@ select {
 .scoreParts {
   font-size: 0.85em;
   opacity: 0.85;
+}
+
+.fleaLink,
+a.scoreTeam {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(127, 127, 127, 0.6);
+}
+
+.fleaLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
+  font-size: 0.9em;
+
+  .material-icons {
+    font-size: 1.1em;
+  }
+}
+
+.weekPager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  text-align: center;
+}
+
+.pageButton {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid rgba(127, 127, 127, 0.6);
+  border-radius: 4px;
+  padding: 0.25em 0.5em;
+  min-height: 36px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+.pagerNote {
+  display: block;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.pickers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 1.5em;
+}
+
+.startsTable {
+  width: auto;
+  min-width: min(28em, 100%);
+  border-collapse: collapse;
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+
+  caption {
+    text-align: left;
+    font-weight: 700;
+    padding-bottom: 0.25em;
+  }
+
+  th,
+  td {
+    padding: 0.25em 0.75em 0.25em 0;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+    text-align: right;
+  }
+
+  th:first-child {
+    text-align: left;
+  }
+
+  thead th {
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .totalRow {
+    font-weight: 700;
+  }
 }
 
 .callout {

@@ -94,7 +94,7 @@ test("a team projection uses each day's set lineup, and calls out bench points",
     ],
   }];
 
-  const projection = projectTeam({
+  const options = {
     lineupFor: day => lineups[day] || null,
     playersById,
     startSlots: [{ label: 'C', eligibility: ['C'], count: 2 }, { label: 'G', eligibility: ['G'], count: 1 }],
@@ -103,7 +103,8 @@ test("a team projection uses each day's set lineup, and calls out bench points",
     method: 'season',
     teamGames: { SEA: 10, EDM: 10 },
     scoreAsOf: DAY_9,
-  });
+  };
+  const projection = projectTeam({ ...options, lineup: 'set' });
 
   // Today: P1 (3) and the goalie (5 at a 50% start rate) start, P3 (2) sits. P2's game has begun.
   // Tomorrow the owner started P3 over P1: the best lineup would score 1 more.
@@ -124,6 +125,14 @@ test("a team projection uses each day's set lineup, and calls out bench points",
   assert.equal(byId[6], undefined);
   assert.ok(projection.variance > 0);
   assert.ok(projection.bestVariance > projection.variance);
+
+  // The best lineup instead: tomorrow P1 starts over P3
+  const best = projectTeam({ ...options, lineup: 'best' });
+  assert.deepEqual(best.days.slice(0, 2).map(day => [day.expected, day.bench]), [[5.5, 2], [9.5, 2]]);
+  assert.deepEqual([best.expected, best.bench, best.best], [15, 4, 15]);
+  const bestById = Object.fromEntries(best.players.map(player => [player.id, player]));
+  assert.deepEqual([bestById[1].games, bestById[1].benchGames, bestById[3].games, bestById[3].benchGames], [2, 0, 0, 2]);
+  assert.equal(best.variance, projection.bestVariance);
 });
 
 test('win chance', () => {

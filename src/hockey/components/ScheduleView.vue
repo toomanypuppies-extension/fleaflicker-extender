@@ -4,8 +4,10 @@
 
     <template v-else>
       <div class="scheduleHeader">
-        <div class="weekPicker" role="tablist" aria-label="Week">
-          <button v-for="(week, index) in schedule" :key="week.startDate" type="button" role="tab" class="weekButton"
+        <WeekPicker v-if="periods.length" :periods="periods" :selected="selectedPeriod" :currentOrdinal="currentOrdinal"
+          @select="selectPeriod" />
+        <div v-else class="weekPicker" role="tablist" aria-label="Week">
+          <button v-for="(week, index) in upcomingWeeks" :key="week.startDate" type="button" role="tab" class="weekButton"
             :class="{ active: index === weekIndex }" :aria-selected="index === weekIndex" @click="weekIndex = index">
             {{ weekLabel(week, index) }}
           </button>
@@ -15,6 +17,8 @@
           Light night: {{ lightNightMax }} or fewer games, so fewer players compete for lineup spots.
         </p>
       </div>
+
+      <p v-if="loadingWeek" class="loadingWeek" role="status">Loading the NHL schedule for this week…</p>
 
       <div class="pickBar" role="status">
         <span v-if="pickedTeams.size">
@@ -34,17 +38,17 @@
               <th class="teamColumn sortable" tabindex="0" :aria-sort="ariaSort('team')" @click="sortBy('team')"
                 @keydown.enter="sortBy('team')">Team {{ sortArrow('team') }}</th>
               <th v-for="(day, dayIndex) in grid.days" :key="day.date" class="dayColumn"
-                :class="{ light: day.light, past: day.past, clickable: canFilterDay }"
-                :title="canFilterDay ? `Show players on teams playing ${dayName(day)}` : null"
-                :tabindex="canFilterDay ? 0 : null" @click="canFilterDay && showDay(dayIndex)"
-                @keydown.enter="canFilterDay && showDay(dayIndex)">
+                :class="{ light: day.light, past: day.past, clickable: filterIndex(day) !== null }"
+                :title="filterIndex(day) !== null ? `Show players on teams playing ${dayName(day)}` : null"
+                :tabindex="filterIndex(day) !== null ? 0 : null" @click="showDay(day)"
+                @keydown.enter="showDay(day)">
                 <span class="dayName">{{ dayName(day) }}</span>
                 <span class="gameCount">{{ day.gameCount }} {{ day.gameCount === 1 ? 'game' : 'games' }}</span>
               </th>
               <th class="sortable total" :aria-sort="ariaSort('games')" tabindex="0" @click="sortBy('games')" @keydown.enter="sortBy('games')">Games {{ sortArrow('games') }}</th>
               <th class="sortable total" :aria-sort="ariaSort('lightGames')" tabindex="0" @click="sortBy('lightGames')" @keydown.enter="sortBy('lightGames')"
                 title="Games on light nights">Light {{ sortArrow('lightGames') }}</th>
-              <th v-if="weekIndex === 0" class="sortable total" :aria-sort="ariaSort('gamesLeft')" tabindex="0" @click="sortBy('gamesLeft')" @keydown.enter="sortBy('gamesLeft')"
+              <th v-if="showLeft" class="sortable total" :aria-sort="ariaSort('gamesLeft')" tabindex="0" @click="sortBy('gamesLeft')" @keydown.enter="sortBy('gamesLeft')"
                 title="Games from today on">Left {{ sortArrow('gamesLeft') }}</th>
             </tr>
           </thead>
@@ -63,7 +67,7 @@
               </td>
               <td class="total">{{ row.games }}</td>
               <td class="total">{{ row.lightGames }}</td>
-              <td v-if="weekIndex === 0" class="total">{{ row.gamesLeft }}</td>
+              <td v-if="showLeft" class="total">{{ row.gamesLeft }}</td>
             </tr>
           </tbody>
         </table>
@@ -74,7 +78,10 @@
 
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME, HOCKEY_TEAM_NAME_TO_ABBR, DATE_MAP } from "../constants";
-import { weekGrid, LIGHT_NIGHT_MAX_GAMES } from "../collections/schedule";
+import { weekGrid, easternDate, LIGHT_NIGHT_MAX_GAMES } from "../collections/schedule";
+import { currentPeriod } from "../collections/league";
+import { weekStart, periodDates, periodSchedule, coversPeriod } from "../collections/scheduleWeeks";
+import WeekPicker from "./WeekPicker.vue";
 
 const MINUTE = 60 * 1000;
 
@@ -84,10 +91,17 @@ const dateParts = (date) => {
   return new Date(year, month - 1, day);
 };
 
+const DAY = 24 * 60 * MINUTE;
+
 export default {
+  components: { WeekPicker },
+  // From Hockey, loads schedule weeks
+  inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
-    // From convertSchedule, this week first
+    // From convertSchedule, by date
     schedule: Array,
+    // For its matchup weeks. Without it the schedule's own weeks are shown.
+    league: Object,
   },
   data() {
     return {
@@ -103,8 +117,38 @@ export default {
     pickedTeams() {
       return new Set(this.$store.state.teamSelections.map(name => HOCKEY_TEAM_NAME_TO_ABBR[name]).filter(Boolean));
     },
+    periods() {
+      return this.league?.scoreboard?.periods || [];
+    },
+    currentOrdinal() {
+      return currentPeriod(this.league?.scoreboard, this.now)?.ordinal;
+    },
+    // Shared with the League tab's matchups
+    selectedPeriod() {
+      const ordinal = this.$store.state.selectedPeriod ?? this.currentOrdinal;
+      return this.periods.find(period => period.ordinal === ordinal) || null;
+    },
+    loadingWeek() {
+      return !!this.selectedPeriod && !coversPeriod(this.schedule, this.selectedPeriod);
+    },
+    // The matchup week's days, or without matchup weeks the schedule's week
+    shownWeek() {
+      if (this.selectedPeriod) {
+        return periodSchedule(this.schedule, this.selectedPeriod);
+      }
+      return this.upcomingWeeks[this.weekIndex];
+    },
+    // The schedule's weeks from this one on
+    upcomingWeeks() {
+      const thisWeek = weekStart(easternDate(this.now));
+      return (this.schedule || []).filter(week => week.startDate >= thisWeek);
+    },
     grid() {
-      return weekGrid(this.schedule?.[this.weekIndex], { now: this.now });
+      return weekGrid(this.shownWeek, { now: this.now });
+    },
+    // Games from today on, for the week that's under way
+    showLeft() {
+      return this.selectedPeriod ? this.selectedPeriod.ordinal === this.currentOrdinal : this.weekIndex === 0;
     },
     sortedTeams() {
       const { key, desc } = this.sort;
@@ -117,10 +161,7 @@ export default {
         return direction * (a[key] - b[key]) || b.lightGames - a.lightGames || a.team.localeCompare(b.team);
       });
     },
-    // Game Days filters only cover this week and next
-    canFilterDay() {
-      return this.weekIndex < 2;
-    },
+
   },
   methods: {
     weekLabel(week, index) {
@@ -160,12 +201,34 @@ export default {
     showPickedTeams() {
       this.$store.commit('setKeyValue', { key: 'activeTab', value: 'players' });
     },
-    showDay(dayIndex) {
-      this.$store.commit('setKeyValue', { key: 'gameDaysSelections', value: [DATE_MAP[this.weekIndex * 7 + dayIndex]] });
+    // The Players tab's Game Days filter covers this week and next: the day's place in them, or null
+    filterIndex(day) {
+      const monday = weekStart(easternDate(this.now));
+      const index = Math.round((dateParts(day.date) - dateParts(monday)) / DAY);
+      return index >= 0 && index < 14 ? index : null;
+    },
+    showDay(day) {
+      const index = this.filterIndex(day);
+      if (index === null) return;
+      this.$store.commit('setKeyValue', { key: 'gameDaysSelections', value: [DATE_MAP[index]] });
       this.$store.commit('setKeyValue', { key: 'activeTab', value: 'players' });
+    },
+    selectPeriod(ordinal) {
+      this.$store.commit('setKeyValue', { key: 'selectedPeriod', value: ordinal === this.currentOrdinal ? null : ordinal });
+    },
+    loadWeek() {
+      if (this.selectedPeriod) {
+        this.ensureSchedule(periodDates(this.selectedPeriod));
+      }
+    },
+  },
+  watch: {
+    'selectedPeriod.ordinal'() {
+      this.loadWeek();
     },
   },
   mounted() {
+    this.loadWeek();
     // Days move into the past
     this.clock = setInterval(() => { this.now = Date.now(); }, 10 * MINUTE);
   },
@@ -176,6 +239,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.loadingWeek {
+  font-size: 0.9em;
+  opacity: 0.85;
+  margin: 0;
+}
+
 .scheduleView {
   display: flex;
   flex-direction: column;
