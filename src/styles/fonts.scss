@@ -146,7 +146,8 @@
   src: url(https://fonts.gstatic.com/s/materialicons/v125/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
 }
 
-.material-icons {
+/* Our elements, and vuestic's dropdowns, which it moves to the end of the page */
+:where(.fleaflicker-extender-drawer, .mainContent, .va-dropdown__content, .va-select-dropdown__content) .material-icons {
   font-family: 'Material Icons';
   font-weight: normal;
   font-style: normal;

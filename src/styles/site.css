@@ -1,0 +1,4 @@
+/* The standalone site owns its page, so it gets vuestic's reset and typography.
+   The extension leaves these out so it doesn't restyle the fleaflicker page. */
+@import "npm:vuestic-ui/dist/styles/reset.css";
+@import "npm:vuestic-ui/dist/styles/typography.css";

@@ -9,9 +9,12 @@
   >
     <Main></Main>
 
-    <div
+    <button
+      type="button"
       @click="toggleDrawer"
       class="expandCollapse"
+      :aria-label="drawerExpanded ? 'Close Fleaflicker Extender' : 'Open Fleaflicker Extender'"
+      :aria-expanded="drawerExpanded"
     >
       <va-icon
         v-if="sport === 'nhl'"
@@ -19,7 +22,7 @@
         :color="teamSecondaryColor"
         size="large"
       >sports_hockey</va-icon>
-    </div>
+    </button>
   </div>
 </template>
 
@@ -37,6 +40,25 @@ export default {
     toggleDrawer() {
       this.$store.commit('toggleDrawer');
     },
+    closeOnEscape(event) {
+      if (event.key !== 'Escape' || !this.drawerExpanded || event.defaultPrevented) {
+        return;
+      }
+      // Esc closes dialogs and dropdowns first, and fields keep it
+      // The player panel closes first, it listens for Esc itself
+      const { openSettings, openHelp } = this.$store.state;
+      // Open dropdowns have focus in their list, which vuestic moves to the end of the page
+      if (openSettings || openHelp || event.target.closest?.('input, textarea, select, [role="combobox"], .va-select, .va-dropdown__content')) {
+        return;
+      }
+      this.toggleDrawer();
+    },
+  },
+  mounted() {
+    document.addEventListener('keydown', this.closeOnEscape);
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.closeOnEscape);
   },
   computed: {
     ...mapState({
@@ -48,7 +70,8 @@ export default {
       'teamMainColor',
       'teamSecondaryColor',
       'themeBaseColor',
-      'themeAccentColor'
+      'themeAccentColor',
+      'opponentColors',
     ]),
     bindCssVars() {
       return {
@@ -57,6 +80,8 @@ export default {
         "--teamMainColor": this.teamMainColor,
         "--teamSecondaryColor": this.teamSecondaryColor,
         "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
+        "--opponentColor": this.opponentColors.background,
+        "--opponentTextColor": this.opponentColors.text,
       };
     },
   }
@@ -100,7 +125,9 @@ export default {
   }
 }
 
-.expandCollapse {
+.fleaflicker-extender-drawer .expandCollapse {
+  border: none;
+  padding: 0;
   position: absolute;
   left: -48px;
   bottom: 48px;

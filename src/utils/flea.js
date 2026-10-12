@@ -1,5 +1,5 @@
 import { fleaClient } from './fleaClient';
-import { FLEA_API_BASE, SORT_OPTIONS } from '../hockey/constants';
+import { FLEA_API_BASE, LEAGUE_SETTINGS_BASE, SORT_OPTIONS } from '../hockey/constants';
 
 
 const buildUrl = (segment) => {
@@ -63,7 +63,8 @@ export const getActivityToTimeEpochMilli = async (sport = 'NHL', leagueId, targe
 }
 
 // Ex https://www.fleaflicker.com/api/FetchPlayerListing?sport=NHL&league_id=12089
-export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) => {
+// season is the year a season starts in, e.g. 2025 for 2025-26. Omitted for the current season.
+export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0, season) => {
   try {
     if (!leagueId) {
       console.error('No league id provided. Failing call');
@@ -75,7 +76,8 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
         league_id: leagueId,
         'filter.free_agent_only': freeAgent,
         sort: SORT_OPTIONS.total,
-        result_offset: offset
+        result_offset: offset,
+        ...(season && { sort_season: season }),
       },
     });
     return response.data;
@@ -86,16 +88,23 @@ export const getPlayers = async (sport, leagueId, freeAgent = true, offset = 0) 
   }
 }
 
-export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, forceRefresh = false, freeAgent = false) => {
+/**
+ * Every page of the player listing, sorted by points.
+ * @returns {Promise<{ players: Array, seasons?: { eligibleValues: number[], selectedValue: number } }>}
+ *   seasons are the ones fleaflicker has stats for, and the one listed
+ */
+export const getAllHockeyPlayers = async (leagueId, { stopIfNoPoints = true, freeAgent = false, season } = {}) => {
   let playersList = [];
+  let seasons;
   let offset = 0;
   let morePlayersLeft = true;
   while (morePlayersLeft) {
-    const response = await getPlayers('NHL', leagueId, freeAgent, offset);
+    const response = await getPlayers('NHL', leagueId, freeAgent, offset, season);
     if (!response) {
       throw new Error('Failed to fetch player listing');
     }
-    playersList = playersList.concat(response.players);
+    seasons = seasons || response.sortSeasons;
+    playersList = playersList.concat(response.players || []);
     offset = response.resultOffsetNext;
 
     // Without a next offset this would refetch the first page forever
@@ -109,15 +118,9 @@ export const getAllHockeyPlayers = async (leagueId, stopIfNoPoints = true, force
     if (stopIfNoPoints && (firstPlayerOfSegment?.viewingActualPoints?.value > 0 && !lastPlayerOfSegment?.viewingActualPoints?.value || lastPlayerOfSegment?.viewingActualPoints?.value === 0)) {
       morePlayersLeft = false;
     }
-
-    // exit early in dev
-    if (process.env.NODE_ENV === 'development' && offset > 50) {
-      console.log('local env, exiting getAllHockeyPlayers early')
-      morePlayersLeft = false;
-    }
   }
 
-  return playersList;
+  return { players: playersList, seasons };
 }
 
 export const getLeagueStandings = async (leagueId) => {
@@ -138,11 +141,46 @@ export const getLeagueStandings = async (leagueId) => {
   }
 }
 
-export const getLeagueOwners = async (leagueId) => {
-  const standings = await getLeagueStandings(leagueId);
+const fetchLeagueEndpoint = async (endpoint, leagueId, params = {}) => {
+  if (!leagueId) {
+    console.error('No league id provided. Failing call');
+    return;
+  }
+  const response = await fleaClient.get(buildUrl(endpoint), {
+    params: { sport: 'NHL', league_id: leagueId, ...params },
+  });
+  return response.data;
+}
 
-  const teams = standings?.divisions?.[0]?.teams;
-  if (!teams) return [];
+// Roster rules: positions (including IR spots), maxActive and maxRosterSize
+// Ex https://www.fleaflicker.com/api/FetchLeagueRules?sport=NHL&league_id=12089
+export const getLeagueRules = (leagueId) => fetchLeagueEndpoint('FetchLeagueRules', leagueId);
 
-  return teams.map(team => team.name);
+// The current matchup period (schedulePeriod) and the season's others (eligibleSchedulePeriods)
+// Ex https://www.fleaflicker.com/api/FetchLeagueScoreboard?sport=NHL&league_id=12089
+export const getLeagueScoreboard = (leagueId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchLeagueScoreboard', leagueId, scoringPeriod ? { scoring_period: scoringPeriod } : {}
+);
+
+// Both lineups in a matchup on one day (scoring period), with each player's points that day
+// Ex https://www.fleaflicker.com/api/FetchLeagueBoxscore?sport=NHL&league_id=12089&fantasy_game_id=3603193&scoring_period=11
+export const getLeagueBoxscore = (leagueId, gameId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchLeagueBoxscore', leagueId, { fantasy_game_id: gameId, scoring_period: scoringPeriod }
+);
+
+// A team's current roster, grouped into starters, bench, IR and taxi
+// Ex https://www.fleaflicker.com/api/FetchRoster?sport=NHL&league_id=12089&team_id=63133
+// With a scoring period (day), the lineup set for that day, which can be a future one
+export const getTeamRoster = (leagueId, teamId, scoringPeriod) => fetchLeagueEndpoint(
+  'FetchRoster', leagueId, { team_id: teamId, ...(scoringPeriod && { scoring_period: scoringPeriod }) }
+);
+
+/**
+ * Settings from the league's rules page, through the proxy: transactionLimit ({ period, limit } or null)
+ * and waivers ({ hoursAfterDrop, gameStartWaivers, gameStartLockTime, firstComeFirstServedTime, ... }).
+ * See the proxy's flea/rules.js.
+ */
+export const getLeagueSettings = async (leagueId) => {
+  const response = await fleaClient.get(`${LEAGUE_SETTINGS_BASE}/nhl/${leagueId}`);
+  return response.data;
 }

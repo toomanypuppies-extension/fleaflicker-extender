@@ -1,7 +1,26 @@
-import { set, debounce, merge, get } from 'lodash';
+import lodash from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
+import { teamSeriesColors, textColorOn, FALLBACK_COLORS } from './hockey/chartColors';
+
+// The app's own colors, when the favorite team's aren't wanted
+export const DEFAULT_THEME_COLORS = { primary: '#17202b', secondary: '#58a6ff' };
+const themeColors = (state) => (state.settings.colorTheme === 'default' ? DEFAULT_THEME_COLORS : getColors(state));
+
+// lodash is CommonJS, which node (tests) can't import names from
+const { set, debounce, mergeWith, get, cloneDeep } = lodash;
+
+// Saved state over the defaults. Saved lists replace the default ones whole: merged item by item, an
+// empty saved list would keep a default like ['HEALTHY'].
+const merge = (target, source) => mergeWith(target, source, (_, value) => (Array.isArray(value) ? value : undefined));
+
+// What the Players tab's filters start as, and go back to with Clear filters
+export const FILTER_DEFAULTS = { ownership: 'Free Agent', injurySelections: ['HEALTHY'] };
+// Bumped when defaults change that saved state should take once (saved as filterDefaultsVersion):
+// 1 the filters' defaults (FILTER_DEFAULTS), 2 the app's own colors instead of the favorite team's,
+// 3 every player loaded, those without points too
+const FILTER_DEFAULTS_VERSION = 3;
 
 const initState = {
   sport: 'nhl',
@@ -10,31 +29,99 @@ const initState = {
   loading: true,
   settings: {
     darkMode: true,
+    // 'default' for the app's own colors (DEFAULT_THEME_COLORS), 'team' for the favorite team's
+    colorTheme: 'default',
   },
+  // A TABS key
+  activeTab: 'players',
   openSettings: false,
+  openHelp: false,
   favoriteTeam: "Seattle Kraken",
-  excludeIfNoPoints: true,
+  // Settings' "Only show players that have points this season"
+  excludeIfNoPoints: false,
   selectedPlayer: null,
   filter: "",
   teamSelections: [],
-  injurySelections: [],
+  injurySelections: [...FILTER_DEFAULTS.injurySelections],
   positionSelections: [],
   gameDaysSelections: [],
+  // all or any, see GAME_DAYS_MODES
+  gameDaysMode: 'all',
+  // [{ key, min, max }]
+  statFilters: [],
+  // Lineup spots picked in the matchup's planner, players must fit all of them:
+  // [{ date: 'YYYY-MM-DD', label: 'C', eligibility: ['C'] }]
+  spotFilters: [],
+  // Daily Faceoff statuses of today's starting goalies to show (Confirmed, Likely, Unconfirmed), empty for anyone
+  goalieStartSelections: [],
+  // Columns picked in the column chooser, empty for the defaults
+  visibleColumnKeys: [],
+  // The user's team in this league, picked in the toolbar or found on fleaflicker's page
+  myTeamId: null,
+  // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
+  timelineTeamId: null,
+  timelineFilters: [],
+  // The team page open on the League tab, or null
+  openTeamId: null,
+  // The team page's COMPARE_RANGES key
+  teamRange: 'matchup',
+  // The matchup period (week) shown, null for the current one
+  selectedPeriod: null,
+  // The matchup open on the League tab (its box score game id), or null for the list
+  openMatchupId: null,
+  // PROJECTION_METHODS and PROJECTION_LINEUPS keys
+  projectionMethod: 'mix',
+  projectionLineup: 'best',
+  // Teams compared in the open matchup, empty for the matchup's two teams, and a COMPARE_RANGES key
+  compareTeamIds: [],
+  compareRange: 'matchup',
   owners: [],
-  ownership: "",
+  ownership: FILTER_DEFAULTS.ownership,
+  filterDefaultsVersion: FILTER_DEFAULTS_VERSION,
   gamesByMatchup: null,
   weekStartDates: null,
 }
 
+// Open dialogs and the open player card aren't saved, so a reload doesn't reopen them.
+// A picked week isn't either, so the League tab opens on the current one.
+const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null, selectedPeriod: null };
+const TRANSIENT_KEYS = Object.keys(TRANSIENT_DEFAULTS);
+
+// The state for the league in the URL: its saved state over the defaults
 const createState = () => {
-  let initialState = initState;
+  // A copy, so one league's saved state doesn't become the next league's defaults
+  let initialState = cloneDeep(initState);
+  // Nothing saved has the current defaults already
+  let savedDefaultsVersion = FILTER_DEFAULTS_VERSION;
   if (!!getLeagueId()) {
     const localstoreState = getLocalStorage('vuex-state', getLeagueId());
     if (localstoreState) {
-      initialState = merge(initState, localstoreState);
+      initialState = merge(initialState, localstoreState);
+      savedDefaultsVersion = localstoreState.filterDefaultsVersion || 0;
     }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
+  // Saved by older versions
+  Object.assign(defaultState, TRANSIENT_DEFAULTS);
+
+  // Earlier versions had a League tab with matchups and rosters (or activity) as sections
+  if (defaultState.activeTab === 'league') {
+    defaultState.activeTab = defaultState.leagueSection === 'matchups' ? 'matchups' : 'rosters';
+  }
+  delete defaultState.leagueSection;
+
+  // Saved before these defaults: take them once, after that what the user picks stays (an empty
+  // Injury, meaning any, or team colors)
+  if (savedDefaultsVersion < 1) {
+    Object.assign(defaultState, cloneDeep(FILTER_DEFAULTS));
+  }
+  if (savedDefaultsVersion < 2) {
+    defaultState.settings.colorTheme = 'default';
+  }
+  if (savedDefaultsVersion < 3) {
+    defaultState.excludeIfNoPoints = false;
+  }
+  defaultState.filterDefaultsVersion = FILTER_DEFAULTS_VERSION;
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;
@@ -52,10 +139,14 @@ export const store = createStore({
     clearFilters(state) {
       state.filter = "";
       state.teamSelections = [];
-      state.injurySelections = [];
+      state.injurySelections = [...FILTER_DEFAULTS.injurySelections];
       state.positionSelections = [];
       state.gameDaysSelections = [];
-      state.ownership = "";
+      state.gameDaysMode = 'all';
+      state.statFilters = [];
+      state.spotFilters = [];
+      state.goalieStartSelections = [];
+      state.ownership = FILTER_DEFAULTS.ownership;
     },
     loadFromLocalStorage(state) {
       const localStorageState = getLocalStorage('vuex-state', state.leagueId);
@@ -63,6 +154,10 @@ export const store = createStore({
     },
     resetStore(state) {
       merge(state, createState());
+    },
+    // On the standalone site, opening a league from the home page doesn't reload the page
+    loadLeagueState(state) {
+      Object.assign(state, createState(), { leagueId: getLeagueId() });
     },
     setSport(state, payload) {
       state.sport = payload;
@@ -82,7 +177,7 @@ export const store = createStore({
     toggleDrawer(state) {
       state.drawerExpanded = !state.drawerExpanded;
       // We set this immediately since it happens on nav. Otherwise the debounce would prevent the set
-      setLocalStorage('vuex-state', state, state.leagueId);
+      saveState(state);
     },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))
@@ -96,16 +191,30 @@ export const store = createStore({
       return state.settings.darkMode ? "#e2e2e2" : "#333333";
     },
     teamMainColor(state) {
-      return getColors(state)?.primary;
+      return themeColors(state)?.primary;
     },
     teamSecondaryColor(state) {
-      return getColors(state)?.secondary;
+      return themeColors(state)?.secondary;
+    },
+    // Two chart series colors from the favorite team's, adjusted to be readable in the theme
+    chartColors(state) {
+      const mode = state.settings.darkMode ? 'dark' : 'light';
+      return state.settings.colorTheme === 'default' ? FALLBACK_COLORS[mode] : teamSeriesColors(getColors(state), mode);
+    },
+    // Your opponent's badge and border: their color in your matchup's charts, where you're first
+    opponentColors(state, getters) {
+      const background = getters.chartColors[1];
+      return { background, text: textColorOn(background) };
     }
   }
 })
 
-const localStoreSubscriber = debounce((mutation, state) => {
-  setLocalStorage('vuex-state', state, state.leagueId);
-}, 250);
+const saveState = (state) => {
+  const saved = { ...state };
+  TRANSIENT_KEYS.forEach(key => delete saved[key]);
+  setLocalStorage('vuex-state', saved, state.leagueId);
+};
+
+const localStoreSubscriber = debounce((mutation, state) => saveState(state), 250);
 
 store.subscribe(localStoreSubscriber)

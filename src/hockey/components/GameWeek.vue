@@ -1,84 +1,156 @@
 <template>
-  <div class="gameWeekOuterContainer">
-    <h3 class="startDate">{{ startDate }} - {{ endDate }}</h3>
-    <div class="gameWeekContainer" :style="bindCssVars">
-      <div class="gameDay" :class="{ hasGame: !!week.MON }"><span>{{ week.MON }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.TUE }"><span>{{ week.TUE }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.WED }"><span>{{ week.WED }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.THU }"><span>{{ week.THU }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.FRI }"><span>{{ week.FRI }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.SAT }"><span>{{ week.SAT }}</span></div>
-      <div class="gameDay" :class="{ hasGame: !!week.SUN }"><span>{{ week.SUN }}</span></div>
+  <div class="gameWeek">
+    <div class="weekHeading">
+      <span class="weekName">{{ label }}</span>
+      <span class="weekCount">{{ gameCount }} {{ gameCount === 1 ? 'game' : 'games' }}</span>
     </div>
+    <ol class="days">
+      <li v-for="day in days" :key="day.key" class="day"
+        :class="{ hasGame: !!day.opponent, past: day.past, today: day.today }"
+        :title="day.opponent ? `${day.name} vs ${day.opponent}` : `${day.name}, no game`">
+        <span class="dayName">{{ day.short }} <span class="dayNumber">{{ day.date }}</span></span>
+        <span class="opponent">{{ day.opponent || '–' }}</span>
+      </li>
+    </ol>
   </div>
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-import { nextSunday, format } from 'date-fns'
+const DAYS = [
+  { key: 'MON', short: 'Mon', name: 'Monday' },
+  { key: 'TUE', short: 'Tue', name: 'Tuesday' },
+  { key: 'WED', short: 'Wed', name: 'Wednesday' },
+  { key: 'THU', short: 'Thu', name: 'Thursday' },
+  { key: 'FRI', short: 'Fri', name: 'Friday' },
+  { key: 'SAT', short: 'Sat', name: 'Saturday' },
+  { key: 'SUN', short: 'Sun', name: 'Sunday' },
+];
 
+const DAY = 24 * 60 * 60 * 1000;
+
+// A YYYY-MM-DD date as midnight UTC, so days add up without time zone shifts
+const utcDate = (date) => {
+  const [year, month, day] = date.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+};
+
+/**
+ * One week of a player's team's games, Monday to Sunday, for the player panel.
+ */
 export default {
   props: {
-    // Missing for weeks the team has no games
+    // Day abbreviation (MON…) to opponent. Missing for weeks the team has no games.
     week: { type: Object, default: () => ({}) },
-    startDate: String
+    // The week's Monday, YYYY-MM-DD
+    startDate: String,
+    // 0 for this week
+    index: Number,
+  },
+  data() {
+    return { now: Date.now() };
   },
   computed: {
-    ...mapGetters([
-      'teamMainColor',
-      'teamSecondaryColor',
-      'themeBaseColor',
-      'themeAccentColor'
-    ]),
-    bindCssVars() {
-      return {
-        "--themeAccentColor": this.themeAccentColor,
-        "--themeBaseColor": this.themeBaseColor,
-        "--teamMainColor": this.teamMainColor,
-        "--teamSecondaryColor": this.teamSecondaryColor,
-        "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
-      };
+    today() {
+      const now = new Date(this.now);
+      return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
     },
-    endDate() {
-      const end = nextSunday(new Date(this.startDate));
-      return format(end, "yyyy-MM-dd")
-    }
-  }
-}
+    days() {
+      const start = utcDate(this.startDate);
+      return DAYS.map((day, i) => {
+        const time = start + i * DAY;
+        return {
+          ...day,
+          date: new Date(time).getUTCDate(),
+          opponent: this.week?.[day.key] || '',
+          past: time < this.today,
+          today: time === this.today,
+        };
+      });
+    },
+    gameCount() {
+      return this.days.filter(day => day.opponent).length;
+    },
+    label() {
+      if (this.index === 0) return 'This week';
+      if (this.index === 1) return 'Next week';
+      const format = (time) => new Date(time).toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: 'UTC' });
+      const start = utcDate(this.startDate);
+      return `${format(start)} to ${format(start + 6 * DAY)}`;
+    },
+  },
+};
 </script>
 
-<style lang="scss">
-.gameWeekOuterContainer {
+<style lang="scss" scoped>
+.gameWeek {
   display: flex;
   flex-direction: column;
+  gap: 0.3em;
 }
 
-.gameWeekContainer {
+.weekHeading {
   display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9em;
+}
 
-  .gameDay:last-child {
-    border-right: 4px solid var(--teamMainColor);
+.weekName {
+  font-weight: 700;
+}
+
+.weekCount {
+  opacity: 0.8;
+}
+
+.days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1em;
+  padding: 0.3em 0.1em;
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  border-radius: 4px;
+  min-width: 0;
+
+  &.hasGame {
+    background: var(--teamSecondaryColor30Opacity);
+    border-color: var(--teamSecondaryColor);
+  }
+
+  &.past {
+    opacity: 0.45;
+  }
+
+  &.today {
+    outline: 2px solid var(--teamSecondaryColor);
+    outline-offset: -1px;
   }
 }
 
-.gameDay {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 2.5em;
-  width: 2.5em;
-  line-height: 1em;
-  color: var(--teamMainColor);
-  border: 4px solid var(--teamMainColor);
-  border-right: 0px;
+.dayName {
+  font-size: 0.7em;
+  opacity: 0.8;
+  white-space: nowrap;
 }
 
-.hasGame {
-  background-color: var(--teamSecondaryColor);
+.opponent {
+  font-size: 0.85em;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.startDate {
-  text-align: center;
+.day:not(.hasGame) .opponent {
+  font-weight: normal;
+  opacity: 0.5;
 }
 </style>

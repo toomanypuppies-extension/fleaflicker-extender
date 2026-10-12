@@ -1,6 +1,8 @@
-import { getLocalStorage, setLocalStorage, clearLocalStorage } from "../../utils/storage";
-import { convertEpochToTimeString } from "../../utils/util";
-import { getAllHockeyPlayers, getActivityToTimeEpochMilli } from "../../utils/flea";
+import { getLocalStorage } from "../../utils/storage";
+import { getStored, setStoredEntries, removeStored } from "../../utils/db";
+import { convertEpochToTimeString, easternDay } from "../../utils/util";
+import { getAllHockeyPlayers } from "../../utils/flea";
+import { syncActivity, ACTIVITY_KINDS } from "./activity";
 
 const getTodaysGame = (requestedGames, teamAbbr) => {
   const currentGame = requestedGames[0].game;
@@ -10,6 +12,21 @@ const getTodaysGame = (requestedGames, teamAbbr) => {
     return `${currentGame.away.abbreviation} ${convertEpochToTimeString(currentGame.startTimeEpochMilli)}`
   }
 }
+
+const parseFormatted = (formatted) => formatted && parseFloat(formatted) || 0.0;
+
+// The two stats fleaflicker lists for each player: goals and assists for skaters,
+// goals against and save percentage for goalies
+const statsByCategory = (player) => Object.fromEntries(
+  (player.viewingActualStats || []).map(stat => [stat.category?.abbreviation, stat.value?.value])
+);
+
+// Fleaflicker flags recent results that are well above or below the player's usual
+const trend = (lastX) => {
+  if (lastX?.overPerforming) return 'hot';
+  if (lastX?.underPerforming) return 'cold';
+  return undefined;
+};
 
 export const convertPlayerObjects = (players) => {
   return players.map((player) => {
@@ -25,11 +42,13 @@ export const convertPlayerObjects = (players) => {
     }
 
 
-    const points = player.viewingActualPoints?.formatted && parseFloat(player.viewingActualPoints.formatted, 10) || 0.0;
-    const avg = player.viewingActualPointsAverage?.formatted && parseFloat(player.viewingActualPointsAverage.formatted, 10) || 0.0;
-    const last1 = player.lastX?.[0]?.value?.formatted && parseFloat(player.lastX[0].value.formatted, 10) || 0.0;
-    const last5 = player.lastX?.[1]?.value?.formatted && parseFloat(player.lastX[1].value.formatted, 10) || 0.0;
-    const last10 = player.lastX?.[2]?.value?.formatted && parseFloat(player.lastX[2].value.formatted, 10) || 0.0;
+    const points = parseFormatted(player.viewingActualPoints?.formatted);
+    const avg = parseFormatted(player.viewingActualPointsAverage?.formatted);
+    const last1 = parseFormatted(player.lastX?.[0]?.value?.formatted);
+    const last5 = parseFormatted(player.lastX?.[1]?.value?.formatted);
+    const last10 = parseFormatted(player.lastX?.[2]?.value?.formatted);
+    const stats = statsByCategory(player);
+    const positionRank = player.rankFantasy?.positions?.[0];
 
     const gamesThisWeek = player.numGamesInSchedulePeriod || 0;
 
@@ -50,7 +69,29 @@ export const convertPlayerObjects = (players) => {
       last1,
       last5,
       last10,
+      // Fleaflicker doesn't list games played, the average is points per game
+      gamesPlayed: avg ? Math.round(points / avg) : 0,
+      goals: stats.G,
+      assists: stats.Ast,
+      goalsAgainst: stats.GA,
+      // Listed as a percentage, shown like .932
+      savePct: stats['%'] === undefined ? undefined : stats['%'] / 100,
+      percentOwned: player.proPlayer.percentOwnedRatio === undefined
+        ? undefined
+        : Math.round(player.proPlayer.percentOwnedRatio * 100),
+      rank: player.rankFantasy?.ordinal,
+      positionRank: positionRank?.ordinal,
+      positionRankLabel: positionRank?.position?.label,
+      // Game to game spread of the player's points this season
+      consistency: player.seasonsStandartDeviation?.value,
+      trend1: trend(player.lastX?.[0]),
+      trend5: trend(player.lastX?.[1]),
+      trend10: trend(player.lastX?.[2]),
       hasGameToday,
+      // Free agents can go on waivers once their game starts
+      todaysGameStart: hasGameToday
+        ? parseInt(player.requestedGames[0].game.startTimeEpochMilli, 10)
+        : undefined,
       expandedData: {
         image: player.proPlayer?.headshotUrl,
         news: player.proPlayer?.news?.[0],
@@ -58,6 +99,9 @@ export const convertPlayerObjects = (players) => {
     }
   })
 }
+
+// Bump when convertPlayerObjects changes, so players stored by an older version are refetched
+const PLAYERS_FORMAT = 2;
 
 const MINUTE = 60 * 1000;
 // Minimum time between stat refreshes while games are being played
@@ -75,8 +119,6 @@ const MAX_ACTIVITY_PAGES = 5;
 // up to 5 min old (see TTL_BY_ENDPOINT in the proxy) and drift between our clock and flea's.
 // Re-applying activity is harmless, it just sets players to their current owner again.
 const ACTIVITY_OVERLAP = 6 * MINUTE;
-
-const easternDay = (epochMilli) => new Date(epochMilli).toLocaleDateString('en-US', { timeZone: 'America/New_York' });
 
 // Stats only change while NHL games are being played. Flea's requestedGames (todaysGame)
 // and numGamesInSchedulePeriod also roll over daily, so always refresh once per day.
@@ -101,59 +143,72 @@ const statsNeedRefresh = (statsEpoch, now, forceRefresh) => {
 
 const fetchAllPlayers = async (leagueId, stopIfNoPoints) => {
   const fetchStart = new Date().getTime();
-  const players = await getAllHockeyPlayers(leagueId, stopIfNoPoints);
+  const { players, seasons } = await getAllHockeyPlayers(leagueId, { stopIfNoPoints });
   const finalPlayers = convertPlayerObjects(players);
 
-  // If the players can't be stored (storage full), still show them, and leave any older
-  // stored players paired with their own metadata
-  if (setLocalStorage('hockey_players', finalPlayers)) {
-    setLocalStorage('hockey_playersMeta', {
+  // If the players can't be stored (storage full), still show them. Players and their metadata
+  // are stored together, so older stored players stay paired with their own metadata.
+  await setStoredEntries({
+    hockey_players: finalPlayers,
+    hockey_playersMeta: {
+      format: PLAYERS_FORMAT,
       stopIfNoPoints,
+      season: seasons?.selectedValue,
+      // The latest season before this one that fleaflicker has stats for
+      previousSeason: previousSeason(seasons),
       statsEpoch: fetchStart,
       activityEpoch: fetchStart - ACTIVITY_OVERLAP,
       activityCheckedEpoch: fetchStart,
-    });
-  }
+    },
+  }, leagueId);
 
   return { players: finalPlayers, savedAt: fetchStart };
 }
 
+const previousSeason = (seasons) => {
+  const earlier = (seasons?.eligibleValues || []).filter(season => season < seasons.selectedValue);
+  return earlier.length ? Math.max(...earlier) : undefined;
+};
+
 // Applies league activity since the last check to the stored players.
 // Returns false if the changes can't be applied incrementally and a full fetch is needed.
 const applyOwnershipChanges = async (leagueId, players, meta, now) => {
-  const items = await getActivityToTimeEpochMilli('NHL', leagueId, meta.activityEpoch, MAX_ACTIVITY_PAGES);
-  if (!items) {
+  const log = await syncActivity(leagueId, { since: meta.activityEpoch, maxPages: MAX_ACTIVITY_PAGES, now });
+  if (!log) {
     return false;
   }
 
-  // Trade and commissioner items don't list the players that moved
-  if (items.some(item => item.trade || item.commishPowers)) {
+  // Oldest first
+  const items = log.items.filter(item => item.time > meta.activityEpoch).reverse();
+
+  if (items.some(item => item.unknownOwnership)) {
     return false;
   }
 
-  if (items.some(item => item.membership)) {
-    clearLocalStorage('hockey_owners');
+  // Teams joined, left or were renamed
+  if (items.some(item => item.kind === ACTIVITY_KINDS.membership)) {
+    await removeStored('hockey_league', leagueId);
   }
 
+  // Each item has its player's owner from when the item was fetched. Applied oldest first, every
+  // player ends up with the owner from their newest item, which was fetched after their last move.
   const playersById = new Map(players.map(player => [player.id, player]));
   items.forEach(item => {
-    // transaction.player.owner is the player's current owner, not the owner at the time
-    // of the transaction, so the order the items are applied in doesn't matter
-    const leaguePlayer = item.transaction?.player;
-    const player = playersById.get(leaguePlayer?.proPlayer?.id);
+    const player = playersById.get(item.playerId);
     if (player) {
-      player.owner = leaguePlayer.owner?.name;
+      player.owner = item.owner;
     }
   });
 
-  const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => parseInt(item.timeEpochMilli, 10)));
-  if (setLocalStorage('hockey_players', players)) {
-    setLocalStorage('hockey_playersMeta', {
+  const newestActivityEpoch = Math.max(meta.activityEpoch, ...items.map(item => item.time));
+  await setStoredEntries({
+    hockey_players: players,
+    hockey_playersMeta: {
       ...meta,
       activityEpoch: newestActivityEpoch,
       activityCheckedEpoch: now,
-    });
-  }
+    },
+  }, leagueId);
 
   return true;
 }
@@ -188,8 +243,8 @@ const loadHockeyPlayersNow = async (leagueId, stopIfNoPoints, forceRefresh) => {
     return { players: [], error: LOAD_ERRORS.noLeague };
   }
 
-  const storedPlayers = getLocalStorage('hockey_players');
-  const meta = getLocalStorage('hockey_playersMeta');
+  const storedPlayers = await getStored('hockey_players', leagueId);
+  const meta = await getStored('hockey_playersMeta', leagueId);
   const now = new Date().getTime();
   const stored = { players: storedPlayers, savedAt: meta?.statsEpoch };
 
@@ -197,6 +252,7 @@ const loadHockeyPlayersNow = async (leagueId, stopIfNoPoints, forceRefresh) => {
     if (
       !storedPlayers ||
       !meta ||
+      meta.format !== PLAYERS_FORMAT ||
       meta.stopIfNoPoints !== stopIfNoPoints ||
       statsNeedRefresh(meta.statsEpoch, now, forceRefresh)
     ) {

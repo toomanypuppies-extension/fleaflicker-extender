@@ -2,6 +2,21 @@
 const proxyBase = process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8080' : 'https://winter-inkwell-365019.uc.r.appspot.com'
 export const FLEA_API_BASE = process.env.STANDALONE ? `${proxyBase}/proxy/flea` : 'https://www.fleaflicker.com/api';
 export const NHL_API_BASEV2 = `${proxyBase}/proxy/nhlv2`;
+// League settings from the rules page, which the API doesn't have. Used by the extension too.
+export const LEAGUE_SETTINGS_BASE = `${proxyBase}/proxy/flea-rules`;
+// A day's starting goalies from Daily Faceoff
+export const STARTING_GOALIES_BASE = `${proxyBase}/proxy/starting-goalies`;
+
+// The app's sections
+export const TABS = [
+  { key: 'players', label: 'Players' },
+  { key: 'matchups', label: 'Matchups' },
+  { key: 'rosters', label: 'Rosters' },
+  { key: 'schedule', label: 'Schedule' },
+];
+
+// The league's tabs, which share league activity and rosters
+export const LEAGUE_TABS = ['matchups', 'rosters'];
 
 export const DAYS_ARRAY = [
   'Mo',
@@ -53,6 +68,10 @@ export const HOCKEY_POSITION_OPTIONS = [
 
 export const OWNERSHIP_OPTIONS = [
   "Free Agent",
+  // Free agents who can be added right away, not on waivers
+  "Addable now",
+  // Free agents who can only be claimed right now
+  "On waivers",
   "Owned",
   "All"
 ]
@@ -343,3 +362,6 @@ export const HOCKEY_TEAM_ABBR_TO_COLORS = {
     secondary: '#7B303E',
   },
 }
+
+// Modals cover the app: above sticky table headers (up to 3) and help panels and sheets (20)
+export const MODAL_Z_INDEX = 50;

@@ -1,0 +1,907 @@
+{
+  "rules": {
+    "rosterPositions": [
+      {
+        "label": "C",
+        "group": "START",
+        "eligibility": [
+          "C"
+        ],
+        "min": 2,
+        "max": 18,
+        "start": 2,
+        "colors": [
+          "DRAFT_BOARD_PURPLE"
+        ]
+      },
+      {
+        "label": "LW",
+        "group": "START",
+        "eligibility": [
+          "LW"
+        ],
+        "min": 2,
+        "max": 18,
+        "start": 2,
+        "colors": [
+          "DRAFT_BOARD_GREEN"
+        ]
+      },
+      {
+        "label": "RW",
+        "group": "START",
+        "eligibility": [
+          "RW"
+        ],
+        "min": 2,
+        "max": 18,
+        "start": 2,
+        "colors": [
+          "DRAFT_BOARD_GREEN"
+        ]
+      },
+      {
+        "label": "F",
+        "group": "START",
+        "eligibility": [
+          "C",
+          "LW",
+          "RW"
+        ],
+        "start": 1,
+        "colors": [
+          "DRAFT_BOARD_GREEN",
+          "DRAFT_BOARD_PURPLE"
+        ]
+      },
+      {
+        "label": "D",
+        "group": "START",
+        "eligibility": [
+          "D"
+        ],
+        "min": 4,
+        "max": 18,
+        "start": 4,
+        "colors": [
+          "DRAFT_BOARD_BLUE"
+        ]
+      },
+      {
+        "label": "F/D",
+        "group": "START",
+        "eligibility": [
+          "C",
+          "LW",
+          "RW",
+          "D"
+        ],
+        "start": 1,
+        "colors": [
+          "DRAFT_BOARD_GREEN",
+          "DRAFT_BOARD_BLUE",
+          "DRAFT_BOARD_PURPLE"
+        ]
+      },
+      {
+        "label": "G",
+        "group": "START",
+        "eligibility": [
+          "G"
+        ],
+        "min": 2,
+        "max": 18,
+        "start": 2,
+        "colors": [
+          "DRAFT_BOARD_RED"
+        ]
+      },
+      {
+        "label": "IR",
+        "group": "INJURED",
+        "eligibility": [
+          "C",
+          "LW",
+          "RW",
+          "D",
+          "G"
+        ],
+        "start": 2,
+        "colors": [
+          "DRAFT_BOARD_GREEN",
+          "DRAFT_BOARD_BLUE",
+          "DRAFT_BOARD_RED",
+          "DRAFT_BOARD_PURPLE"
+        ]
+      },
+      {
+        "label": "BN",
+        "max": 4
+      },
+      {
+        "label": "TAXI",
+        "group": "TAXI",
+        "eligibility": [
+          "C",
+          "LW",
+          "RW",
+          "D",
+          "G"
+        ],
+        "colors": [
+          "DRAFT_BOARD_GREEN",
+          "DRAFT_BOARD_BLUE",
+          "DRAFT_BOARD_RED",
+          "DRAFT_BOARD_PURPLE"
+        ]
+      }
+    ],
+    "numStarters": 14,
+    "numBench": 4,
+    "maxActive": 18,
+    "maxRosterSize": 20
+  },
+  "scoreboard": {
+    "schedulePeriod": {
+      "ordinal": 2,
+      "low": {
+        "duration": "DAY",
+        "ordinal": 7,
+        "startEpochMilli": "1791194400000"
+      },
+      "high": {
+        "duration": "DAY",
+        "ordinal": 13,
+        "startEpochMilli": "1791712800000",
+        "isNow": true
+      },
+      "containsNow": true,
+      "value": 13
+    },
+    "eligibleSchedulePeriods": [
+      {
+        "ordinal": 1,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 1,
+          "startEpochMilli": "1790676000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 6,
+          "startEpochMilli": "1791108000000"
+        },
+        "value": 1
+      },
+      {
+        "ordinal": 2,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 7,
+          "startEpochMilli": "1791194400000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 13,
+          "startEpochMilli": "1791712800000",
+          "isNow": true
+        },
+        "containsNow": true,
+        "value": 13
+      },
+      {
+        "ordinal": 3,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 14,
+          "startEpochMilli": "1791799200000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 20,
+          "startEpochMilli": "1792317600000"
+        },
+        "value": 14
+      },
+      {
+        "ordinal": 4,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 21,
+          "startEpochMilli": "1792404000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 27,
+          "startEpochMilli": "1792922400000"
+        },
+        "value": 21
+      },
+      {
+        "ordinal": 5,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 28,
+          "startEpochMilli": "1793008800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 34,
+          "startEpochMilli": "1793530800000"
+        },
+        "value": 28
+      },
+      {
+        "ordinal": 6,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 35,
+          "startEpochMilli": "1793617200000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 41,
+          "startEpochMilli": "1794135600000"
+        },
+        "value": 35
+      },
+      {
+        "ordinal": 7,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 42,
+          "startEpochMilli": "1794222000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 48,
+          "startEpochMilli": "1794740400000"
+        },
+        "value": 42
+      },
+      {
+        "ordinal": 8,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 49,
+          "startEpochMilli": "1794826800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 55,
+          "startEpochMilli": "1795345200000"
+        },
+        "value": 49
+      },
+      {
+        "ordinal": 9,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 56,
+          "startEpochMilli": "1795431600000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 62,
+          "startEpochMilli": "1795950000000"
+        },
+        "value": 56
+      },
+      {
+        "ordinal": 10,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 63,
+          "startEpochMilli": "1796036400000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 69,
+          "startEpochMilli": "1796554800000"
+        },
+        "value": 63
+      },
+      {
+        "ordinal": 11,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 70,
+          "startEpochMilli": "1796641200000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 76,
+          "startEpochMilli": "1797159600000"
+        },
+        "value": 70
+      },
+      {
+        "ordinal": 12,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 77,
+          "startEpochMilli": "1797246000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 83,
+          "startEpochMilli": "1797764400000"
+        },
+        "value": 77
+      },
+      {
+        "ordinal": 13,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 84,
+          "startEpochMilli": "1797850800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 90,
+          "startEpochMilli": "1798369200000"
+        },
+        "value": 84
+      },
+      {
+        "ordinal": 14,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 91,
+          "startEpochMilli": "1798455600000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 97,
+          "startEpochMilli": "1798974000000"
+        },
+        "value": 91
+      },
+      {
+        "ordinal": 15,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 98,
+          "startEpochMilli": "1799060400000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 104,
+          "startEpochMilli": "1799578800000"
+        },
+        "value": 98
+      },
+      {
+        "ordinal": 16,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 105,
+          "startEpochMilli": "1799665200000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 111,
+          "startEpochMilli": "1800183600000"
+        },
+        "value": 105
+      },
+      {
+        "ordinal": 17,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 112,
+          "startEpochMilli": "1800270000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 118,
+          "startEpochMilli": "1800788400000"
+        },
+        "value": 112
+      },
+      {
+        "ordinal": 18,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 119,
+          "startEpochMilli": "1800874800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 125,
+          "startEpochMilli": "1801393200000"
+        },
+        "value": 119
+      },
+      {
+        "ordinal": 19,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 126,
+          "startEpochMilli": "1801479600000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 139,
+          "startEpochMilli": "1802602800000"
+        },
+        "value": 126
+      },
+      {
+        "ordinal": 20,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 140,
+          "startEpochMilli": "1802689200000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 146,
+          "startEpochMilli": "1803207600000"
+        },
+        "value": 140
+      },
+      {
+        "ordinal": 21,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 147,
+          "startEpochMilli": "1803294000000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 153,
+          "startEpochMilli": "1803812400000"
+        },
+        "value": 147
+      },
+      {
+        "ordinal": 22,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 154,
+          "startEpochMilli": "1803898800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 160,
+          "startEpochMilli": "1804417200000"
+        },
+        "value": 154
+      },
+      {
+        "ordinal": 23,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 161,
+          "startEpochMilli": "1804503600000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 167,
+          "startEpochMilli": "1805018400000"
+        },
+        "value": 161
+      },
+      {
+        "ordinal": 24,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 168,
+          "startEpochMilli": "1805104800000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 174,
+          "startEpochMilli": "1805623200000"
+        },
+        "value": 168
+      },
+      {
+        "ordinal": 25,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 175,
+          "startEpochMilli": "1805709600000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 181,
+          "startEpochMilli": "1806228000000"
+        },
+        "value": 175
+      },
+      {
+        "ordinal": 26,
+        "low": {
+          "duration": "DAY",
+          "ordinal": 182,
+          "startEpochMilli": "1806314400000"
+        },
+        "high": {
+          "duration": "DAY",
+          "ordinal": 188,
+          "startEpochMilli": "1806832800000"
+        },
+        "value": 182
+      }
+    ],
+    "games": [
+      {
+        "id": "3603193",
+        "away": {
+          "id": 63145,
+          "name": "Chicken and Raffls"
+        },
+        "home": {
+          "id": 63134,
+          "name": "Hellbuycky Barnes"
+        },
+        "awayScore": {
+          "score": {
+            "value": 216.99998,
+            "formatted": "217"
+          }
+        },
+        "homeScore": {
+          "score": {
+            "value": 117.00001,
+            "formatted": "117"
+          }
+        },
+        "isInProgress": true
+      },
+      {
+        "id": "3603195",
+        "away": {
+          "id": 63154,
+          "name": "Celebrini Dion"
+        },
+        "home": {
+          "id": 63141,
+          "name": "I Really Like Slop!"
+        },
+        "awayScore": {
+          "score": {
+            "value": 225.60002,
+            "formatted": "225.6"
+          }
+        },
+        "homeScore": {
+          "score": {
+            "value": 194.65,
+            "formatted": "194.65"
+          }
+        },
+        "isInProgress": true
+      }
+    ]
+  },
+  "roster": {
+    "groups": [
+      {
+        "group": "START",
+        "slots": [
+          {
+            "position": {
+              "label": "C"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8521,
+                "nameFull": "Wyatt Johnston",
+                "proTeamAbbreviation": "DAL",
+                "position": "C/RW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "C"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 3488,
+                "nameFull": "Brayden Point",
+                "proTeamAbbreviation": "TB",
+                "position": "C"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "LW"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 3730,
+                "nameFull": "Artemi Panarin",
+                "proTeamAbbreviation": "LA",
+                "position": "LW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "LW"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8227,
+                "nameFull": "Quinton Byfield",
+                "proTeamAbbreviation": "LA",
+                "position": "C/LW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "RW"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8568,
+                "nameFull": "Jackson Blake",
+                "proTeamAbbreviation": "CAR",
+                "position": "RW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "RW"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8524,
+                "nameFull": "William Eklund",
+                "proTeamAbbreviation": "OTT",
+                "position": "W",
+                "injury": {
+                  "typeAbbreviaition": "IR"
+                }
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "F"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8230,
+                "nameFull": "JJ Peterka",
+                "proTeamAbbreviation": "BOS",
+                "position": "W"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "D"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 4403,
+                "nameFull": "Cale Makar",
+                "proTeamAbbreviation": "COL",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "D"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 4400,
+                "nameFull": "Miro Heiskanen",
+                "proTeamAbbreviation": "DAL",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "D"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8156,
+                "nameFull": "Philip Broberg",
+                "proTeamAbbreviation": "STL",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "D"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 9461,
+                "nameFull": "Luca Cagnoni",
+                "proTeamAbbreviation": "SJ",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "F/D"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8216,
+                "nameFull": "Egor Chinakhov",
+                "proTeamAbbreviation": "PIT",
+                "position": "RW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "G"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8519,
+                "nameFull": "Jesper Wallstedt",
+                "proTeamAbbreviation": "MIN",
+                "position": "G"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "G"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 5187,
+                "nameFull": "Logan Thompson",
+                "proTeamAbbreviation": "WSH",
+                "position": "G"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "slots": [
+          {
+            "position": {
+              "label": "BN"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 10334,
+                "nameFull": "Maxim Shabanov",
+                "proTeamAbbreviation": "MIN",
+                "position": "RW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "BN"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 4103,
+                "nameFull": "Jack Roslovic",
+                "proTeamAbbreviation": "TOR",
+                "position": "C/RW"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "BN"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 9751,
+                "nameFull": "Carter Yakemchuk",
+                "proTeamAbbreviation": "OTT",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "BN"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8969,
+                "nameFull": "Tristan Luneau",
+                "proTeamAbbreviation": "ANA",
+                "position": "D"
+              }
+            }
+          },
+          {
+            "position": {
+              "label": "BN"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 8323,
+                "nameFull": "Jakub Dobes",
+                "proTeamAbbreviation": "MTL",
+                "position": "G"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "group": "INJURED",
+        "slots": [
+          {
+            "position": {
+              "label": "IR"
+            },
+            "leaguePlayer": {
+              "proPlayer": {
+                "id": 9740,
+                "nameFull": "Ivan Demidov",
+                "proTeamAbbreviation": "MTL",
+                "position": "RW",
+                "injury": {
+                  "typeAbbreviaition": "IR"
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "standings": {
+    "league": {
+      "id": 12089,
+      "name": "Messier - D3"
+    },
+    "divisions": [
+      {
+        "teams": [
+          {
+            "id": 63145,
+            "name": "Chicken and Raffls",
+            "recordOverall": {
+              "formatted": "1-0",
+              "rank": 1
+            },
+            "pointsFor": { "value": 218.15, "formatted": "218.15" },
+            "pointsAgainst": { "value": 191.45, "formatted": "191.45" },
+            "streak": { "value": 1, "formatted": "W1" },
+            "waiverPosition": 14,
+            "owners": [
+              {
+                "displayName": "funkyquasar"
+              }
+            ]
+          },
+          {
+            "id": 63158,
+            "name": "Dumpster Fire Brigade",
+            "recordOverall": {
+              "formatted": "1-0",
+              "rank": 2
+            },
+            "waiverPosition": 2,
+            "owners": [
+              {
+                "displayName": "stroopwafels"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

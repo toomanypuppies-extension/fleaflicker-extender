@@ -1,11 +1,11 @@
 import { getLeagueId } from "./util";
 
-const KEY_PREFIX = 'ff-extender-';
+export const KEY_PREFIX = 'ff-extender-';
 // Stored per league and by far the largest thing we store (~0.5-1MB each)
 const PLAYERS_KEY = 'hockey_players';
 const PLAYERS_META_KEY = 'hockey_playersMeta';
 
-const buildKey = (key, leagueId) => `${KEY_PREFIX}${leagueId || getLeagueId()}-${key}`;
+export const buildKey = (key, leagueId) => `${KEY_PREFIX}${leagueId || getLeagueId()}-${key}`;
 
 const isQuotaError = (err) => err?.name === 'QuotaExceededError' || err?.name === 'NS_ERROR_DOM_QUOTA_REACHED';
 

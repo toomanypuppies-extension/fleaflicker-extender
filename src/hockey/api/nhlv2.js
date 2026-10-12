@@ -25,7 +25,8 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
     }
   }
 
-  if (!forceRefresh && storedThisWeek && storedGames) {
+  // Stored by older versions without the full schedule
+  if (!forceRefresh && storedThisWeek && storedGames?.schedule) {
     return storedGames;
   }
 
@@ -59,11 +60,14 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
       .flatMap(day => day.games.map(game => new Date(game.startTimeUTC).getTime()))
       .filter(time => !isNaN(time));
 
+    const schedule = convertSchedule([weekOneResponse.data, weekTwoResponse.data, weekThreeResponse.data, weekFourResponse.data]);
+
     const games = {
       gamesByTeam,
       gamesByMatchup,
       weekStartDates,
-      gameStartTimes
+      gameStartTimes,
+      schedule,
     }
 
     setLocalStorage('gamesThisWeek', games);
@@ -76,6 +80,34 @@ export const getGamesThisWeek = async (forceRefresh = false) => {
     return storedThisWeek && storedGames ? storedGames : null;
   }
 }
+
+/**
+ * The NHL's schedule for the 7 days from `startDate` (YYYY-MM-DD), like one convertSchedule week
+ */
+export const getScheduleWeek = async (startDate) => {
+  const response = await axios.get(buildUrl(`schedule/${startDate}`));
+  return convertSchedule([response.data])[0];
+};
+
+/**
+ * Every game in the given weeks of the NHL's schedule:
+ * [{ startDate: '2026-10-12', days: [{ date, dayAbbrev: 'MON', games: [{ away: 'VAN', home: 'SEA', start }] }] }]
+ * Team abbreviations are fleaflicker's.
+ */
+export const convertSchedule = (weeks) => weeks.map(week => ({
+  startDate: week.gameWeek?.[0]?.date,
+  days: (week.gameWeek || []).map(day => ({
+    date: day.date,
+    dayAbbrev: day.dayAbbrev,
+    games: (day.games || [])
+      .map(game => ({
+        away: NHL_APIV2_ABBREV_TO_ABBR[game.awayTeam?.abbrev],
+        home: NHL_APIV2_ABBREV_TO_ABBR[game.homeTeam?.abbrev],
+        start: Date.parse(game.startTimeUTC),
+      }))
+      .filter(game => game.away && game.home),
+  })),
+}));
 
 const convertGameObjectsToGamesByTeam = (weekOne, weekTwo) => {
   // { ABR: ['Mo', 'We', 'Next - Mo'] }

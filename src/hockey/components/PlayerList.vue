@@ -1,338 +1,389 @@
 <template>
-  <div class="tableContainer containerColor">
-    <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
-      <table class="va-table datatable" :class="{ tableLoading: loading }">
-        <thead>
-          <tr>
-            <th v-for="column in columns" :key="column.key" @click="() => handledSortSingleClick(column)"
-              @dblclick="() => handledSortDoubleClick(column)" class="headerStyles"
-              :class="{ cursor: column.sortable }">
-              <span class="colHeadContent">
-                {{ column.name }}
-                <va-icon v-if="sortMap[column.key] === 'desc'" class="material-icons" size="1em">expand_more</va-icon>
-                <va-icon v-if="
-                  sortMap[column.key] === 'desc' &&
-                  sortColumns[1] === column.key
-                " class="material-icons" size="1em">expand_more</va-icon>
-                <va-icon v-if="sortMap[column.key] === 'asc'" class="material-icons" size="1em">expand_less</va-icon>
-                <va-icon v-if="
-                  sortMap[column.key] === 'asc' &&
-                  sortColumns[1] === column.key
-                " class="material-icons" size="1em">expand_less</va-icon>
-              </span>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="player in filteredPlayers" :key="player.id" @click="$emit('playerSelected', player)"
-            class="hoverEffects">
-            <td v-for="column in columns" :key="`${column.key}-${player.id}`">
-              <template v-if="column.key === 'gameDays'">
-                <!-- Only show this week days -->
-                {{ gamesByTeam && gamesByTeam[player?.team]?.filter((day) =>
-                  ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'].includes(day))?.join(", ") }}
-              </template>
-              <template v-else>
-                {{ player[column.key] }}
-              </template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </va-inner-loading>
+  <div class="tableArea">
+    <!-- The count and the column chooser (sort on phones) sit in the table's own frame, above its rows -->
+    <div class="tableFrame containerColor">
+    <div class="tableHeader">
+      <span class="resultCount" role="status">{{ resultCount }}</span>
+      <div v-if="narrow" class="mobileSort">
+        <label>
+          Sort
+          <select :value="sorts[0]?.key || ''" @change="sortByKey($event.target.value)">
+            <option value="">Points</option>
+            <option v-for="column in sortableColumns" :key="column.key" :value="column.key">{{ column.name }}</option>
+          </select>
+        </label>
+        <button v-if="sorts.length" type="button" class="tableButton" aria-label="Reverse the sort"
+          @click="reverseSort">
+          <va-icon class="material-icons" size="1.1em">swap_vert</va-icon>
+        </button>
+      </div>
+      <button v-else type="button" class="tableButton headerButton" @click="columnsOpen = true">
+        <va-icon class="material-icons" size="1.1em">view_column</va-icon>
+        Columns
+      </button>
+    </div>
+
+    <div ref="scroller" class="tableContainer">
+      <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
+        <ul v-if="narrow" class="playerCards" :class="{ tableLoading: loading }">
+          <li v-for="player in renderedPlayers" :key="player.id" class="playerCardRow" tabindex="0"
+            :class="{ selected: player.id === selectedPlayerId }"
+            @click="$emit('playerSelected', player)" @keydown.enter="$emit('playerSelected', player)">
+            <div class="cardTop">
+              <span class="cardName">{{ player.name }}</span>
+              <span v-if="player.injury" class="injuryBadge">{{ player.injury }}</span>
+              <span v-if="player.goalieStartLabel" class="startBadge" :class="player.goalieStartLabel.toLowerCase()"
+                :title="`Daily Faceoff: ${player.goalieStartLabel.toLowerCase()} starter today`">{{ player.goalieStartLabel }} starter</span>
+              <span class="cardOwner">{{ player.owner || player.availabilityLabel || 'Free agent' }}</span>
+            </div>
+            <div class="cardMeta">
+              {{ player.team }} · {{ player.position }} · {{ player.todaysGame || 'No game today' }}
+              · {{ player.gamesThisWeek }} left this week
+            </div>
+            <dl class="cardStatList">
+              <div v-for="column in cardColumns" :key="column.key" class="cardStat">
+                <dt>{{ column.name }}</dt>
+                <dd>
+                  {{ cellText(column, player) }}
+                  <va-icon v-if="column.trendField && player[column.trendField]" class="material-icons trend"
+                    :class="player[column.trendField]" size="1em">{{
+                      player[column.trendField] === 'hot' ? 'trending_up' : 'trending_down'
+                    }}</va-icon>
+                </dd>
+              </div>
+            </dl>
+          </li>
+          <li v-if="renderedPlayers.length < visiblePlayers.length" ref="sentinel" class="sentinel">Loading more players…</li>
+          <li v-if="!loading && visiblePlayers.length === 0" class="emptyState">
+            <p class="emptyTitle">No players match your filters.</p>
+            <p v-for="hint in emptyHints" :key="hint" class="emptyHint">{{ hint }}</p>
+            <button type="button" class="tableButton" @click="$store.commit('clearFilters')">Clear filters</button>
+          </li>
+        </ul>
+        <table v-else class="datatable" :class="{ tableLoading: loading }">
+          <thead>
+            <tr>
+              <th v-for="column in columns" :key="column.key" @click="(event) => onHeaderClick(column, event)"
+                @keydown.enter="(event) => onHeaderClick(column, event)" :tabindex="column.sortType ? 0 : null"
+                class="headerStyles" :class="{ sortable: column.sortType }" :aria-sort="ariaSort(column)"
+                :title="column.title">
+                <span class="colHeadContent">
+                  {{ column.name }}
+                  <template v-if="sortIndex(column) >= 0">
+                    <va-icon class="material-icons" size="1em">{{
+                      sorts[sortIndex(column)].direction === 'desc' ? 'expand_more' : 'expand_less'
+                    }}</va-icon>
+                    <span v-if="sorts.length > 1" class="sortOrder">{{ sortIndex(column) + 1 }}</span>
+                  </template>
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="player in renderedPlayers" :key="player.id" @click="$emit('playerSelected', player)"
+              @keydown.enter="$emit('playerSelected', player)" tabindex="0" class="hoverEffects"
+              :class="{ selected: player.id === selectedPlayerId }">
+              <td v-for="column in columns" :key="column.key">
+                <template v-if="column.key === 'gameDays'">{{ gameDays(player) }}</template>
+                <template v-else>
+                  {{ cellText(column, player) }}
+                  <va-icon v-if="column.trendField && player[column.trendField]" class="material-icons trend"
+                    :class="player[column.trendField]" size="1em"
+                    :title="player[column.trendField] === 'hot' ? 'Well above their usual' : 'Well below their usual'">{{
+                      player[column.trendField] === 'hot' ? 'trending_up' : 'trending_down'
+                    }}</va-icon>
+                </template>
+              </td>
+            </tr>
+            <tr v-if="renderedPlayers.length < visiblePlayers.length" ref="sentinel" class="sentinel">
+              <td :colspan="columns.length">Loading more players…</td>
+            </tr>
+            <tr v-if="!loading && visiblePlayers.length === 0" class="emptyState">
+              <td :colspan="columns.length">
+                <p class="emptyTitle">No players match your filters.</p>
+                <p v-for="hint in emptyHints" :key="hint" class="emptyHint">{{ hint }}</p>
+                <button type="button" class="tableButton" @click="$store.commit('clearFilters')">Clear filters</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </va-inner-loading>
+    </div>
+    </div>
+
+    <ColumnsModal v-model="columnsOpen" />
   </div>
 </template>
 
 <script>
-import { HOCKEY_TEAM_NAME_TO_ABBR, OWNERSHIP_OPTIONS } from "../constants";
-import { containsAll } from "../../utils/util";
 import { mapState, mapGetters } from 'vuex';
+import { filterPlayers } from "../collections/filtering";
+import { sortPlayers, toggleSort } from "../collections/sorting";
+import { visibleColumns, cellText, SORT_TYPES, COLUMNS, COLUMNS_BY_KEY } from "../collections/columns";
+import ColumnsModal from "./ColumnsModal.vue";
+import { isNarrow } from "../../utils/narrow";
+
+// Stats always on a phone's player cards, after any sorted or filtered stats
+const CARD_STATS = ['points', 'avg', 'last5'];
+const MAX_CARD_STATS = 5;
+// Already on the card's top lines
+const CARD_TEXT_COLUMNS = ['name', 'team', 'owner', 'position', 'injury', 'todaysGame', 'gamesThisWeek', 'availabilityLabel', 'gameDays'];
+
+// Rows are added in pages as the table is scrolled, rendering every player at once is slow
+const PAGE_SIZE = 100;
+const WEEK_DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
 export default {
+  components: { ColumnsModal },
+  emits: ['playerSelected'],
   data() {
     return {
-      tableColumns: [
-        {
-          key: "name",
-          name: "Name",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "team",
-          name: "Team",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "owner",
-          name: "Owner",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "todaysGame",
-          name: "Todays Game",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "gamesThisWeek",
-          name: "Games Remaining",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "gameDays",
-          name: "Game Days",
-          sortable: false,
-        },
-        {
-          key: "position",
-          name: "Position",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "injury",
-          name: "Injury",
-          sortable: true,
-          sortingFn: this.stringSortFn,
-        },
-        {
-          key: "points",
-          name: "Points",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "avg",
-          name: "Avg",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last1",
-          name: "Last 1",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last5",
-          name: "Last 5",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-        {
-          key: "last10",
-          name: "Last 10",
-          sortable: true,
-          sortingFn: this.numSortFn,
-        },
-      ],
-      filteredPlayers: [],
-      sortMap: {},
-      sortColumns: [],
-      dblClickTimer: null,
+      sorts: [],
+      renderLimit: PAGE_SIZE,
+      columnsOpen: false,
+      observer: null,
     };
   },
   props: {
     loading: Boolean,
     players: Array,
     gamesByTeam: Object,
+    // Date to the teams playing, for lineup spot filters
+    teamsByDate: Object,
     sport: String,
+    // Whether the league's waiver settings are known, so availability can be worked out
+    availabilityKnown: Boolean,
   },
   computed: {
     ...mapState({
       teamSelections: state => state.teamSelections,
-      excludeIfNoPoints: state => state.excludeIfNoPoints,
       filter: state => state.filter,
       positionSelections: state => state.positionSelections,
       injurySelections: state => state.injurySelections,
       gameDaysSelections: state => state.gameDaysSelections,
-      filterHash: state => state.filterHash,
+      gameDaysMode: state => state.gameDaysMode,
+      statFilters: state => state.statFilters,
+      spotFilters: state => state.spotFilters,
+      goalieStartSelections: state => state.goalieStartSelections,
       ownership: state => state.ownership,
+      visibleColumnKeys: state => state.visibleColumnKeys,
+      excludeIfNoPoints: state => state.excludeIfNoPoints,
+      selectedPlayerId: state => state.selectedPlayer?.id,
     }),
     ...mapGetters([
       'teamSecondaryColor',
     ]),
     columns() {
-      return this.tableColumns.filter((col) => {
-        if (this.ownership === "Free Agent" && col.key === "owner") {
-          return false;
-        }
-        if (
-          this.injurySelections.length === 1 &&
-          this.injurySelections.includes("HEALTHY") &&
-          col.key === "injury"
-        ) {
-          return false;
-        }
-        return true;
-      });
-    },
-    teamsMatchingGamesDaysSelection() {
-      if (!this.gameDaysSelections || this.gameDaysSelections.length === 0)
-        return [];
-      const matchedTeams = [];
-
-      for (const [teamAbbr, teamGames] of Object.entries(this.gamesByTeam)) {
-        if (containsAll(teamGames, this.gameDaysSelections)) {
-          matchedTeams.push(teamAbbr);
-        }
+      // Columns that would be the same for every player shown
+      const hidden = new Set();
+      if (["Free Agent", "Addable now", "On waivers"].includes(this.ownership)) {
+        hidden.add("owner");
       }
-
-      return matchedTeams;
+      if (this.ownership === "Owned") {
+        hidden.add("availabilityLabel");
+      }
+      if (this.injurySelections.length === 1 && this.injurySelections.includes("HEALTHY")) {
+        hidden.add("injury");
+      }
+      return visibleColumns(this.visibleColumnKeys).filter(column => !hidden.has(column.key));
+    },
+    filteredPlayers() {
+      return filterPlayers(this.players, {
+        filter: this.filter,
+        teamSelections: this.teamSelections,
+        injurySelections: this.injurySelections,
+        positionSelections: this.positionSelections,
+        gameDaysSelections: this.gameDaysSelections,
+        gameDaysMode: this.gameDaysMode,
+        statFilters: this.statFilters,
+        spotFilters: this.spotFilters,
+        goalieStartSelections: this.goalieStartSelections,
+        ownership: this.ownership,
+      }, this.gamesByTeam, this.teamsByDate);
+    },
+    visiblePlayers() {
+      // Hidden columns have the same value for every player, so sorting on them does nothing
+      const visibleKeys = this.columns.map(column => column.key);
+      const sorts = this.sorts.filter(sort => visibleKeys.includes(sort.key));
+      return sortPlayers(this.filteredPlayers, sorts, SORT_TYPES);
+    },
+    narrow() {
+      return isNarrow.value;
+    },
+    sortableColumns() {
+      return COLUMNS.filter(column => column.sortType);
+    },
+    // On phones: the sorted and filtered stats, then points, average and last 5
+    cardColumns() {
+      const keys = [...this.sorts.map(sort => sort.key), ...this.statFilters.map(statFilter => statFilter.key), ...CARD_STATS];
+      return [...new Set(keys)]
+        .filter(key => !CARD_TEXT_COLUMNS.includes(key))
+        .map(key => COLUMNS_BY_KEY[key])
+        .filter(Boolean)
+        .slice(0, MAX_CARD_STATS);
+    },
+    renderedPlayers() {
+      return this.visiblePlayers.slice(0, this.renderLimit);
+    },
+    resultCount() {
+      if (this.loading) {
+        return "Loading players…";
+      }
+      const total = this.players?.length || 0;
+      const shown = this.visiblePlayers.length;
+      if (shown === total) return `${total} players`;
+      // Shorter on phones, so it fits beside the sort
+      return this.narrow ? `${shown} of ${total} players` : `Showing ${shown} of ${total} players`;
+    },
+    emptyHints() {
+      const hints = [];
+      if (this.ownership === "Addable now" && !this.availabilityKnown) {
+        hints.push("The league's waiver settings couldn't be loaded, so no one is known to be addable right now.");
+      }
+      if (this.ownership === "On waivers" && !this.availabilityKnown) {
+        hints.push("The league's waiver settings couldn't be loaded, so no one is known to be on waivers.");
+      }
+      if (this.gameDaysSelections.length > 1 && this.gameDaysMode === "all") {
+        hints.push("Game Days shows teams playing on every day you picked. Switch it to any day to see more.");
+      }
+      if (this.statFilters.length) {
+        hints.push("Players without a stat you're filtering on, like last season's for rookies, are left out.");
+      }
+      if (this.excludeIfNoPoints) {
+        hints.push("Players without points this season are hidden, see Settings.");
+      }
+      return hints;
     },
   },
   methods: {
-    setFilteredPlayers() {
-      const teamSelectionsAbbr = this.teamSelections.map(
-        (sel) => HOCKEY_TEAM_NAME_TO_ABBR[sel]
-      );
-
-      this.filteredPlayers = this.players.filter((player) => {
-        if (this.ownership === "Free Agent" && player.owner) {
-          return false
-        } else if (this.ownership === "Owned" && !player.owner) {
-          return false
-        } else if (this.ownership !== "" && !OWNERSHIP_OPTIONS.includes(this.ownership) && player.owner !== this.ownership) {
-          return false
-        }
-
-        if (this.gameDaysSelections && this.gameDaysSelections.length > 0) {
-          if (!this.teamsMatchingGamesDaysSelection.includes(player.team)) {
-            return false;
-          }
-        }
-
-        if (
-          this.teamSelections.length > 0 &&
-          !teamSelectionsAbbr.includes(player.team)
-        ) {
-          return false;
-        }
-
-        if (this.injurySelections.length > 0) {
-          if (!player.injury && this.injurySelections.includes("HEALTHY")) {
-            // no-op
-          } else if (!this.injurySelections.includes(player.injury)) {
-            return false;
-          }
-        }
-
-        if (this.positionSelections.length > 0) {
-          const intersection = this.positionSelections.filter((pos) =>
-            player.positions.includes(pos)
-          );
-          if (intersection.length === 0) {
-            return false;
-          }
-        }
-
-        if (
-          this.filter !== "" &&
-          !player.name.toLowerCase().includes(this.filter.toLowerCase())
-        ) {
-          return false;
-        }
-
-        return true;
-      });
-
-      // Re-apply sort after filtering
-      if (this.sortColumns.length > 0) {
-        this.sortPlayerList();
+    cellText,
+    gameDays(player) {
+      // Only this week's days
+      return this.gamesByTeam?.[player?.team]?.filter((day) => WEEK_DAYS.includes(day))?.join(", ");
+    },
+    sortIndex(column) {
+      return this.sorts.findIndex(sort => sort.key === column.key);
+    },
+    ariaSort(column) {
+      const sort = this.sorts.find(sort => sort.key === column.key);
+      if (!sort) {
+        return column.sortType ? "none" : null;
       }
+      // "desc" is the first click's order: highest numbers first, but text and ranks lowest first
+      const highFirst = column.sortType === "number";
+      return (sort.direction === "desc") === highFirst ? "descending" : "ascending";
     },
-    numSortFn(a, b) {
-      const aA = a || 0;
-      const bB = b || 0;
-      return bB - aA;
+    sortByKey(key) {
+      this.sorts = key ? [{ key, direction: "desc" }] : [];
     },
-    stringSortFn(a, b) {
-      const aA = a || "";
-      const bB = b || "";
-      return aA.localeCompare(bB);
+    reverseSort() {
+      this.sorts = this.sorts.map((sort, i) => (i === 0 ? { ...sort, direction: sort.direction === "desc" ? "asc" : "desc" } : sort));
     },
-    handledSortSingleClick(column) {
-      if (!column.sortable) return;
-
-      if (this.dblClickTimer) {
-        clearTimeout(this.dblClickTimer);
-      }
-      this.dblClickTimer = setTimeout(() => {
-        this.configureSortColumn(column);
-      }, 300);
+    onHeaderClick(column, event) {
+      if (!column.sortType) return;
+      this.sorts = toggleSort(this.sorts, column.key, event.shiftKey);
     },
-    handledSortDoubleClick(column) {
-      if (!column.sortable) return;
-
-      if (this.dblClickTimer) {
-        clearTimeout(this.dblClickTimer);
-      }
-      this.removeSortColumn(column);
-    },
-    configureSortColumn(column) {
-      if (
-        this.sortColumns.length >= 2 &&
-        !this.sortColumns.includes(column.key)
-      ) {
+    observeSentinel() {
+      this.observer?.disconnect();
+      if (!this.$refs.sentinel || !window.IntersectionObserver) {
         return;
       }
-
-      if (!this.sortColumns.includes(column.key)) {
-        this.sortColumns.push(column.key);
-      }
-
-      if (!this.sortMap[column.key]) {
-        this.sortMap[column.key] = "desc";
-      } else if (this.sortMap[column.key] === "desc") {
-        this.sortMap[column.key] = "asc";
-      } else {
-        this.removeSortColumn(column);
-      }
-
-      this.sortPlayerList();
-    },
-    removeSortColumn(column) {
-      this.sortMap[column.key] = null;
-      this.sortColumns = this.sortColumns.filter((col) => col !== column.key);
-    },
-    sortPlayerList() {
-      this.sortColumns
-        .slice()
-        .reverse()
-        .forEach((col) => {
-          const column = this.columns.find((c) => c.key === col);
-
-          this.filteredPlayers = this.filteredPlayers.sort((a, b) => {
-            aVal = this.sortMap[col] === "desc" ? a[col] : b[col];
-            bVal = this.sortMap[col] === "desc" ? b[col] : a[col];
-
-            return column.sortingFn(aVal, bVal);
-          });
-        });
+      this.observer = new IntersectionObserver((entries) => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          this.renderLimit += PAGE_SIZE;
+        }
+      }, { root: this.$refs.scroller, rootMargin: "400px" });
+      this.observer.observe(this.$refs.sentinel);
     },
   },
   watch: {
-    players(newPlayers, oldPlayers) {
-      if (oldPlayers !== newPlayers) {
-        this.setFilteredPlayers();
+    // A new list starts from the top
+    visiblePlayers() {
+      this.renderLimit = PAGE_SIZE;
+      if (this.$refs.scroller) {
+        this.$refs.scroller.scrollTop = 0;
       }
     },
-    filterHash(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        this.setFilteredPlayers();
-      }
+    renderedPlayers() {
+      this.$nextTick(this.observeSentinel);
     },
+  },
+  mounted() {
+    this.observeSentinel();
+  },
+  beforeUnmount() {
+    this.observer?.disconnect();
   },
 };
 </script>
 
 <style lang="scss" scoped>
+.tableArea {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.tableFrame {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.tableHeader {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4em 0.75em;
+  padding: 0.35em 0.6em;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+}
+
+// Lighter than the table's other buttons, it's part of the header bar
+.tableButton.headerButton {
+  border-color: transparent;
+  min-height: 30px;
+  padding: 0.2em 0.5em;
+
+  &:hover {
+    border-color: currentColor;
+  }
+}
+
+.resultCount {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.tableButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0.3em 0.75em;
+  min-height: 32px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--teamSecondaryColor30Opacity);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
+}
+
 .tableContainer {
-  max-height: 100%;
-  overflow-y: scroll;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
 }
 
 .tableContainer .datatable {
@@ -341,9 +392,53 @@ export default {
   min-width: 100%;
   position: relative;
 
+  th,
+  td {
+    text-align: left;
+    padding: 0.625em;
+    white-space: nowrap;
+  }
+
   th {
     position: sticky;
     top: 0;
+    z-index: 1;
+    font-size: 0.7em;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  td {
+    vertical-align: top;
+  }
+
+  // Names stay in view when the table scrolls sideways
+  th:first-child,
+  td:first-child {
+    position: sticky;
+    left: 0;
+  }
+
+  th:first-child {
+    z-index: 2;
+  }
+
+  td:first-child {
+    z-index: 1;
+    background: var(--themeBaseColor);
+    box-shadow: inset -1px 0 0 rgba(127, 127, 127, 0.3);
+  }
+
+  tbody tr:hover td:first-child,
+  tbody tr.selected td:first-child {
+    background: linear-gradient(var(--teamSecondaryColor30Opacity), var(--teamSecondaryColor30Opacity)), var(--themeBaseColor);
+  }
+
+  // Easier to follow a row across
+  tbody tr:nth-child(even):not(.emptyState):not(.sentinel) {
+    background: rgba(127, 127, 127, 0.07);
   }
 }
 
@@ -351,9 +446,18 @@ export default {
   height: 200px;
 }
 
-.hoverEffects:hover {
+.hoverEffects {
   cursor: pointer;
-  background: var(--teamSecondaryColor30Opacity);
+
+  &:hover,
+  &.selected {
+    background: var(--teamSecondaryColor30Opacity) !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+    outline-offset: -2px;
+  }
 }
 
 .headerStyles {
@@ -361,21 +465,198 @@ export default {
   background: var(--themeBaseColor);
   box-shadow: inset 0 -2px 0 var(--themeAccentColor);
   border-bottom: unset;
+  // Shift-click adds a sort, without this it also selects the header text
+  user-select: none;
 
-  &:hover {
-    background: var(--themeAccentColor);
-    color: var(--themeBaseColor);
-  }
-}
-
-.cursor {
-  &:hover {
+  &.sortable {
     cursor: pointer;
+
+    &:hover {
+      background: var(--themeAccentColor);
+      color: var(--themeBaseColor);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+    outline-offset: -2px;
   }
 }
 
 .colHeadContent {
   display: flex;
-  font-size: 0.625rem;
+  align-items: center;
+}
+
+.sortOrder {
+  font-size: 0.75em;
+}
+
+.trend {
+  margin-left: 0.2em;
+  vertical-align: middle;
+
+  &.hot {
+    color: #4caf50;
+  }
+
+  &.cold {
+    color: #ef5350;
+  }
+}
+
+.mobileSort {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    margin: 0;
+    font-weight: normal;
+  }
+
+  select {
+    font: inherit;
+    color: inherit;
+    background: var(--themeBaseColor);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    min-height: 36px;
+    max-width: 9em;
+    padding: 0 0.3em;
+    font-size: 0.9em;
+  }
+
+  .tableButton {
+    min-height: 36px;
+  }
+}
+
+.playerCards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.playerCardRow {
+  padding: 0.75em;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+  cursor: pointer;
+
+  &.selected {
+    background: var(--teamSecondaryColor30Opacity);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+    outline-offset: -2px;
+  }
+}
+
+.cardTop {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5em;
+}
+
+.cardName {
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
+.injuryBadge {
+  font-size: 0.75em;
+  padding: 0 0.35em;
+  border-radius: 3px;
+  background: #ef5350;
+  color: #fff;
+}
+
+.startBadge {
+  font-size: 0.75em;
+  padding: 0 0.35em;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+
+  // Daily Faceoff's colors for each
+  &.confirmed {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: #fff;
+  }
+
+  &.likely {
+    background: #e65100;
+    border-color: #e65100;
+    color: #fff;
+  }
+}
+
+.cardOwner {
+  margin-left: auto;
+  font-size: 0.85em;
+  opacity: 0.85;
+  text-align: right;
+}
+
+.cardMeta {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin: 0.2em 0 0.4em;
+}
+
+.cardStatList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 1.25em;
+  margin: 0;
+}
+
+.cardStat {
+  dt {
+    font-size: 0.75em;
+    opacity: 0.7;
+    font-weight: normal;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+li.sentinel {
+  text-align: center;
+  opacity: 0.7;
+  padding: 1em;
+}
+
+li.emptyState {
+  text-align: center;
+  padding: 2em 1em;
+}
+
+.sentinel td {
+  text-align: center;
+  opacity: 0.7;
+}
+
+.emptyState td {
+  white-space: normal;
+  text-align: center;
+  padding: 2em 1em;
+}
+
+.emptyTitle {
+  font-weight: 700;
+  margin-bottom: 0.5em;
+}
+
+.emptyHint {
+  opacity: 0.85;
+  margin-bottom: 0.5em;
 }
 </style>
