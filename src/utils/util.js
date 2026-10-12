@@ -67,6 +67,13 @@ export const nextEasternTime = (after, { hour, minute = 0 }) => {
 };
 
 // A name as it appears in site URLs: "Ryan O'Reilly" -> "ryan-oreilly", "Tim Stützle" -> "tim-stutzle"
+// 1st, 2nd, 3rd, 4th … 11th, 12th, 13th … 21st
+export const ordinal = (n) => {
+  const teen = Math.floor(n / 10) % 10 === 1;
+  const suffix = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+  return `${n}${suffix}`;
+};
+
 export const slugify = (name) => (name || '')
   .normalize('NFD')
   // Accents, split off by normalize

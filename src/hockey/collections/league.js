@@ -12,7 +12,7 @@ const LEAGUE_INFO_MAX_AGE = HOUR;
 // Roster rules rarely change
 const RULES_MAX_AGE = DAY;
 // Bump when stored league info gains fields, so info stored by older versions is refetched
-const LEAGUE_INFO_FORMAT = 2;
+const LEAGUE_INFO_FORMAT = 3;
 
 // Injuries that let a player go on IR, in this app's leagues
 export const IR_ELIGIBLE_INJURIES = ['DTD', 'OUT', 'SUS', 'IR'];
@@ -35,6 +35,10 @@ const convertStandings = (standings) => ({
     logoUrl: team.logoUrl,
     record: team.recordOverall?.formatted,
     rank: team.recordOverall?.rank,
+    // Points for and against in completed matchups
+    pointsFor: team.pointsFor?.value ?? 0,
+    pointsAgainst: team.pointsAgainst?.value ?? 0,
+    streak: team.streak?.formatted,
     waiverPosition: team.waiverPosition,
     owners: (team.owners || []).map(owner => owner.displayName),
   })),
@@ -315,6 +319,17 @@ export const loadTeamRosters = async (leagueId, teamIds, activityItems, { now = 
 
   await setStored('hockey_rosters', rosters, leagueId);
   return rosters;
+};
+
+/**
+ * Each team's place by points for, most first, as { [teamId]: rank }. Tied teams share a place.
+ */
+export const pointsForRanks = (teams) => {
+  const sorted = [...teams].sort((a, b) => b.pointsFor - a.pointsFor);
+  return Object.fromEntries(sorted.map(team => [
+    team.id,
+    sorted.findIndex(other => other.pointsFor === team.pointsFor) + 1,
+  ]));
 };
 
 export const countAcquisitions = (activityItems, teamId, period) => {

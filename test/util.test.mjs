@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { nextEasternTime, easternDay } from '../src/utils/util.js';
+import { nextEasternTime, easternDay, ordinal } from '../src/utils/util.js';
 
 const FIVE_AM = { hour: 5, minute: 0 };
 
@@ -40,4 +40,9 @@ test('league ids from what was typed or pasted', async () => {
   assert.equal(parseLeagueInput('abc'), null);
   assert.equal(parseLeagueInput(''), null);
   assert.equal(parseLeagueInput(undefined), null);
+});
+
+test('ordinals', () => {
+  assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 101, 111].map(ordinal),
+    ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '14th', '21st', '22nd', '101st', '111th']);
 });

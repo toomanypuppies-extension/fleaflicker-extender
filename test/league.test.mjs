@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, advanceClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  loadLeagueInfo, loadTeamRosters, loadPeriodMatchups, loadDayRosters, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup, groupByMatchup,
+  loadLeagueInfo, loadTeamRosters, loadPeriodMatchups, loadDayRosters, pointsForRanks, summarizeTeam, countAcquisitions, currentPeriod, acquisitionLimit, currentMatchup, groupByMatchup,
 } from '../src/hockey/collections/league.js';
 import { ACTIVITY_KINDS } from '../src/hockey/collections/activity.js';
 
@@ -46,6 +46,9 @@ test('league info has the name, teams, roster rules and matchup periods', async 
     rank: 1,
     waiverPosition: 14,
     owners: ['funkyquasar'],
+    pointsFor: 218.15,
+    pointsAgainst: 191.45,
+    streak: 'W1',
   });
   assert.deepEqual(league.rules, {
     maxActive: 18,
@@ -299,4 +302,10 @@ test("the lineups teams set for each day are kept for a few minutes", async () =
   flea.calls = [];
   await settle(loadDayRosters(LEAGUE, [1], [10, 11], { now: now + 20 * MINUTE }));
   assert.equal(flea.callsTo('FetchRoster'), 2);
+});
+
+test('places by points for, ties sharing one', () => {
+  const teams = [{ id: 1, pointsFor: 100 }, { id: 2, pointsFor: 250.5 }, { id: 3, pointsFor: 100 }, { id: 4, pointsFor: 90 }];
+
+  assert.deepEqual(pointsForRanks(teams), { 2: 1, 1: 2, 3: 2, 4: 4 });
 });

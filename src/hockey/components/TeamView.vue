@@ -13,7 +13,11 @@
     </div>
 
     <section class="statusSection containerColor" aria-label="Status">
-      <span class="meta">{{ team.record }} · {{ ordinal(team.rank) }} in the standings · waiver #{{ team.waiverPosition }}</span>
+      <span class="meta">
+        <strong>{{ ordinal(team.rank) }}</strong> of {{ league.teams.length }} · {{ team.record }}<template v-if="team.streak">
+        ({{ team.streak }})</template> · PF {{ format(team.pointsFor) }}<template v-if="summary.pointsForRank">
+        ({{ ordinal(summary.pointsForRank) }})</template> · PA {{ format(team.pointsAgainst) }} · waiver #{{ team.waiverPosition }}
+      </span>
       <div class="stats">
         <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
         <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
@@ -134,6 +138,7 @@ import { loadTeamDays, totalPoints, dayOrdinalAt, COMPARE_RANGES } from "../coll
 import { periodDates } from "../collections/scheduleWeeks";
 import { playerBreakdown, positionBreakdown, playerChartRows, positionChartRows } from "../collections/breakdowns";
 import { projectTeam, teamGamesPlayed, PROJECTION_METHODS, PROJECTION_LINEUPS } from "../collections/projection";
+import { ordinal } from "../../utils/util";
 
 const GROUP_LABELS = {
   [ROSTER_GROUPS.start]: 'Starters',
@@ -269,10 +274,7 @@ export default {
     percent(fraction) {
       return `${Math.round(fraction * 100)}%`;
     },
-    ordinal(rank) {
-      const suffix = { 1: 'st', 2: 'nd', 3: 'rd' }[rank % 10 > 3 || Math.floor(rank / 10) === 1 ? 0 : rank % 10] || 'th';
-      return `${rank}${suffix}`;
-    },
+    ordinal,
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     },

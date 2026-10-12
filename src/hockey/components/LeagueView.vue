@@ -35,6 +35,7 @@
           </div>
           <p v-if="period" class="periodNote">
             Adds are counted since this matchup started on {{ formatDay(period.start) }}.
+            Standings, points for (PF, with its place in the league) and against (PA) count completed matchups.
             Open a team for its roster, projections and moves.
             <template v-if="acquisitionLimit === null && !league.settings">
               The league's add limit couldn't be loaded.
@@ -52,7 +53,13 @@
                 <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
                 <span class="material-icons openIcon" aria-hidden="true">chevron_right</span>
               </span>
-              <span class="cardMeta">{{ summary.record }} · waiver #{{ summary.waiverPosition }}</span>
+              <span class="cardMeta standing">
+                <strong>{{ ordinal(summary.rank) }}</strong> of {{ league.teams.length }} · {{ summary.record }}<template
+                  v-if="summary.streak"> ({{ summary.streak }})</template> · waiver #{{ summary.waiverPosition }}
+              </span>
+              <span class="cardMeta">
+                PF {{ format(summary.pointsFor) }} ({{ ordinal(summary.pointsForRank) }}) · PA {{ format(summary.pointsAgainst) }}
+              </span>
               <span class="cardStats">
                 <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
                 <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
@@ -85,8 +92,9 @@
 import { mapState } from "vuex";
 import { syncActivity, TIMELINE_WINDOW } from "../collections/activity";
 import {
-  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit,
+  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit, pointsForRanks,
 } from "../collections/league";
+import { ordinal } from "../../utils/util";
 import MatchupsSection from "./MatchupsSection.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
 import TeamView from "./TeamView.vue";
@@ -143,6 +151,7 @@ export default {
     },
     // Every team's status, yours first, then by standings
     summaries() {
+      const pointsForRank = pointsForRanks(this.league?.teams || []);
       const summaries = (this.league?.teams || []).map(team => ({
         ...summarizeTeam({
           team,
@@ -154,6 +163,10 @@ export default {
         }),
         record: team.record,
         rank: team.rank,
+        streak: team.streak,
+        pointsFor: team.pointsFor,
+        pointsAgainst: team.pointsAgainst,
+        pointsForRank: pointsForRank[team.id],
         waiverPosition: team.waiverPosition,
       }));
       return summaries.sort((a, b) => (b.teamId === this.myTeamId) - (a.teamId === this.myTeamId) || a.rank - b.rank);
@@ -201,6 +214,10 @@ export default {
     },
     openPlayer(playerId) {
       this.$emit('openPlayer', playerId);
+    },
+    ordinal,
+    format(value) {
+      return (value ?? 0).toFixed(1);
     },
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
@@ -394,6 +411,10 @@ select {
 .cardLine {
   font-size: 0.9em;
   opacity: 0.85;
+}
+
+.standing {
+  opacity: 1;
 }
 
 .cardStats {

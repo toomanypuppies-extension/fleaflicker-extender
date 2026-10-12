@@ -876,6 +876,9 @@
               "formatted": "1-0",
               "rank": 1
             },
+            "pointsFor": { "value": 218.15, "formatted": "218.15" },
+            "pointsAgainst": { "value": 191.45, "formatted": "191.45" },
+            "streak": { "value": 1, "formatted": "W1" },
             "waiverPosition": 14,
             "owners": [
               {
