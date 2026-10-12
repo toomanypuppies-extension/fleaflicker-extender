@@ -301,7 +301,7 @@ select {
   }
 
   &.opponent {
-    border-color: #ef5350;
+    border-color: var(--opponentColor);
     border-width: 2px;
   }
 
@@ -341,8 +341,8 @@ select {
   color: var(--teamMainColor);
 
   &.opponentBadge {
-    background: #ef5350;
-    color: #fff;
+    background: var(--opponentColor);
+    color: var(--opponentTextColor);
   }
 }
 

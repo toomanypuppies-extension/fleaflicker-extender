@@ -41,7 +41,8 @@ export default defineComponent({
       'teamMainColor',
       'teamSecondaryColor',
       'themeBaseColor',
-      'themeAccentColor'
+      'themeAccentColor',
+      'opponentColors',
     ]),
     bindCssVars() {
       return {
@@ -50,6 +51,8 @@ export default defineComponent({
         "--teamMainColor": this.teamMainColor,
         "--teamSecondaryColor": this.teamSecondaryColor,
         "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
+        "--opponentColor": this.opponentColors.background,
+        "--opponentTextColor": this.opponentColors.text,
       };
     },
   }

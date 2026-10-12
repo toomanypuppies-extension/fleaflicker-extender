@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HOCKEY_TEAM_ABBR_TO_COLORS } from '../src/hockey/constants.js';
-import { teamSeriesColors, passes, oklch, neutralColor, FALLBACK_COLORS } from '../src/hockey/chartColors.js';
+import { teamSeriesColors, passes, oklch, neutralColor, textColorOn, FALLBACK_COLORS } from '../src/hockey/chartColors.js';
 
 const TEAMS = Object.entries(HOCKEY_TEAM_ABBR_TO_COLORS);
 const hueDifference = (a, b) => {
@@ -53,4 +53,11 @@ test('no team needs the reference palette', () => {
       assert.ok(series.every(hex => !FALLBACK_COLORS[mode].includes(hex)), `${team} ${mode}: ${series}`);
     }
   }
+});
+
+test('badge text reads on any series color', () => {
+  assert.equal(textColorOn('#d7d7d7'), '#111111');
+  assert.equal(textColorOn('#333333'), '#ffffff');
+  assert.equal(textColorOn('#2a78d6'), '#ffffff');
+  assert.equal(textColorOn('#eda100'), '#111111');
 });

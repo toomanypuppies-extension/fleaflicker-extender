@@ -150,6 +150,9 @@ const lightnessSteps = (from, [low, high], step = 0.02) => {
   return steps.sort((a, b) => Math.abs(a - from) - Math.abs(b - from));
 };
 
+// Text that reads on a color: white or near black, whichever contrasts more
+export const textColorOn = (hex) => (contrast(hex, '#ffffff') >= contrast(hex, '#111111') ? '#ffffff' : '#111111');
+
 // Lightness of a team's black or white in charts: dark on the light theme, light on the dark.
 // Silver, for a team with no hue at all, sits between it and the surface.
 const NEUTRAL_LIGHTNESS = { light: 0.32, dark: 0.88 };

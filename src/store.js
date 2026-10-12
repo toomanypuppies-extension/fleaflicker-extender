@@ -2,7 +2,7 @@ import lodash from 'lodash';
 import { createStore } from 'vuex';
 import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
-import { teamSeriesColors, FALLBACK_COLORS } from './hockey/chartColors';
+import { teamSeriesColors, textColorOn, FALLBACK_COLORS } from './hockey/chartColors';
 
 // The app's own colors, when the favorite team's aren't wanted
 export const DEFAULT_THEME_COLORS = { primary: '#17202b', secondary: '#58a6ff' };
@@ -164,6 +164,11 @@ export const store = createStore({
     chartColors(state) {
       const mode = state.settings.darkMode ? 'dark' : 'light';
       return state.settings.colorTheme === 'default' ? FALLBACK_COLORS[mode] : teamSeriesColors(getColors(state), mode);
+    },
+    // Your opponent's badge and border: their color in your matchup's charts, where you're first
+    opponentColors(state, getters) {
+      const background = getters.chartColors[1];
+      return { background, text: textColorOn(background) };
     }
   }
 })

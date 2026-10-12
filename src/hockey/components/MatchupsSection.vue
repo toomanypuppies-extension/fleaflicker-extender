@@ -457,8 +457,8 @@ export default {
   white-space: nowrap;
 
   &.opponentBadge {
-    background: #ef5350;
-    color: #fff;
+    background: var(--opponentColor);
+    color: var(--opponentTextColor);
   }
 }
 

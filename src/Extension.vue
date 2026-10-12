@@ -70,7 +70,8 @@ export default {
       'teamMainColor',
       'teamSecondaryColor',
       'themeBaseColor',
-      'themeAccentColor'
+      'themeAccentColor',
+      'opponentColors',
     ]),
     bindCssVars() {
       return {
@@ -79,6 +80,8 @@ export default {
         "--teamMainColor": this.teamMainColor,
         "--teamSecondaryColor": this.teamSecondaryColor,
         "--teamSecondaryColor30Opacity": `${this.teamSecondaryColor}30`,
+        "--opponentColor": this.opponentColors.background,
+        "--opponentTextColor": this.opponentColors.text,
       };
     },
   }

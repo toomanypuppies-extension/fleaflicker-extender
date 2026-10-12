@@ -75,4 +75,6 @@ test('the default theme replaces the favorite team colors, charts included', asy
 
   store.commit('setKeyValue', { key: 'settings.colorTheme', value: 'team' });
   assert.deepEqual([store.getters.teamMainColor, store.getters.teamSecondaryColor], teamColors);
+  // Your opponent wears the second chart color, the one they have in your matchup's charts
+  assert.equal(store.getters.opponentColors.background, store.getters.chartColors[1]);
 });
