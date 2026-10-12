@@ -9,13 +9,6 @@
             :class="{ active: section === key && !openTeam }" :aria-pressed="section === key && !openTeam"
             @click="showSection(key)">{{ label }}</button>
         </div>
-        <label class="myTeamPicker">
-          Your team
-          <select :value="myTeamId ?? ''" @change="setMyTeam($event.target.value)">
-            <option value="">Not picked</option>
-            <option v-for="team in league.teams" :key="team.id" :value="team.id">{{ team.name }}</option>
-          </select>
-        </label>
       </div>
 
       <TeamView v-if="openTeam" :key="openTeam.teamId" :leagueId="leagueId" :league="league" :teamId="openTeam.teamId"
@@ -212,9 +205,6 @@ export default {
       this.setKey('openTeamId', teamId);
       this.$el?.scrollTo?.({ top: 0 });
     },
-    setMyTeam(value) {
-      this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
-    },
     openPlayer(playerId) {
       this.$emit('openPlayer', playerId);
     },
@@ -324,13 +314,6 @@ select {
   gap: 0.15em;
 }
 
-.myTeamPicker {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-weight: normal;
-  margin: 0;
-}
 
 .periodNote,
 .loading {

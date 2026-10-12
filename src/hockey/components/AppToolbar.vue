@@ -14,6 +14,13 @@
     </div>
 
     <div class="toolbarActions">
+      <label v-if="teams.length" class="myTeam">
+        <span class="myTeamLabel">Your team</span>
+        <select :value="myTeamId ?? ''" @change="setMyTeam($event.target.value)">
+          <option value="">Not picked</option>
+          <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+        </select>
+      </label>
       <span v-if="addsLeft" class="addsLeft" title="Your team's adds and claims left this matchup">{{ addsLeft }}</span>
       <span class="freshness" :title="updatedTitle">{{ freshness }}</span>
       <button type="button" class="toolbarButton" :disabled="loading" aria-label="Refresh"
@@ -46,12 +53,23 @@ export default {
     updatedAt: Number,
     // Your team's adds left this matchup, like "4 of 7 adds left"
     addsLeft: String,
+    // The league's teams, to pick yours from
+    teams: { type: Array, default: () => [] },
   },
   emits: ["update:activeTab", "refresh", "openHelp", "openSettings"],
   data() {
     return { tabs: TABS };
   },
+  methods: {
+    setMyTeam(value) {
+      this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
+    },
+  },
   computed: {
+    // Picked here or found on fleaflicker's page; marks your team and opponent across the app
+    myTeamId() {
+      return this.$store.state.myTeamId;
+    },
     freshness() {
       if (this.loading) {
         return "Updating…";
@@ -127,6 +145,34 @@ export default {
   margin-left: auto;
 }
 
+.myTeam {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  min-width: 0;
+  margin: 0 0.5em 0 0;
+  font-weight: normal;
+
+  select {
+    min-width: 0;
+    max-width: 14em;
+    text-overflow: ellipsis;
+    font: inherit;
+    color: inherit;
+    background: var(--themeBaseColor);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0.25em 0.4em;
+    min-height: 32px;
+  }
+}
+
+.myTeamLabel {
+  font-size: 0.85em;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
 .addsLeft {
   font-weight: 700;
   padding: 0.15em 0.6em;
@@ -172,6 +218,20 @@ export default {
 @media (max-width: 640px) {
   .buttonLabel {
     display: none;
+  }
+
+  // Still read by screen readers
+  .myTeamLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .myTeam select {
+    max-width: 9em;
   }
 
   .addsLeft {

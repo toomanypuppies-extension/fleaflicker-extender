@@ -4,6 +4,7 @@
     :loading="loading"
     :updatedAt="playersSavedAt"
     :addsLeft="myAddsLeft"
+    :teams="league?.teams || []"
     @refresh="refreshAll"
     @openHelp="setKey('openHelp', true)"
     @openSettings="setKey('openSettings', true)"
