@@ -34,57 +34,93 @@
       </p>
     </section>
 
-    <section class="rosterSection containerColor" aria-labelledby="rosterHeading">
+    <section class="depthSection containerColor" aria-labelledby="depthHeading">
       <div class="sectionHeader">
         <span class="titleWithHelp">
-          <h3 id="rosterHeading">Roster</h3>
-          <HelpTip label="the roster">
-            <p>Today's lineup, with each player's stats this season. Games are what's left of this week.</p>
-            <p>Arrows mark recent games well above or below a player's usual. Pos rank is Fleaflicker's fantasy rank at their position.</p>
-            <p>Players without points this season aren't loaded unless Settings includes them, so they show without stats.</p>
+          <h3 id="depthHeading">Position depth</h3>
+          <HelpTip label="position depth">
+            <p>Everyone on the roster who can play each position, IR included, best first by season points.
+              Players eligible at two positions count at both.</p>
+            <p>Healthy leaves out injured players, day to day included.</p>
           </HelpTip>
         </span>
       </div>
       <p v-if="!roster" class="note">The roster couldn't be loaded. Use Refresh to try again.</p>
-      <div v-else class="tableScroller">
-        <table class="rosterTable">
+      <div v-else class="depthGrid">
+        <div v-for="row in depth" :key="row.position" class="depthRow">
+          <span class="depthPosition">{{ row.position }}</span>
+          <span class="depthCount"><strong>{{ row.players.length }}</strong> eligible · {{ row.healthy }} healthy</span>
+          <span class="depthPlayers">
+            <template v-for="(player, index) in row.players" :key="player.id">
+              <button type="button" class="playerButton" @click="$emit('openPlayer', player.id)">{{ player.name }}</button><span
+                v-if="player.hurt" class="injury">{{ player.injury }}</span><template v-if="index < row.players.length - 1">, </template>
+            </template>
+            <template v-if="!row.players.length">None</template>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="seasonSection containerColor" aria-labelledby="seasonHeading">
+      <div class="sectionHeader">
+        <span class="titleWithHelp">
+          <h3 id="seasonHeading">Players this season</h3>
+          <HelpTip label="players this season">
+            <p>Everyone on the roster, IR included. Select a heading to sort by it.</p>
+            <p>Arrows mark recent games well above or below a player's usual. vs LY is points per game against last season's.
+              Pos rank is Fleaflicker's fantasy rank at their position.</p>
+            <p>Players without points this season aren't loaded unless Settings includes them, so they show without stats.</p>
+          </HelpTip>
+        </span>
+      </div>
+      <div v-if="roster" class="tableScroller">
+        <table class="seasonTable">
           <thead>
             <tr>
-              <th scope="col">Slot</th>
-              <th scope="col" class="playerColumn">Player</th>
-              <th scope="col">Today</th>
-              <th scope="col" title="Games left this week">Games</th>
-              <th v-for="column in statColumns" :key="column.key" scope="col" :title="column.title">{{ column.short || column.name }}</th>
+              <th scope="col" class="playerColumn" :aria-sort="ariaSort('name')">
+                <button type="button" class="sortButton" @click="sortBy('name')">Player {{ sortArrow('name') }}</button>
+              </th>
+              <th v-for="column in seasonColumns" :key="column.key" scope="col" :title="column.title" :aria-sort="ariaSort(column.key)">
+                <button type="button" class="sortButton" @click="sortBy(column.key)">{{ column.short || column.name }} {{ sortArrow(column.key) }}</button>
+              </th>
             </tr>
           </thead>
-          <tbody v-for="group in rosterGroups" :key="group.key">
-            <tr class="groupRow"><th :colspan="4 + statColumns.length" scope="rowgroup">{{ group.label }}</th></tr>
-            <tr v-for="(slot, index) in group.slots" :key="`${group.key}-${index}`" :class="{ empty: !slot.player }">
-              <td class="slot">{{ slot.label }}</td>
+          <tbody>
+            <tr v-for="player in seasonPlayers" :key="player.id">
               <th scope="row" class="playerColumn">
-                <template v-if="slot.player">
-                  <button type="button" class="playerButton" @click="$emit('openPlayer', slot.player.id)">{{ slot.player.name }}</button>
-                  <span class="playerMeta">
-                    {{ slot.player.position }} · {{ slot.player.team }}
-                    <span v-if="slot.player.injury" class="injury">{{ slot.player.injury }}</span>
-                  </span>
-                </template>
-                <span v-else class="playerMeta">Empty</span>
+                <button type="button" class="playerButton" @click="$emit('openPlayer', player.id)">{{ player.name }}</button>
+                <span class="playerMeta">
+                  {{ player.position }} · {{ player.team }}
+                  <span v-if="player.injury" class="injury">{{ player.injury }}</span>
+                  <span v-if="player.onIr" class="irTag">IR</span>
+                </span>
               </th>
-              <td class="textCell">{{ stats(slot.player?.id)?.todaysGame || '' }}</td>
-              <td>{{ stats(slot.player?.id)?.gamesThisWeek ?? '' }}</td>
-              <td v-for="column in statColumns" :key="column.key">
-                <template v-if="stats(slot.player?.id)">
-                  {{ statText(column, stats(slot.player.id)) }}<span v-if="column.trendField && stats(slot.player.id)[column.trendField]"
-                    class="material-icons trend" :class="stats(slot.player.id)[column.trendField]"
-                    :title="stats(slot.player.id)[column.trendField] === 'hot' ? 'Well above their usual' : 'Well below their usual'">{{
-                      stats(slot.player.id)[column.trendField] === 'hot' ? 'trending_up' : 'trending_down' }}</span>
+              <td v-for="column in seasonColumns" :key="column.key" :class="changeClass(column, player)">
+                <template v-if="player.hasStats">
+                  {{ cellValue(column, player) }}<span v-if="column.trendField && player[column.trendField]"
+                    class="material-icons trend" :class="player[column.trendField]"
+                    :title="player[column.trendField] === 'hot' ? 'Well above their usual' : 'Well below their usual'">{{
+                      player[column.trendField] === 'hot' ? 'trending_up' : 'trending_down' }}</span>
                 </template>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    </section>
+
+    <section v-if="changeRows.length" class="changeSection containerColor" aria-labelledby="changeHeading">
+      <div class="sectionHeader">
+        <span class="titleWithHelp">
+          <h3 id="changeHeading">This season vs last</h3>
+          <HelpTip label="this season vs last">
+            <p>Each player's points per game this season minus last season's: up is better than last year, down worse.</p>
+            <p>Only players with games in both seasons.</p>
+          </HelpTip>
+        </span>
+      </div>
+      <BarChart title="Points per game, change from last season" rowHeading="Player" :series="[{ name: team.name }]"
+        :rows="changeRows" :digits="2" />
     </section>
 
     <section class="pointsSection containerColor" aria-labelledby="pointsHeading">
@@ -136,7 +172,7 @@ import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
 import HelpTip from "./HelpTip.vue";
-import { ROSTER_GROUPS } from "../collections/league";
+import { rosterPlayers, positionDepth, changeFromLastSeason } from "../collections/rosterStats";
 import { loadTeamDays, totalPoints, COMPARE_RANGES } from "../collections/boxscores";
 import { COLUMNS_BY_KEY, cellText } from "../collections/columns";
 import {
@@ -147,32 +183,23 @@ import {
 const MORE_PLAYERS = 10;
 import { ordinal } from "../../utils/util";
 
-// The Players tab's stat columns shown for each player, with shorter headings where they're long
-const STAT_COLUMNS = [
+// Season columns from the Players tab's, with shorter headings where they're long
+const SEASON_COLUMNS = [
   { key: 'gamesPlayed' },
   { key: 'points', short: 'Pts' },
   { key: 'avg' },
   { key: 'last5', short: 'L5' },
   { key: 'last10', short: 'L10' },
-  { key: 'goals' },
-  { key: 'assists' },
-  { key: 'goalsAgainst' },
-  { key: 'savePct' },
+  { key: 'lastSeasonAvg' },
+  { key: 'change', name: 'vs LY', title: "Points per game this season minus last season's", sortType: 'number' },
   { key: 'positionRank' },
   { key: 'percentOwned', short: 'Own%' },
-  { key: 'lastSeasonAvg' },
 ].map(column => ({ ...COLUMNS_BY_KEY[column.key], ...column }));
 
-const GROUP_LABELS = {
-  [ROSTER_GROUPS.start]: 'Starters',
-  [ROSTER_GROUPS.bench]: 'Bench',
-  [ROSTER_GROUPS.injured]: 'Injured reserve',
-  [ROSTER_GROUPS.taxi]: 'Taxi squad',
-};
-
 /**
- * One team: its status, roster with each player's stats, where its points come from and its
- * recent moves. Projections are on the matchup page.
+ * One team over the season: its standing, depth at each position, how its players are doing this
+ * season and against last, where its points come from and its recent moves. Projections are on the
+ * matchup page.
  */
 export default {
   components: { BarChart, ActivityTimeline, HelpTip },
@@ -200,7 +227,8 @@ export default {
   data() {
     return {
       ranges: COMPARE_RANGES,
-      statColumns: STAT_COLUMNS,
+      seasonColumns: SEASON_COLUMNS,
+      sort: { key: 'points', desc: true },
       days: [],
       failed: 0,
       loadingDays: true,
@@ -224,15 +252,37 @@ export default {
     playersById() {
       return new Map((this.players || []).map(player => [player.id, player]));
     },
-    rosterGroups() {
-      const order = [ROSTER_GROUPS.start, ROSTER_GROUPS.bench, ROSTER_GROUPS.injured, ROSTER_GROUPS.taxi];
-      return order
-        .map(key => ({
-          key,
-          label: GROUP_LABELS[key],
-          slots: (this.roster?.groups || []).filter(group => group.group === key).flatMap(group => group.slots),
-        }))
-        .filter(group => group.slots.length);
+    // Everyone on this team, with their stats (players is the whole league's)
+    teamPlayers() {
+      return rosterPlayers(this.roster, this.playersById).map(player => ({ ...player, change: changeFromLastSeason(player) }));
+    },
+    depth() {
+      return positionDepth(this.teamPlayers);
+    },
+    // Sorted by the picked column; players without that stat last
+    seasonPlayers() {
+      const { key, desc } = this.sort;
+      const column = SEASON_COLUMNS.find(candidate => candidate.key === key);
+      const lowFirst = key !== 'name' && column?.sortType && column.sortType !== 'number' && column.sortType !== 'string';
+      const value = (player) => (key === 'name' ? player.name : player[key]);
+      return [...this.teamPlayers].sort((a, b) => {
+        const [x, y] = [value(a), value(b)];
+        const missing = (v) => v === undefined || v === null || v === '';
+        if (missing(x) || missing(y)) return missing(x) - missing(y);
+        const order = typeof x === 'string' ? x.localeCompare(y) : x - y;
+        return (desc !== lowFirst ? -order : order);
+      });
+    },
+    changeRows() {
+      return this.teamPlayers
+        .filter(player => player.change !== null)
+        .sort((a, b) => b.change - a.change)
+        .map(player => ({
+          key: player.id,
+          label: player.name,
+          values: [player.change],
+          details: [`${player.avg.toFixed(2)} per game this season, ${player.lastSeasonAvg.toFixed(2)} last season`],
+        }));
     },
     totalPoints() {
       return totalPoints(this.days);
@@ -264,8 +314,25 @@ export default {
     stats(playerId) {
       return this.playersById.get(playerId);
     },
-    statText(column, player) {
+    cellValue(column, player) {
+      if (column.key === 'change') {
+        return player.change === null ? '' : `${player.change > 0 ? '+' : ''}${player.change.toFixed(2)}`;
+      }
       return cellText(column, player);
+    },
+    changeClass(column, player) {
+      if (column.key !== 'change' || !player.change) return null;
+      return player.change > 0 ? 'better' : 'worse';
+    },
+    sortBy(key) {
+      this.sort = this.sort.key === key ? { key, desc: !this.sort.desc } : { key, desc: key !== 'name' };
+    },
+    sortArrow(key) {
+      return this.sort.key === key ? (this.sort.desc ? '▾' : '▴') : '';
+    },
+    ariaSort(key) {
+      if (this.sort.key !== key) return 'none';
+      return this.sort.desc ? 'descending' : 'ascending';
     },
     format(value) {
       return (value ?? 0).toFixed(1);
@@ -379,7 +446,9 @@ export default {
 }
 
 .statusSection,
-.rosterSection,
+.depthSection,
+.seasonSection,
+.changeSection,
 .pointsSection {
   padding: 0.75em 1em;
   display: flex;
@@ -457,7 +526,7 @@ select {
   overflow-x: auto;
 }
 
-.rosterTable {
+.seasonTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9em;
@@ -471,8 +540,7 @@ select {
     vertical-align: top;
   }
 
-  th[scope='row'],
-  .slot {
+  th[scope='row'] {
     text-align: left;
     font-weight: normal;
   }
@@ -482,31 +550,8 @@ select {
     font-size: 0.85em;
   }
 
-  thead th:nth-child(-n + 3),
-  .textCell {
-    text-align: left;
-  }
-
-  .textCell {
-    white-space: nowrap;
-  }
-
-  .groupRow th {
-    text-align: left;
-    font-weight: 700;
-    padding-top: 0.75em;
-  }
-
-  .slot,
   thead th:first-child {
-    width: 3.5em;
-    min-width: 3.5em;
-    max-width: 3.5em;
-    box-sizing: border-box;
-  }
-
-  .empty {
-    opacity: 0.6;
+    text-align: left;
   }
 }
 
@@ -533,22 +578,79 @@ select {
   min-width: 10em;
 }
 
-// Slot and player stay put while the stats scroll sideways
-.rosterTable .slot,
-.rosterTable thead th:first-child,
-.rosterTable .playerColumn {
+.depthGrid {
+  display: flex;
+  flex-direction: column;
+}
+
+.depthRow {
+  display: grid;
+  grid-template-columns: 2.5em 11em minmax(0, 1fr);
+  gap: 0.25em 0.75em;
+  align-items: baseline;
+  padding: 0.4em 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+}
+
+.depthPosition {
+  font-weight: 700;
+}
+
+.depthCount {
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.depthPlayers {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.irTag {
+  margin-left: 0.3em;
+  padding: 0 0.3em;
+  border-radius: 3px;
+  font-weight: 700;
+  border: 1px solid currentColor;
+}
+
+.sortButton {
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.better {
+  color: #4caf50;
+  font-weight: 700;
+}
+
+.worse {
+  color: #ef5350;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .depthRow {
+    grid-template-columns: 2.5em minmax(0, 1fr);
+  }
+
+  .depthPlayers {
+    grid-column: 1 / -1;
+  }
+}
+
+// Players stay put while their stats scroll sideways
+.seasonTable .playerColumn {
   position: sticky;
+  left: 0;
   z-index: 1;
   background: var(--themeBaseColor);
-}
-
-.rosterTable .slot,
-.rosterTable thead th:first-child {
-  left: 0;
-}
-
-.rosterTable .playerColumn {
-  left: 3.5em;
   box-shadow: 1px 0 0 rgba(127, 127, 127, 0.3);
 }
 
