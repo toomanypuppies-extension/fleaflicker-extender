@@ -191,7 +191,10 @@ const round = (value) => Math.round(value * 100) / 100;
 
 /**
  * Expected points a team adds over the rest of a matchup period:
- * { expected, bench, best, variance, bestVariance, days: [{ day, date, expected, bench, best, hasLineup }], players }.
+ * { expected, bench, best, variance, bestVariance, days: [{ day, date, expected, bench, best, hasLineup, slots, sitting }], players }.
+ * Each day's `slots` has every start slot in order: { label, player: { id, name, expected } | null, locked },
+ * locked when the player's game has begun, null player when no one with a game is in it. `sitting`
+ * is who has a game but doesn't start: [{ id, name, expected }].
  * Only starters' points count: with `lineup` 'best', the players expected to score the most each day,
  * with 'set', the starters in the lineup the team set (PROJECTION_LINEUPS). `bench` is what players
  * with games who don't start are expected to score, `best` what the best lineup would score.
@@ -254,7 +257,7 @@ export const projectTeam = ({
     const date = dayDate(period, day);
     const groups = lineupFor(day);
     if (!groups) {
-      days.push({ day, date, expected: 0, bench: 0, best: 0, hasLineup: false });
+      days.push({ day, date, expected: 0, bench: 0, best: 0, hasLineup: false, slots: [], sitting: [] });
       continue;
     }
     const dayGames = games.get(date);
@@ -271,14 +274,17 @@ export const projectTeam = ({
 
     // The best lineup from everyone with a game still to come. Starters whose game has begun are
     // locked in, their slots can't be used again.
-    const openSlots = [...allSlots];
+    const lockedIn = new Map();
+    const freeSlotFor = (label, taken) => allSlots.findIndex((candidate, index) => candidate.label === label && !taken.has(index));
     for (const slot of starterSlots) {
       const game = gameOf(slot.player);
       if (game && game.start <= scoreAsOf) {
-        const index = openSlots.findIndex(candidate => candidate.label === slot.label);
-        if (index >= 0) openSlots.splice(index, 1);
+        const index = freeSlotFor(slot.label, lockedIn);
+        if (index >= 0) lockedIn.set(index, playerFor(slot.player));
       }
     }
+    const openIndexes = allSlots.map((_, index) => index).filter(index => !lockedIn.has(index));
+    const openSlots = openIndexes.map(index => allSlots[index]);
     const candidates = [...starterSlots.map(slot => slot.player), ...benched]
       .filter(playsLater)
       .map(playerFor)
@@ -288,12 +294,22 @@ export const projectTeam = ({
     const best = chosen.reduce((total, player) => total + player.gameValue, 0);
     bestVariance += chosen.reduce((total, player) => total + player.gameVariance, 0);
 
-    // Who starts and in which slot: the lineup as set, or the best one
-    const starting = lineupChoice === 'set'
-      ? starterSlots.filter(slot => playsLater(slot.player)).map(slot => ({ player: playerFor(slot.player), label: slot.label }))
-      : lineup
-        .map((index, slotIndex) => (index === null ? null : { player: candidates[index], label: openSlots[slotIndex].label }))
+    // Who starts and in which slot (its place in allSlots): the lineup as set, or the best one
+    let starting;
+    if (lineupChoice === 'set') {
+      const taken = new Set(lockedIn.keys());
+      starting = starterSlots.filter(slot => playsLater(slot.player)).map(slot => {
+        const index = freeSlotFor(slot.label, taken);
+        taken.add(index);
+        return { player: playerFor(slot.player), label: slot.label, index };
+      });
+    } else {
+      starting = lineup
+        .map((index, slotIndex) => (index === null ? null : {
+          player: candidates[index], label: openSlots[slotIndex].label, index: openIndexes[slotIndex],
+        }))
         .filter(Boolean);
+    }
     const startingIds = new Set(starting.map(({ player }) => player.id));
     const sitting = candidates.filter(player => !startingIds.has(player.id));
 
@@ -314,7 +330,20 @@ export const projectTeam = ({
       bench += player.gameValue;
     }
 
-    days.push({ day, date, expected: round(expected), bench: round(bench), best: round(best), hasLineup: true });
+    const summary = (player) => ({ id: player.id, name: player.name, expected: round(player.gameValue) });
+    const slots = allSlots.map((slot, index) => {
+      const locked = lockedIn.get(index);
+      const start = starting.find(candidate => candidate.index === index);
+      return {
+        label: slot.label,
+        player: locked || start ? summary(locked || start.player) : null,
+        locked: !!locked,
+      };
+    });
+    days.push({
+      day, date, expected: round(expected), bench: round(bench), best: round(best), hasLineup: true,
+      slots, sitting: sitting.map(summary),
+    });
   }
 
   const sum = (key) => round(days.reduce((total, day) => total + day[key], 0));

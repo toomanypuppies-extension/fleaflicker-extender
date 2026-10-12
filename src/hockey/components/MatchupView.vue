@@ -40,13 +40,13 @@
         </span>
         <div v-if="phase !== 'past'" class="pickers">
           <label class="methodPicker">
-            Projected lineups
+            <span class="pickerLabel">Lineups</span>
             <select :value="lineupChoice" @change="setKey('projectionLineup', $event.target.value)">
               <option v-for="(option, key) in lineups" :key="key" :value="key">{{ option.label }}</option>
             </select>
           </label>
           <label class="methodPicker">
-            Points per game from
+            <span class="pickerLabel">Points per game</span>
             <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
               <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
             </select>
@@ -58,10 +58,6 @@
           <p v-if="loadingLineups" class="note">Loading the lineups set for each day, using today's until then…</p>
           <p v-else-if="missingLineups" class="note">Some days' lineups couldn't be loaded, today's lineup is used for them.</p>
         </template>
-        <p v-if="phase === 'current'" class="note">
-          <template v-if="loadingLive">Updating scores…</template>
-          <template v-else>Scores as of {{ formatTime(scoreAsOf) }}.</template>
-        </p>
       </template>
 
       <div class="scoreboard">
@@ -79,12 +75,6 @@
               <template v-if="phase === 'current'">{{ format(scores[index]) }} now + </template>{{ format(projections[index].expected) }} projected
             </span>
             <span class="scoreParts">{{ lineupGames(projections[index]) }}</span>
-            <span v-if="projections[index].bench > 0" class="callout">
-              {{ format(projections[index].bench) }} projected points on the bench
-            </span>
-            <span v-if="lineupChoice === 'set' && projections[index].best - projections[index].expected >= 0.1" class="callout">
-              Best lineup each day: +{{ format(projections[index].best - projections[index].expected) }}
-            </span>
           </template>
         </div>
       </div>
@@ -121,6 +111,112 @@
       <BarChart v-if="dayRows.length" class="chart" title="Points by day" rowHeading="Day"
         :series="chartSeries(teamIds)" :rows="dayRows" />
 
+      <p v-if="phase === 'current'" class="asOf" role="status">
+        <template v-if="loadingLive">Updating scores…</template>
+        <template v-else>Scores as of {{ formatTime(scoreAsOf) }}.</template>
+      </p>
+
+    </section>
+
+    <section v-if="phase !== 'past'" class="benchSection containerColor" aria-labelledby="benchHeading">
+      <div class="sectionHeader">
+        <span class="titleWithHelp">
+          <h3 id="benchHeading">Bench management</h3>
+          <HelpTip label="bench management">
+            <p v-if="lineupChoice === 'set'">Players with a game who sit in the lineup each team has set for the rest of the week,
+              and the points they're projected to score in those games.</p>
+            <p v-else>Players with a game who don't fit the best lineup that day, usually because too many players
+              at their position play, and the points they're projected to score in those games.</p>
+            <p>Injured players aren't listed, they're projected to score nothing.</p>
+          </HelpTip>
+        </span>
+      </div>
+      <div class="benchTeams">
+        <div v-for="(teamId, index) in teamIds" :key="teamId" class="benchTeam">
+          <span class="totalLabel"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</span>
+          <span class="benchPoints"><strong>{{ benchGames(projections[index]) }}</strong> {{ benchGames(projections[index]) === 1 ? 'game' : 'games' }} benched,
+            <strong>{{ format(projections[index].bench) }}</strong> projected points</span>
+          <span v-if="lineupChoice === 'set' && projections[index].best - projections[index].expected >= 0.1" class="callout">
+            Best lineup each day: +{{ format(projections[index].best - projections[index].expected) }}
+          </span>
+          <ul v-if="benched(projections[index]).length" class="benchList" :aria-label="`${teamName(teamId)}: projected to sit`">
+            <li v-for="player in benched(projections[index])" :key="player.id">
+              <button type="button" class="playerButton" @click="$emit('openPlayer', player.id)">{{ player.name }}</button>
+              <span class="benchDetail">{{ benchText(player) }}</span>
+            </li>
+          </ul>
+          <p v-else class="note">No one projected to sit.</p>
+        </div>
+      </div>
+    </section>
+
+    <section v-if="phase !== 'past'" class="plannerSection containerColor" aria-labelledby="plannerHeading">
+      <div class="sectionHeader">
+        <span class="titleWithHelp">
+          <h3 id="plannerHeading">Lineup planner</h3>
+          <HelpTip label="lineup planner">
+            <p v-if="lineupChoice === 'set'">The lineup each team has set for each day left, as the projection counts it.
+              Open slots have no one with a game in them.</p>
+            <p v-else>The best lineup for each day left, as the projection counts it: the players expected to score
+              the most. Open slots are ones no one on the roster with a game can fill, room to stream a player.</p>
+            <p>Players whose game has begun are locked in, shown in italics. Benched is who has a game but doesn't start.</p>
+          </HelpTip>
+        </span>
+        <span class="rangeButtons" role="group" aria-label="Team">
+          <button v-for="(teamId, index) in teamIds" :key="teamId" type="button" class="filterButton"
+            :class="{ active: plannerIndex === index }" :aria-pressed="plannerIndex === index"
+            @click="plannerIndex = index"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</button>
+        </span>
+      </div>
+      <div v-if="plannerDays.length" class="plannerScroller">
+        <!-- Every day as wide as the others, names that don't fit are cut short -->
+        <table class="plannerTable" :style="{ minWidth: `${4.5 + plannerDays.length * 6.5}em` }">
+          <colgroup>
+            <col class="slotCol" />
+            <col v-for="day in plannerDays" :key="day.day" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col" class="slotColumn">Slot</th>
+              <th v-for="day in plannerDays" :key="day.day" scope="col">
+                <span class="plannerDay">{{ shortDay(day.date) }}</span>
+                <span class="plannerOpen" :class="{ hasOpen: openCount(day) }">{{ day.hasLineup ? `${openCount(day)} open` : 'unknown' }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(slot, slotIndex) in plannerSlots" :key="slotIndex">
+              <th scope="row" class="slotColumn">{{ slot.label }}</th>
+              <td v-for="day in plannerDays" :key="day.day" :class="plannerCellClass(day, day.slots[slotIndex])">
+                <template v-if="!day.hasLineup">–</template>
+                <button v-else type="button" class="spotButton" :aria-pressed="isSpotPicked(day.date, slot.label)"
+                  :title="plannerCellTitle(day.slots[slotIndex])" @click="toggleSpot(day.date, slot.label)">
+                  {{ day.slots[slotIndex].player ? shortName(day.slots[slotIndex].player.name) : 'Open' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" class="slotColumn">Benched</th>
+              <td v-for="day in plannerDays" :key="day.day" class="sittingCell">
+                <template v-for="player in day.sitting" :key="player.id">
+                  <button type="button" class="playerButton" :title="`${player.name}, ${format(player.expected)} pts expected`"
+                    @click="$emit('openPlayer', player.id)">{{ shortName(player.name) }}</button>
+                </template>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div v-if="plannerDays.length" class="spotBar" role="status">
+        <span v-if="spotFilters.length">
+          {{ spotFilters.length }} {{ spotFilters.length === 1 ? 'spot' : 'spots' }} picked: players who fit all of them
+        </span>
+        <span v-else class="note">Select cells to find players who fit those spots.</span>
+        <button v-if="spotFilters.length" type="button" class="filterButton active" @click="findSpotPlayers">Find players</button>
+        <button v-if="spotFilters.length" type="button" class="filterButton" @click="setKey('spotFilters', [])">Clear</button>
+      </div>
     </section>
 
     <section class="compareSection containerColor" aria-labelledby="compareHeading">
@@ -229,6 +325,8 @@ export default {
       loadingCompare: true,
       // Only the latest comparison load is shown
       compareLoadId: 0,
+      // Which team the lineup planner shows
+      plannerIndex: 0,
     };
   },
   computed: {
@@ -238,6 +336,7 @@ export default {
       drawerExpanded: state => state.drawerExpanded,
       compareRange: state => state.compareRange,
       compareTeamIds: state => state.compareTeamIds,
+      spotFilters: state => state.spotFilters,
     }),
     teamIds() {
       return this.group.teams.map(team => team.teamId);
@@ -305,6 +404,13 @@ export default {
         teamGames: this.teamGames,
         scoreAsOf: this.scoreAsOf,
       });
+    },
+    // The planner's team's days left
+    plannerDays() {
+      return this.projections[this.plannerIndex]?.days || [];
+    },
+    plannerSlots() {
+      return this.plannerDays.find(day => day.hasLineup)?.slots || [];
     },
     projectedFinal() {
       return this.teamIds.map((_, index) => this.scores[index] + this.projections[index].expected);
@@ -420,6 +526,56 @@ export default {
     },
     chance(fraction) {
       return formatChance(fraction, this.projections.some(projection => projection.players.some(player => player.games)));
+    },
+    // Players projected to sit for at least one game, most points lost first
+    benched(projection) {
+      return projection.players
+        .filter(player => player.benchGames > 0)
+        .sort((a, b) => b.benchExpected - a.benchExpected);
+    },
+    openCount(day) {
+      return day.slots.filter(slot => !slot.player).length;
+    },
+    shortDay(date) {
+      return this.dayLabel(date) === 'Today'
+        ? 'Today'
+        : new Date(`${date}T12:00:00`).toLocaleDateString([], { weekday: 'short', day: 'numeric' });
+    },
+    // Last name, the table is narrow
+    shortName(name) {
+      const parts = name.split(' ');
+      return parts.length > 1 ? parts.slice(1).join(' ') : name;
+    },
+    plannerCellClass(day, slot) {
+      if (!slot) return null;
+      return { open: !slot.player, locked: slot.locked, picked: this.isSpotPicked(day.date, slot.label) };
+    },
+    plannerCellTitle(slot) {
+      if (!slot.player) return `${slot.label}: open. Select to find players for it`;
+      return `${slot.player.name}, ${slot.locked ? 'game under way' : `${this.format(slot.player.expected)} pts expected`}. Select to find players for it`;
+    },
+    // A spot is a slot on a day, two C slots the same day are the same spot
+    isSpotPicked(date, label) {
+      return this.spotFilters.some(spot => spot.date === date && spot.label === label);
+    },
+    toggleSpot(date, label) {
+      if (this.isSpotPicked(date, label)) {
+        this.setKey('spotFilters', this.spotFilters.filter(spot => spot.date !== date || spot.label !== label));
+        return;
+      }
+      const eligibility = this.league.rules?.startSlots?.find(slot => slot.label === label)?.eligibility || [label];
+      const spots = [...this.spotFilters, { date, label, eligibility }];
+      this.setKey('spotFilters', spots.sort((a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label)));
+    },
+    findSpotPlayers() {
+      this.setKey('activeTab', 'players');
+    },
+    benchGames(projection) {
+      return projection.players.reduce((total, player) => total + player.benchGames, 0);
+    },
+    benchText(player) {
+      const total = player.games + player.benchGames;
+      return `${player.benchGames} of ${total} ${total === 1 ? 'game' : 'games'}, ${this.format(player.benchExpected)} pts`;
     },
     lineupGames(projection) {
       const games = projection.players.reduce((total, player) => total + player.games, 0);
@@ -567,6 +723,8 @@ export default {
 }
 
 .projectionSection,
+.benchSection,
+.plannerSection,
 .compareSection {
   padding: 0.75em 1em;
   display: flex;
@@ -736,6 +894,125 @@ button.scoreTeam {
   gap: 0.5em 1.5em;
 }
 
+.plannerScroller {
+  overflow-x: auto;
+}
+
+.plannerTable {
+  border-collapse: collapse;
+  font-size: 0.85em;
+  width: 100%;
+  table-layout: fixed;
+
+  .slotCol {
+    width: 4.5em;
+  }
+
+  th,
+  td {
+    padding: 0.3em 0.4em;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .playerButton {
+    display: block;
+    max-width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  thead th {
+    font-weight: 700;
+    vertical-align: bottom;
+  }
+
+  // Above the day cells scrolling under it: the see-through ones (locked, benched) would
+  // otherwise be drawn over it
+  .slotColumn {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--themeBaseColor);
+    text-align: left;
+    font-weight: 700;
+  }
+
+  td.open {
+    background: var(--teamSecondaryColor30Opacity);
+    font-weight: 700;
+  }
+
+  td.locked {
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  td.picked {
+    box-shadow: inset 0 0 0 2px var(--teamSecondaryColor);
+    background: var(--teamSecondaryColor30Opacity);
+  }
+
+  tfoot td,
+  tfoot th {
+    vertical-align: top;
+    border-bottom: none;
+  }
+}
+
+.spotButton {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0.15em 0;
+  width: 100%;
+  min-height: 28px;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
+}
+
+.spotBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  font-size: 0.9em;
+}
+
+.plannerDay,
+.plannerOpen {
+  display: block;
+}
+
+.plannerOpen {
+  font-weight: normal;
+  font-size: 0.85em;
+  opacity: 0.8;
+
+  &.hasOpen {
+    font-weight: 700;
+    opacity: 1;
+  }
+}
+
+.sittingCell {
+  font-size: 0.9em;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
 .startsTable {
   width: auto;
   min-width: min(28em, 100%);
@@ -776,9 +1053,63 @@ button.scoreTeam {
   gap: 0.15em;
 }
 
+.asOf {
+  font-size: 0.85em;
+  font-style: italic;
+  opacity: 0.8;
+  margin: 0;
+}
+
 .callout {
   font-size: 0.85em;
   font-weight: 700;
+}
+
+.benchList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.4em;
+  }
+}
+
+.benchTeams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1em;
+}
+
+.benchTeam {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  min-width: 0;
+}
+
+.benchPoints {
+  font-size: 0.9em;
+}
+
+.playerButton {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(127, 127, 127, 0.6);
+  cursor: pointer;
+}
+
+.benchDetail {
+  opacity: 0.8;
 }
 
 .periodLabel {
@@ -882,6 +1213,43 @@ button.scoreTeam {
 
   .finalScore {
     font-size: 1.7em;
+  }
+}
+
+// Phones: the pickers side by side, labels above them
+@media (max-width: 640px) {
+  .pickers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 0.5em;
+    width: 100%;
+  }
+
+  .pickers label {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0.15em;
+    min-width: 0;
+  }
+
+  .pickerLabel {
+    font-size: 0.8em;
+    opacity: 0.85;
+  }
+
+  .pickers select {
+    width: 100%;
+    font-size: 0.9em;
+    padding: 0.2em 0.3em;
+  }
+}
+
+// Each team's list on its own rows, the lines are long
+@media (max-width: 480px) {
+  .benchTeams {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

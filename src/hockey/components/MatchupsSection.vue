@@ -11,13 +11,13 @@
 
     <div class="projectionControls">
       <label>
-        Projected lineups
+        <span class="pickerLabel">Lineups</span>
         <select :value="projectionLineup" @change="setKey('projectionLineup', $event.target.value)">
           <option v-for="(option, key) in lineupOptions" :key="key" :value="key">{{ option.label }}</option>
         </select>
       </label>
       <label>
-        Points per game from
+        <span class="pickerLabel">Points per game</span>
         <select :value="projectionMethod" @change="setKey('projectionMethod', $event.target.value)">
           <option v-for="(option, key) in methodOptions" :key="key" :value="key">{{ option.label }}</option>
         </select>
@@ -542,6 +542,36 @@ export default {
 
   .material-icons {
     font-size: 1.2em;
+  }
+}
+
+// Phones: the pickers side by side, labels above them
+@media (max-width: 640px) {
+  .projectionControls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    align-items: end;
+    gap: 0.5em;
+    width: 100%;
+  }
+
+  .projectionControls label {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0.15em;
+    min-width: 0;
+  }
+
+  .pickerLabel {
+    font-size: 0.8em;
+    opacity: 0.85;
+  }
+
+  .projectionControls select {
+    width: 100%;
+    font-size: 0.9em;
+    padding: 0.2em 0.3em;
   }
 }
 

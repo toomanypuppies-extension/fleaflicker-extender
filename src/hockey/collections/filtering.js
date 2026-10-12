@@ -50,13 +50,28 @@ const matchesInjury = (player, injurySelections) => {
   return injurySelections.includes(player.injury);
 };
 
+// Positions a listing like W or F stands for
+const POSITION_GROUPS = { W: ['LW', 'RW'], F: ['C', 'LW', 'RW'] };
+const expandPositions = (positions) => positions.flatMap(position => [position, ...(POSITION_GROUPS[position] || [])]);
+
+// A lineup spot like { date, eligibility }: the player's team plays that day and they can fill it
+const fitsSpot = (player, { date, eligibility }, teamsByDate) => {
+  if (!teamsByDate?.[date]?.includes(player.team)) {
+    return false;
+  }
+  const canPlay = expandPositions([...(player.positions || []), ...(player.position || '').split('/')]);
+  const slotTakes = expandPositions(eligibility || []);
+  return canPlay.some(position => slotTakes.includes(position));
+};
+
 /**
  * @param {Array} players
  * @param {Object} filters the filter state from the store: filter, teamSelections, injurySelections,
- *   positionSelections, gameDaysSelections, gameDaysMode, ownership, statFilters
+ *   positionSelections, gameDaysSelections, gameDaysMode, ownership, statFilters, spotFilters
  * @param {Object} gamesByTeam team abbreviation to the days it plays, e.g. { SEA: ['Mo', 'We'] }
+ * @param {Object} teamsByDate date (YYYY-MM-DD) to the teams playing, for spotFilters
  */
-export const filterPlayers = (players, filters, gamesByTeam) => {
+export const filterPlayers = (players, filters, gamesByTeam, teamsByDate = {}) => {
   const {
     filter = "",
     teamSelections = [],
@@ -66,6 +81,7 @@ export const filterPlayers = (players, filters, gamesByTeam) => {
     gameDaysMode = GAME_DAYS_MODES.all,
     ownership = "",
     statFilters = [],
+    spotFilters = [],
   } = filters;
 
   const search = filter.trim().toLowerCase();
@@ -81,6 +97,7 @@ export const filterPlayers = (players, filters, gamesByTeam) => {
     (injurySelections.length === 0 || matchesInjury(player, injurySelections)) &&
     (positionSelections.length === 0 || positionSelections.some(pos => player.positions.includes(pos))) &&
     (!search || player.name.toLowerCase().includes(search)) &&
-    statFilters.every(statFilter => matchesStatFilter(player, statFilter))
+    statFilters.every(statFilter => matchesStatFilter(player, statFilter)) &&
+    spotFilters.every(spot => fitsSpot(player, spot, teamsByDate))
   ));
 };

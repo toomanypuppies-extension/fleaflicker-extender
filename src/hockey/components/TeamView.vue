@@ -64,8 +64,8 @@
     <section class="seasonSection containerColor" aria-labelledby="seasonHeading">
       <div class="sectionHeader">
         <span class="titleWithHelp">
-          <h3 id="seasonHeading">Players this season</h3>
-          <HelpTip label="players this season">
+          <h3 id="seasonHeading">Current roster</h3>
+          <HelpTip label="current roster">
             <p>Everyone on the roster, IR included. Select a heading to sort by it.</p>
             <p>Arrows mark recent games well above or below a player's usual. vs LY is points per game against last season's.
               Pos rank is Fleaflicker's fantasy rank at their position.</p>

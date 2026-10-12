@@ -37,6 +37,9 @@ const initState = {
   gameDaysMode: 'all',
   // [{ key, min, max }]
   statFilters: [],
+  // Lineup spots picked in the matchup's planner, players must fit all of them:
+  // [{ date: 'YYYY-MM-DD', label: 'C', eligibility: ['C'] }]
+  spotFilters: [],
   // Columns picked in the column chooser, empty for the defaults
   visibleColumnKeys: [],
   // The user's team in this league, picked in the toolbar or found on fleaflicker's page
@@ -110,6 +113,7 @@ export const store = createStore({
       state.gameDaysSelections = [];
       state.gameDaysMode = 'all';
       state.statFilters = [];
+      state.spotFilters = [];
       state.ownership = "";
     },
     loadFromLocalStorage(state) {

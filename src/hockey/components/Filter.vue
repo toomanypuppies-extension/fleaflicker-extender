@@ -79,6 +79,15 @@
         clearable
       />
     </div>
+    <div v-if="spotFilters.length" class="statFilters" role="group" aria-label="Lineup spots">
+      <span class="spotIntro">Fits every spot:</span>
+      <span v-for="(spot, index) in spotFilters" :key="`${spot.date}:${spot.label}`" class="chip">
+        {{ spotLabel(spot) }}
+        <button type="button" class="chipRemove" :aria-label="`Remove ${spotLabel(spot)}`" @click="removeSpotFilter(index)">
+          <va-icon class="material-icons" size="1em">close</va-icon>
+        </button>
+      </span>
+    </div>
     <div class="statFilters">
       <span v-for="(statFilter, index) in statFilters" :key="index" class="chip">
         {{ statFilterLabel(statFilter) }}
@@ -207,6 +216,13 @@ export default {
       }]);
       this.addingStatFilter = false;
     },
+    removeSpotFilter(index) {
+      this.emitUpdate('spotFilters', this.spotFilters.filter((_, i) => i !== index));
+    },
+    spotLabel({ date, label }) {
+      const [year, month, day] = date.split('-').map(Number);
+      return `${new Date(year, month - 1, day).toLocaleDateString([], { weekday: 'short', day: 'numeric' })} ${label}`;
+    },
     removeStatFilter(index) {
       this.emitUpdate('statFilters', this.statFilters.filter((_, i) => i !== index));
     },
@@ -250,6 +266,7 @@ export default {
       owners: state => state.owners,
       ownership: state => state.ownership,
       statFilters: state => state.statFilters,
+      spotFilters: state => state.spotFilters,
       gameDaysMode: state => state.gameDaysMode,
     }),
     narrow() {
@@ -275,7 +292,7 @@ export default {
         this.injurySelections.length,
         this.positionSelections.length,
         this.ownership && this.ownership !== "All",
-      ].filter(Boolean).length + this.statFilters.length;
+      ].filter(Boolean).length + this.statFilters.length + this.spotFilters.length;
     },
     ownershipOptions() {
       return [...OWNERSHIP_OPTIONS, ...this.owners]
@@ -301,6 +318,8 @@ export default {
 
 .formContainer.compact {
   padding: 0.5em;
+  // The sheet and its backdrop cover the app, not this bar (containers are positioned for help panels)
+  position: static;
 }
 
 .sheetBackdrop {
@@ -358,6 +377,11 @@ export default {
   margin-top: 0.75em;
 }
 
+.spotIntro {
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
 .statFilters {
   display: flex;
   flex-wrap: wrap;
@@ -410,10 +434,25 @@ export default {
   font-size: 0.9em;
 }
 
-@media (max-width: 640px) {
+// Narrow: the stat on its own row, the bounds side by side, then the buttons. Columns can shrink
+// below their inputs' natural width, which would otherwise push the form off the side.
+@mixin narrowStatForm {
   .statFilterForm {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > :first-child,
+    .formButtons {
+      grid-column: 1 / -1;
+    }
   }
+}
+
+@media (max-width: 640px) {
+  @include narrowStatForm;
+}
+
+.compact {
+  @include narrowStatForm;
 }
 
 .gameDaysMode {

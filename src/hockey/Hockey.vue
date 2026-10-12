@@ -13,7 +13,7 @@
 
   <template v-if="activeTab === 'players'">
     <Filter />
-    <PlayerList sport="nhl" :loading="loading" :players="tablePlayers" :gamesByTeam="gamesByTeam"
+    <PlayerList sport="nhl" :loading="loading" :players="tablePlayers" :gamesByTeam="gamesByTeam" :teamsByDate="teamsByDate"
       :availabilityKnown="!!waiverSettings" @playerSelected="(player) => selectPlayer(player)" />
   </template>
   <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" :league="league" />
@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_ABBR_TO_NAME, TABS, LEAGUE_TABS } from "./constants";
+import { HOCKEY_TEAM_ABBR_TO_NAME, LEAGUE_TABS } from "./constants";
 import { getLeagueId, findMyTeamIdOnPage } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
@@ -48,10 +48,13 @@ import { getActivityLog, syncActivity } from "./collections/activity";
 import { latestDrops, waiverStatus, availabilityLabel, availabilityOrder } from "./collections/waivers";
 import { loadLastSeasonStats, lastSeasonFields } from "./collections/lastSeason";
 import { usesLastSeason } from "./collections/columns";
-import { loadScheduleWeeks, mergeScheduleWeeks } from "./collections/scheduleWeeks";
+import { navFromState, stateFromNav, sameNav, queryWithNav, queryHasNav } from "./navigation";
+import { loadScheduleWeeks, mergeScheduleWeeks, gamesLeftByTeam, todaysGamesByTeam } from "./collections/scheduleWeeks";
 
 // Waiver status depends on the time, so it's worked out again this often
 const CLOCK_INTERVAL = 60 * 1000;
+// The extension's page in history entries, beside whatever fleaflicker keeps there
+const HISTORY_KEY = 'fleaflickerExtenderPage';
 
 export default {
   // Views ask for the schedule weeks they show, it starts with the next 4
@@ -61,6 +64,8 @@ export default {
   data() {
     return {
       leagueTabs: LEAGUE_TABS,
+      // The page last added to the browser's history, or shown from it
+      recordedPage: null,
       teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
       leagueId: null,
       loading: true,
@@ -159,6 +164,45 @@ export default {
       this.activityItems = log.items;
       this.activityCoveredFrom = log.coveredFrom;
     },
+    // Shows a page from the URL or history: the store keys from stateFromNav
+    applyPage(page) {
+      this.recordedPage = navFromState(page);
+      for (const [key, value] of Object.entries(page)) {
+        this.setKey(key, value);
+      }
+    },
+    /**
+     * Adds the page showing to the browser's history, or with replace updates the current entry.
+     * The site keeps it in the URL. In the extension it's kept in history entries without changing
+     * fleaflicker's URL, and only while the panel is open, so Back on fleaflicker's page still
+     * leaves it when the panel is closed.
+     */
+    recordPage({ replace = false } = {}) {
+      const page = this.page;
+      this.recordedPage = page;
+      if (this.$router) {
+        // Passing the path keeps its slashes, the route's param would encode them
+        const location = { path: this.$route.path, query: queryWithNav(this.$route.query, page) };
+        if (replace) {
+          this.$router.replace(location);
+        } else {
+          this.$router.push(location);
+        }
+        return;
+      }
+      const entry = { ...(window.history.state || {}), [HISTORY_KEY]: page };
+      if (replace || !this.$store.state.drawerExpanded) {
+        window.history.replaceState(entry, '');
+      } else {
+        window.history.pushState(entry, '');
+      }
+    },
+    onPopState(event) {
+      const target = stateFromNav(event.state?.[HISTORY_KEY]);
+      if (target) {
+        this.applyPage(target);
+      }
+    },
     openPlayerById(playerId) {
       const player = this.tablePlayers.find(candidate => candidate.id === playerId);
       if (player) {
@@ -236,13 +280,17 @@ export default {
         this.setKey('myTeamId', myTeamId);
       }
     }
-    // Links from before matchups and rosters had their own tabs
-    const tabFromUrl = this.$route?.query?.tab === 'league' ? 'matchups' : this.$route?.query?.tab;
-    if (TABS.some(tab => tab.key === tabFromUrl)) {
-      this.activeTab = tabFromUrl;
+    // The standalone site's URL says which page to show, otherwise the last one shown
+    const fromUrl = this.$route && queryHasNav(this.$route.query) ? stateFromNav(this.$route.query) : null;
+    if (fromUrl) {
+      this.applyPage(fromUrl);
     }
   },
   mounted() {
+    this.recordPage({ replace: true });
+    if (!this.$router) {
+      window.addEventListener('popstate', this.onPopState);
+    }
     this.clock = setInterval(() => { this.now = Date.now(); }, CLOCK_INTERVAL);
     this.loadPlayers();
     this.loadGames();
@@ -252,6 +300,7 @@ export default {
   },
   beforeUnmount() {
     clearInterval(this.clock);
+    window.removeEventListener('popstate', this.onPopState);
   },
   watch: {
     "$store.state.visibleColumnKeys"() {
@@ -262,6 +311,19 @@ export default {
     activeTab() {
       if (!this.loading) {
         this.loadLastSeasonIfNeeded();
+      }
+    },
+    // Going to another page adds it to the browser's history
+    page(page) {
+      if (!sameNav(page, this.recordedPage)) {
+        this.recordPage();
+      }
+    },
+    // Back and Forward on the standalone site
+    "$route.query"(query) {
+      const target = queryHasNav(query) ? stateFromNav(query) : null;
+      if (target && !sameNav(navFromState(target), this.recordedPage)) {
+        this.applyPage(target);
       }
     },
   },
@@ -284,9 +346,41 @@ export default {
       return { left, limit };
     },
     // Players with availability and last season's stats, for the table
+    // From the NHL schedule, so it's right however long ago players were fetched. Null until the
+    // schedule has the rest of the matchup.
+    gamesLeft() {
+      return gamesLeftByTeam(this.schedule, { period: currentPeriod(this.league?.scoreboard, this.now), now: this.now });
+    },
+    // The page showing: tab, week, and matchup or team page open
+    page() {
+      return navFromState(this.$store.state);
+    },
+    // Date to the teams playing that day, for lineup spot filters
+    teamsByDate() {
+      const byDate = {};
+      for (const day of (this.schedule || []).flatMap(week => week.days)) {
+        byDate[day.date] = day.games.flatMap(game => [game.away, game.home]);
+      }
+      return byDate;
+    },
+    // The same for today's game. Null until the schedule has today.
+    todaysGames() {
+      return todaysGamesByTeam(this.schedule, { now: this.now });
+    },
     tablePlayers() {
       const context = { waivers: this.waiverSettings, drops: this.drops, now: this.now };
-      return this.players.map(player => {
+      return this.players.map(stored => {
+        // Fleaflicker's games left and today's game are from when players were fetched
+        const todaysGame = this.todaysGames?.[stored.team];
+        const player = {
+          ...stored,
+          ...(this.gamesLeft && { gamesThisWeek: this.gamesLeft[stored.team] || 0 }),
+          ...(this.todaysGames && {
+            todaysGame: todaysGame?.todaysGame,
+            todaysGameStart: todaysGame?.todaysGameStart,
+            hasGameToday: !!todaysGame,
+          }),
+        };
         const availability = waiverStatus(player, context);
         return {
           ...player,
@@ -328,10 +422,6 @@ export default {
           this.setKey('openMatchupId', null);
         }
         this.setKey('activeTab', tab);
-        if (this.$router && this.$route.query.tab !== tab) {
-          // Passing the path keeps its slashes, the route's param would encode them
-          this.$router.replace({ path: this.$route.path, query: { ...this.$route.query, tab } });
-        }
       },
     },
     ...mapState({

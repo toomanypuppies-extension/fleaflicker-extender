@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import axios from 'axios';
 import { resetStorage } from './support/fakeFlea.mjs';
 import {
-  weekStart, periodDates, loadScheduleWeeks, mergeScheduleWeeks, periodSchedule, coversPeriod,
+  weekStart, periodDates, loadScheduleWeeks, mergeScheduleWeeks, periodSchedule, coversPeriod, gamesLeftByTeam, todaysGamesByTeam,
 } from '../src/hockey/collections/scheduleWeeks.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -90,4 +90,31 @@ test('weeks are merged by start date, and a period is cut from them', async () =
   assert.equal(coversPeriod(schedule, PERIOD_2), true);
   assert.equal(coversPeriod([third], PERIOD_2), false);
   assert.equal(coversPeriod(schedule, BREAK), false);
+});
+
+test("games left count today's until 6am Eastern, to the end of the period", async () => {
+  const schedule = await loadScheduleWeeks(['2026-10-05'], { now: NOW });
+
+  // Thursday to Sunday
+  assert.deepEqual(gamesLeftByTeam(schedule, { period: PERIOD_2, now: NOW }), { SEA: 4, VAN: 4 });
+  // 2am Friday is still Thursday's scoring day
+  assert.deepEqual(gamesLeftByTeam(schedule, { period: PERIOD_2, now: Date.parse('2026-10-09T06:00:00Z') }), { SEA: 4, VAN: 4 });
+  // Without a league, the week
+  assert.deepEqual(gamesLeftByTeam(schedule, { now: NOW }), { SEA: 4, VAN: 4 });
+  // Teams without games aren't listed, and a schedule missing days gives nothing
+  assert.equal(gamesLeftByTeam(schedule, { period: BREAK, now: BREAK.start }), null);
+});
+
+test("today's games, until 6am Eastern", async () => {
+  const schedule = await loadScheduleWeeks(['2026-10-05'], { now: NOW });
+  const start = Date.parse('2026-10-08T23:00:00Z');
+
+  const games = todaysGamesByTeam(schedule, { now: NOW });
+  assert.deepEqual(Object.keys(games), ['SEA', 'VAN']);
+  assert.equal(games.SEA.todaysGameStart, start);
+  assert.match(games.SEA.todaysGame, /^@VAN /);
+  assert.match(games.VAN.todaysGame, /^SEA /);
+  // 2am Friday is still Thursday's
+  assert.equal(todaysGamesByTeam(schedule, { now: Date.parse('2026-10-09T06:00:00Z') }).SEA.todaysGameStart, start);
+  assert.equal(todaysGamesByTeam(schedule, { now: BREAK.start }), null);
 });

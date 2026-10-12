@@ -136,6 +136,17 @@ test("a team projection uses each day's set lineup, and calls out bench points",
   // Starts are recorded by the slot they fill
   assert.deepEqual(bestById[1].slots, { C: { games: 2, expected: 6 } });
   assert.deepEqual(bestById[5].slots, { G: { games: 2, expected: 5 } });
+
+  // Each day's slots for the planner: P2's game began so he's locked in a C slot, days without
+  // games leave every slot open
+  const slotsOn = (day) => day.slots.map(slot => [slot.label, slot.player?.id ?? null, slot.locked]);
+  assert.deepEqual(slotsOn(best.days[0]), [['C', 2, true], ['C', 1, false], ['G', 5, false]]);
+  assert.deepEqual(best.days[0].sitting.map(player => player.id), [3]);
+  assert.deepEqual(slotsOn(best.days[2]), [['C', null, false], ['C', null, false], ['G', null, false]]);
+  assert.deepEqual(best.days[4].slots, []);
+  // As set, tomorrow P3 is in P1's place
+  assert.deepEqual(slotsOn(projection.days[1]), [['C', 3, false], ['C', 2, false], ['G', 5, false]]);
+  assert.deepEqual(projection.days[1].sitting.map(player => player.id), [1]);
 });
 
 test('win chance', () => {

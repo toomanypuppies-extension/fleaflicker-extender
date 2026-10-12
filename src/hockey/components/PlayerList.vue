@@ -143,6 +143,8 @@ export default {
     loading: Boolean,
     players: Array,
     gamesByTeam: Object,
+    // Date to the teams playing, for lineup spot filters
+    teamsByDate: Object,
     sport: String,
     // Whether the league's waiver settings are known, so availability can be worked out
     availabilityKnown: Boolean,
@@ -156,6 +158,7 @@ export default {
       gameDaysSelections: state => state.gameDaysSelections,
       gameDaysMode: state => state.gameDaysMode,
       statFilters: state => state.statFilters,
+      spotFilters: state => state.spotFilters,
       ownership: state => state.ownership,
       visibleColumnKeys: state => state.visibleColumnKeys,
       excludeIfNoPoints: state => state.excludeIfNoPoints,
@@ -187,8 +190,9 @@ export default {
         gameDaysSelections: this.gameDaysSelections,
         gameDaysMode: this.gameDaysMode,
         statFilters: this.statFilters,
+        spotFilters: this.spotFilters,
         ownership: this.ownership,
-      }, this.gamesByTeam);
+      }, this.gamesByTeam, this.teamsByDate);
     },
     visiblePlayers() {
       // Hidden columns have the same value for every player, so sorting on them does nothing

@@ -98,3 +98,20 @@ test('addable now keeps free agents who are not on waivers', () => {
   ];
   assert.deepEqual(ids(filterPlayers(players, { ownership: 'Addable now' }, {})), [1]);
 });
+
+test('lineup spots keep players who can fill every one, with their team playing that day', () => {
+  const teamsByDate = { '2026-10-12': ['SEA', 'VAN'], '2026-10-13': ['SEA'] };
+  const spots = (...list) => ids(filterPlayers(PLAYERS, { spotFilters: list }, GAMES_BY_TEAM, teamsByDate));
+  const C = { label: 'C', eligibility: ['C'] };
+  const F = { label: 'F', eligibility: ['C', 'LW', 'RW'] };
+  const D = { label: 'D', eligibility: ['D'] };
+
+  assert.deepEqual(spots({ date: '2026-10-12', ...C }), [1, 4]);
+  // A flex slot takes any forward
+  assert.deepEqual(spots({ date: '2026-10-13', ...F }), [1]);
+  // Every spot has to fit: a C on Monday and a D on Tuesday leaves no one
+  assert.deepEqual(spots({ date: '2026-10-12', ...C }, { date: '2026-10-13', ...D }), []);
+  assert.deepEqual(spots({ date: '2026-10-12', ...D }, { date: '2026-10-13', ...D }), [2]);
+  // Days the schedule doesn't have yet match no one
+  assert.deepEqual(spots({ date: '2026-10-20', ...D }), []);
+});

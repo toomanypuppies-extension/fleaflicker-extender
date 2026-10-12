@@ -2,9 +2,12 @@ import { getStored, setStored } from "../../utils/db";
 import { getScheduleWeek } from "../api/nhlv2";
 import { easternDate } from "./schedule";
 import { dayDate } from "./boxscores";
+import { convertEpochToTimeString } from "../../utils/util";
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
+// Fleaflicker's scoring days start at 6am Eastern
+const SCORING_DAY_START_HOUR = 6;
 // Games get postponed and rescheduled, so weeks that aren't over are checked twice a day
 const SCHEDULE_WEEK_MAX_AGE = 12 * HOUR;
 // The NHL's schedule is the same for every league
@@ -88,3 +91,49 @@ export const periodSchedule = (schedule, period) => {
 
 // Whether the schedule has every day of the period
 export const coversPeriod = (schedule, period) => periodSchedule(schedule, period).days.length === period.lastDay - period.firstDay + 1;
+
+/**
+ * Each team's games from today to the end of the matchup period (or without one, the week), today
+ * included until the scoring day ends at 6am Eastern: { [team]: games }. Null when the schedule
+ * doesn't have every one of those days yet.
+ */
+export const gamesLeftByTeam = (schedule, { period = null, now = Date.now() } = {}) => {
+  const today = easternDate(now - SCORING_DAY_START_HOUR * HOUR);
+  const start = weekStart(today);
+  const dates = period
+    ? periodDates(period)
+    : Array.from({ length: 7 }, (_, i) => fromUtc(toUtc(start) + i * DAY));
+  const byDate = new Map((schedule || []).flatMap(week => week.days).map(day => [day.date, day]));
+  const left = dates.filter(date => date >= today);
+  if (left.some(date => !byDate.has(date))) {
+    return null;
+  }
+  const games = {};
+  for (const date of left) {
+    for (const game of byDate.get(date).games) {
+      games[game.away] = (games[game.away] || 0) + 1;
+      games[game.home] = (games[game.home] || 0) + 1;
+    }
+  }
+  return games;
+};
+
+/**
+ * Each team's game on today's scoring day (until 6am Eastern), as the players table shows it:
+ * { [team]: { todaysGame: '@SEA 07:00 PM', todaysGameStart } }. Null when the schedule doesn't have
+ * today.
+ */
+export const todaysGamesByTeam = (schedule, { now = Date.now() } = {}) => {
+  const today = easternDate(now - SCORING_DAY_START_HOUR * HOUR);
+  const day = (schedule || []).flatMap(week => week.days).find(candidate => candidate.date === today);
+  if (!day) {
+    return null;
+  }
+  const games = {};
+  for (const game of day.games) {
+    const time = convertEpochToTimeString(game.start);
+    games[game.away] = { todaysGame: `@${game.home} ${time}`, todaysGameStart: game.start };
+    games[game.home] = { todaysGame: `${game.away} ${time}`, todaysGameStart: game.start };
+  }
+  return games;
+};
