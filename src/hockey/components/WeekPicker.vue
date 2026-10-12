@@ -58,6 +58,10 @@ export default {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5em;
+  // As a flex item (the Schedule tab's header) it would otherwise stay as wide as the longest
+  // week's name and overflow on phones
+  min-width: 0;
+  max-width: 100%;
 
   select {
     flex: 0 1 auto;
