@@ -45,7 +45,8 @@
     <section v-if="gamesByMatchup && weekStartDates" class="upcomingGames">
       <h3>Upcoming games</h3>
       <div class="gameGrid">
-        <GameWeek v-for="week in 4" :key="week" :week="gameWeekForTeam[week - 1]" :startDate="weekStartDates[week - 1]" />
+        <GameWeek v-for="week in 4" :key="week" :week="gameWeekForTeam[week - 1]" :startDate="weekStartDates[week - 1]"
+          :index="week - 1" />
       </div>
     </section>
   </aside>
@@ -296,7 +297,6 @@ h4 {
 .gameGrid {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 0.75em;
 }
 
