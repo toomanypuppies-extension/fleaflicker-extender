@@ -20,7 +20,7 @@
 
 <script>
 /**
- * Picks a matchup period (week) of the season. The League tab's matchups and the Schedule tab
+ * Picks a matchup period (week) of the season. The Matchups tab and the Schedule tab
  * share it, through the store's selectedPeriod.
  */
 export default {

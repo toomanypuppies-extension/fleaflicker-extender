@@ -15,7 +15,7 @@ const initState = {
   settings: {
     darkMode: true,
   },
-  // players, schedule or league
+  // A TABS key
   activeTab: 'players',
   openSettings: false,
   openHelp: false,
@@ -33,13 +33,11 @@ const initState = {
   statFilters: [],
   // Columns picked in the column chooser, empty for the defaults
   visibleColumnKeys: [],
-  // The user's team in this league, picked on the League tab or found on fleaflicker's page
+  // The user's team in this league, picked in the toolbar or found on fleaflicker's page
   myTeamId: null,
   // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
   timelineTeamId: null,
   timelineFilters: [],
-  // League tab section: matchups or rosters
-  leagueSection: 'matchups',
   // The team page open on the League tab, or null
   openTeamId: null,
   // The team page's COMPARE_RANGES key
@@ -78,6 +76,12 @@ const createState = () => {
   const defaultState = JSON.parse(JSON.stringify(initialState));
   // Saved by older versions
   Object.assign(defaultState, TRANSIENT_DEFAULTS);
+
+  // Earlier versions had a League tab with matchups and rosters (or activity) as sections
+  if (defaultState.activeTab === 'league') {
+    defaultState.activeTab = defaultState.leagueSection === 'matchups' ? 'matchups' : 'rosters';
+  }
+  delete defaultState.leagueSection;
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;

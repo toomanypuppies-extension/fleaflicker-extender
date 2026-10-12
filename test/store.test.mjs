@@ -48,3 +48,15 @@ test('open dialogs and the open player card are not restored', async () => {
   assert.equal(store.state.selectedPlayer, null);
   assert.equal(store.state.openSettings, false);
 });
+
+test('the old League tab opens on its new tab', async () => {
+  storage.reset();
+  const { store } = await import('../src/store.js');
+  for (const [leagueId, section, tab] of [['500', 'matchups', 'matchups'], ['501', 'activity', 'rosters'], ['502', 'rosters', 'rosters']]) {
+    storage.setItem(`ff-extender-${leagueId}-vuex-state`, JSON.stringify({ activeTab: 'league', leagueSection: section }));
+    setLeague(leagueId);
+    store.commit('loadLeagueState');
+    assert.equal(store.state.activeTab, tab);
+    assert.equal(store.state.leagueSection, undefined);
+  }
+});

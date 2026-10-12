@@ -7,7 +7,7 @@
 </template>
 
 <script>
-// A player in the League tab's timeline, which opens their details when they're in the player table
+// A player in the activity timeline, which opens their details when they're in the player table
 export default {
   props: {
     // An activity item with playerId, playerName, playerTeam, playerPosition and injury

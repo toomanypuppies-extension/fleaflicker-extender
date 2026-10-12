@@ -3,14 +3,6 @@
     <p v-if="!league" class="notice containerColor">League info couldn't be loaded. Use Refresh to try again.</p>
 
     <template v-else>
-      <div class="leagueBar containerColor">
-        <div class="sectionTabs" role="group" aria-label="League section">
-          <button v-for="(label, key) in sections" :key="key" type="button" class="sectionTab"
-            :class="{ active: section === key && !openTeam }" :aria-pressed="section === key && !openTeam"
-            @click="showSection(key)">{{ label }}</button>
-        </div>
-      </div>
-
       <TeamView v-if="openTeam" :key="openTeam.teamId" :leagueId="leagueId" :league="league" :teamId="openTeam.teamId"
         :roster="rosters[openTeam.teamId]" :summary="openTeam" :period="period" :players="players"
         :now="now" :activityItems="activityItems" :activityLoaded="activityLoaded" :activityLoading="loadingActivity"
@@ -95,14 +87,11 @@ import ActivityTimeline from "./ActivityTimeline.vue";
 import TeamView from "./TeamView.vue";
 import HelpTip from "./HelpTip.vue";
 
-const SECTIONS = {
-  matchups: 'Matchups',
-  rosters: 'Rosters',
-};
-
 export default {
   components: { MatchupsSection, ActivityTimeline, TeamView, HelpTip },
   props: {
+    // The tab shown: matchups or rosters
+    section: String,
     leagueId: String,
     // From loadLeagueInfo
     league: Object,
@@ -122,15 +111,12 @@ export default {
       loadingActivity: false,
       loadingRosters: false,
       activityError: false,
-      sections: SECTIONS,
     };
   },
   computed: {
     ...mapState({
       myTeamId: state => state.myTeamId,
       openTeamId: state => state.openTeamId,
-      // Saved as 'activity' by an earlier version
-      section: state => (state.leagueSection === 'matchups' ? 'matchups' : 'rosters'),
     }),
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
@@ -196,10 +182,6 @@ export default {
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
     },
-    showSection(key) {
-      this.setKey('openTeamId', null);
-      this.setKey('leagueSection', key);
-    },
     // A team's page, over whichever section it was opened from; null goes back
     openTeamPage(teamId) {
       this.setKey('openTeamId', teamId);
@@ -237,42 +219,6 @@ export default {
   overflow-y: auto;
   min-height: 0;
   flex: 1 1 auto;
-}
-
-.leagueBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5em 1em;
-  padding: 0.5em 1em;
-}
-
-.sectionTabs {
-  display: flex;
-  gap: 0.25em;
-}
-
-.sectionTab {
-  font: inherit;
-  font-weight: 700;
-  color: inherit;
-  background: none;
-  border: none;
-  border-bottom: 3px solid transparent;
-  padding: 0.35em 0.6em;
-  min-height: 36px;
-  cursor: pointer;
-  opacity: 0.75;
-
-  &.active {
-    opacity: 1;
-    border-bottom-color: var(--teamSecondaryColor);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--teamSecondaryColor);
-  }
 }
 
 .notice {

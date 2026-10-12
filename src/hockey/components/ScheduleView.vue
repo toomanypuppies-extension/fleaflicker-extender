@@ -127,7 +127,7 @@ export default {
     currentOrdinal() {
       return currentPeriod(this.league?.scoreboard, this.now)?.ordinal;
     },
-    // Shared with the League tab's matchups
+    // Shared with the Matchups tab
     selectedPeriod() {
       const ordinal = this.$store.state.selectedPeriod ?? this.currentOrdinal;
       return this.periods.find(period => period.ordinal === ordinal) || null;

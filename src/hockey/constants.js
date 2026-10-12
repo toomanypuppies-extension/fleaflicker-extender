@@ -8,9 +8,13 @@ export const LEAGUE_SETTINGS_BASE = `${proxyBase}/proxy/flea-rules`;
 // The app's sections
 export const TABS = [
   { key: 'players', label: 'Players' },
+  { key: 'matchups', label: 'Matchups' },
+  { key: 'rosters', label: 'Rosters' },
   { key: 'schedule', label: 'Schedule' },
-  { key: 'league', label: 'League' },
 ];
+
+// The league's tabs, which share league activity and rosters
+export const LEAGUE_TABS = ['matchups', 'rosters'];
 
 export const DAYS_ARRAY = [
   'Mo',

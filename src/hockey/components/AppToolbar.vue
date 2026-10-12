@@ -231,6 +231,11 @@ export default {
     display: none;
   }
 
+  // Four tabs fit a phone's width
+  .tab {
+    padding: 0 0.55em;
+  }
+
   // Still read by screen readers
   .myTeamLabel {
     position: absolute;

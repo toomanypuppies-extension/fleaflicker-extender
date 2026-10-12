@@ -4,7 +4,7 @@ import { getActivityToTimeEpochMilli } from "../../utils/flea";
 const MINUTE = 60 * 1000;
 const DAY = 24 * 60 * MINUTE;
 
-// How far back the League tab's timeline goes
+// How far back the activity timeline goes
 export const TIMELINE_WINDOW = 14 * DAY;
 // Items older than this are dropped from storage. Longer than the timeline so add counts can
 // cover matchup periods that span more than one week, like around the all-star break.

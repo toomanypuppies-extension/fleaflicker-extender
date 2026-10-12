@@ -61,7 +61,7 @@ export const pairSwaps = (items) => {
 };
 
 /**
- * The League tab's timeline: activity since `since`, newest first, grouped by Eastern day.
+ * The activity timeline: activity since `since`, newest first, grouped by Eastern day.
  * @param {Array} items activity log items, newest first
  * @param {{ since: number, teamId?: number, filters?: string[], period?: { start: number } }} options
  *   filters are TIMELINE_FILTERS keys, none for every kind

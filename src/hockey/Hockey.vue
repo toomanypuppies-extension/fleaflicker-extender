@@ -17,7 +17,7 @@
       :availabilityKnown="!!waiverSettings" @playerSelected="(player) => selectPlayer(player)" />
   </template>
   <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" :league="league" />
-  <LeagueView v-else-if="activeTab === 'league'" :leagueId="leagueId" :league="league" :players="tablePlayers"
+  <LeagueView v-else-if="leagueTabs.includes(activeTab)" :section="activeTab" :leagueId="leagueId" :league="league" :players="tablePlayers"
     :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
 
   <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
@@ -28,7 +28,7 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_ABBR_TO_NAME, TABS } from "./constants";
+import { HOCKEY_TEAM_ABBR_TO_NAME, TABS, LEAGUE_TABS } from "./constants";
 import { getLeagueId, findMyTeamIdOnPage } from "../utils/util";
 import PlayerList from "./components/PlayerList.vue";
 import PlayerCard from "./components/PlayerCard.vue";
@@ -60,6 +60,7 @@ export default {
   },
   data() {
     return {
+      leagueTabs: LEAGUE_TABS,
       teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
       leagueId: null,
       loading: true,
@@ -158,9 +159,9 @@ export default {
         this.setKey('selectedPlayer', player);
       }
     },
-    // For last season columns, and for projections on the League tab
+    // For last season columns, projections and rosters
     async loadLastSeasonIfNeeded() {
-      const needed = usesLastSeason(this.$store.state.visibleColumnKeys) || this.activeTab === 'league';
+      const needed = usesLastSeason(this.$store.state.visibleColumnKeys) || LEAGUE_TABS.includes(this.activeTab);
       if (this.lastSeasonById || !needed) {
         return;
       }
@@ -222,7 +223,8 @@ export default {
         this.setKey('myTeamId', myTeamId);
       }
     }
-    const tabFromUrl = this.$route?.query?.tab;
+    // Links from before matchups and rosters had their own tabs
+    const tabFromUrl = this.$route?.query?.tab === 'league' ? 'matchups' : this.$route?.query?.tab;
     if (TABS.some(tab => tab.key === tabFromUrl)) {
       this.activeTab = tabFromUrl;
     }
@@ -307,6 +309,11 @@ export default {
         return this.$store.state.activeTab;
       },
       set(tab) {
+        // A tab opens on its main page, not a team or matchup opened earlier
+        this.setKey('openTeamId', null);
+        if (tab === 'matchups') {
+          this.setKey('openMatchupId', null);
+        }
         this.setKey('activeTab', tab);
         if (this.$router && this.$route.query.tab !== tab) {
           // Passing the path keeps its slashes, the route's param would encode them
