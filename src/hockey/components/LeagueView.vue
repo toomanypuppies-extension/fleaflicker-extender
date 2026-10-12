@@ -31,15 +31,17 @@
       <template v-else>
         <section class="rostersSection containerColor" aria-labelledby="rostersHeading">
           <div class="sectionHeader">
-            <h2 id="rostersHeading">Rosters</h2>
+            <span class="titleWithHelp">
+              <h2 id="rostersHeading">Rosters</h2>
+              <HelpTip label="rosters">
+                <p v-if="period">Adds are counted since this matchup started on {{ formatDay(period.start) }}.</p>
+                <p>Standings, points for (PF, with its place in the league) and against (PA) count completed matchups.</p>
+                <p>Open a team for its roster, projections and moves.</p>
+              </HelpTip>
+            </span>
           </div>
-          <p v-if="period" class="periodNote">
-            Adds are counted since this matchup started on {{ formatDay(period.start) }}.
-            Standings, points for (PF, with its place in the league) and against (PA) count completed matchups.
-            Open a team for its roster, projections and moves.
-            <template v-if="acquisitionLimit === null && !league.settings">
-              The league's add limit couldn't be loaded.
-            </template>
+          <p v-if="acquisitionLimit === null && !league.settings" class="periodNote">
+            The league's add limit couldn't be loaded.
           </p>
           <p v-if="loadingRosters" class="loading" role="status">Loading rosters…</p>
 
@@ -98,6 +100,7 @@ import { ordinal } from "../../utils/util";
 import MatchupsSection from "./MatchupsSection.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
 import TeamView from "./TeamView.vue";
+import HelpTip from "./HelpTip.vue";
 
 const SECTIONS = {
   matchups: 'Matchups',
@@ -105,7 +108,7 @@ const SECTIONS = {
 };
 
 export default {
-  components: { MatchupsSection, ActivityTimeline, TeamView },
+  components: { MatchupsSection, ActivityTimeline, TeamView, HelpTip },
   props: {
     leagueId: String,
     // From loadLeagueInfo
@@ -313,6 +316,12 @@ select {
   border-radius: 4px;
   padding: 0.3em 0.5em;
   min-height: 32px;
+}
+
+.titleWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
 }
 
 .myTeamPicker {

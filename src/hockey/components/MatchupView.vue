@@ -27,7 +27,15 @@
 
     <section class="projectionSection containerColor" aria-labelledby="projectionHeading">
       <div class="sectionHeader">
-        <h3 id="projectionHeading">{{ phase === 'past' ? 'Result' : 'Projection' }}</h3>
+        <span class="titleWithHelp">
+          <h3 id="projectionHeading">{{ phase === 'past' ? 'Result' : 'Projection' }}</h3>
+          <HelpTip v-if="phase !== 'past'" label="projections">
+            <p>{{ lineups[lineupChoice].description }} {{ methods[method].description }}</p>
+            <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+            <p v-if="phase === 'current'">Games already under way count only what they've scored so far.</p>
+            <p>Starts are games in the lineup: so far, plus what's left.</p>
+          </HelpTip>
+        </span>
         <div v-if="phase !== 'past'" class="pickers">
           <label class="methodPicker">
             Projected lineups
@@ -44,18 +52,13 @@
         </div>
       </div>
       <template v-if="phase !== 'past'">
-        <p class="note">
-          {{ lineups[lineupChoice].description }} {{ methods[method].description }}
-          Goalies count for the share of their team's games they've started. Injured players, day to day
-          included, count as zero.
-        </p>
         <template v-if="lineupChoice === 'set'">
           <p v-if="loadingLineups" class="note">Loading the lineups set for each day, using today's until then…</p>
           <p v-else-if="missingLineups" class="note">Some days' lineups couldn't be loaded, today's lineup is used for them.</p>
         </template>
         <p v-if="phase === 'current'" class="note">
           <template v-if="loadingLive">Updating scores…</template>
-          <template v-else>Scores as of {{ formatTime(scoreAsOf) }}. Games already under way count only what they've scored so far.</template>
+          <template v-else>Scores as of {{ formatTime(scoreAsOf) }}.</template>
         </p>
       </template>
 
@@ -120,7 +123,15 @@
 
     <section class="compareSection containerColor" aria-labelledby="compareHeading">
       <div class="sectionHeader">
-        <h3 id="compareHeading">Where the points come from</h3>
+        <span class="titleWithHelp">
+          <h3 id="compareHeading">Where the points come from</h3>
+          <HelpTip label="where the points come from">
+            <p>Only points that counted: starters' points, not the bench's. Each team's page breaks them down by player.</p>
+            <p v-if="phase !== 'past'">The lighter part of each bar is what's projected for the rest of this matchup.</p>
+            <p v-if="phase === 'future'">This matchup hasn't started: longer ranges count points scored up to now.</p>
+            <p v-else>Longer ranges end at this matchup.</p>
+          </HelpTip>
+        </span>
       </div>
       <div class="compareFilters">
         <select :value="compareTeams[0]" aria-label="First team" @change="setCompareTeam(0, $event.target.value)">
@@ -136,12 +147,6 @@
             @click="setKey('compareRange', key)">{{ range.label }}</button>
         </span>
       </div>
-      <p class="note">
-        Only points that counted: starters' points, not the bench's. Each team's page breaks them down by player.
-        <template v-if="phase !== 'past'">The lighter part of each bar is what's projected for the rest of this matchup.</template>
-        <template v-if="phase === 'future'">This matchup hasn't started: longer ranges count points scored up to now.</template>
-        <template v-else-if="compareRange !== 'matchup'">Ranges end at this matchup.</template>
-      </p>
       <p v-if="loadingCompare" class="note" role="status">
         Loading box scores{{ compareProgress.total ? ` ${compareProgress.done} of ${compareProgress.total}` : '' }}…
         <template v-if="compareProgress.total > 40">The first load of a long range takes a while, after that it's quick.</template>
@@ -169,6 +174,7 @@
 <script>
 import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
+import HelpTip from "./HelpTip.vue";
 import {
   projectTeam, teamGamesPlayed, winChance, formatChance, PROJECTION_METHODS, PROJECTION_LINEUPS,
 } from "../collections/projection";
@@ -181,7 +187,7 @@ import { periodDates } from "../collections/scheduleWeeks";
 import { positionBreakdown, positionChartRows } from "../collections/breakdowns";
 
 export default {
-  components: { BarChart },
+  components: { BarChart, HelpTip },
   // From Hockey, loads schedule weeks
   inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
@@ -755,6 +761,12 @@ button.scoreTeam {
   .totalRow {
     font-weight: 700;
   }
+}
+
+.titleWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
 }
 
 .callout {

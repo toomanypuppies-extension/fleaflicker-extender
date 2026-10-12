@@ -37,7 +37,17 @@
 
     <section class="rosterSection containerColor" aria-labelledby="rosterHeading">
       <div class="sectionHeader">
-        <h3 id="rosterHeading">Roster</h3>
+        <span class="titleWithHelp">
+          <h3 id="rosterHeading">Roster</h3>
+          <HelpTip label="the roster">
+            <p>
+              Today's lineup. Starts, projected and bench points are for the rest of this matchup<template v-if="period">
+              ({{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }})</template>.
+            </p>
+            <p>{{ lineups[lineupChoice].description }} {{ methods[method].description }}</p>
+            <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+          </HelpTip>
+        </span>
         <div class="pickers">
           <label>
             Projected lineups
@@ -54,9 +64,8 @@
         </div>
       </div>
       <p v-if="period" class="note">
-        Today's lineup. Starts, projected and bench points are for the rest of this matchup
-        ({{ formatDay(period.start) }} to {{ formatDay(period.lastDayStart) }}):
-        {{ format(projection.expected) }} projected<template v-if="projection.bench > 0">, {{ format(projection.bench) }} on the bench</template>.
+        This matchup: {{ format(projection.expected) }} projected<template v-if="projection.bench > 0">,
+        {{ format(projection.bench) }} on the bench</template>.
       </p>
       <p v-if="!roster" class="note">The roster couldn't be loaded. Use Refresh to try again.</p>
       <div v-else class="tableScroller">
@@ -100,7 +109,13 @@
 
     <section class="pointsSection containerColor" aria-labelledby="pointsHeading">
       <div class="sectionHeader">
-        <h3 id="pointsHeading">Where the points come from</h3>
+        <span class="titleWithHelp">
+          <h3 id="pointsHeading">Where the points come from</h3>
+          <HelpTip label="where the points come from">
+            <p>Only points that counted: starters' points, not the bench's.</p>
+            <p v-if="period">The lighter part of each bar is what's projected for the rest of this matchup.</p>
+          </HelpTip>
+        </span>
         <span class="rangeButtons" role="group" aria-label="Range">
           <button v-for="(range, key) in ranges" :key="key" type="button" class="filterButton"
             :class="{ active: teamRange === key }" :aria-pressed="teamRange === key"
@@ -108,8 +123,6 @@
         </span>
       </div>
       <p class="note">
-        Only points that counted: starters' points, not the bench's.
-        <template v-if="period">The lighter part of each bar is what's projected for the rest of this matchup.</template>
         {{ format(totalPoints) }} points over {{ days.length }} days<template v-if="period"> + {{ format(projection.expected) }} projected</template>.
       </p>
       <p v-if="loadingDays" class="note" role="status">
@@ -143,6 +156,7 @@
 import { mapState } from "vuex";
 import BarChart from "./BarChart.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
+import HelpTip from "./HelpTip.vue";
 import { ROSTER_GROUPS, loadDayRosters } from "../collections/league";
 import { loadTeamDays, totalPoints, dayOrdinalAt, COMPARE_RANGES } from "../collections/boxscores";
 import { periodDates } from "../collections/scheduleWeeks";
@@ -167,7 +181,7 @@ const GROUP_LABELS = {
  * its recent moves.
  */
 export default {
-  components: { BarChart, ActivityTimeline },
+  components: { BarChart, ActivityTimeline, HelpTip },
   // From Hockey, loads schedule weeks
   inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
@@ -476,6 +490,12 @@ export default {
     font-weight: 700;
     margin: 0;
   }
+}
+
+.titleWithHelp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
 }
 
 .pickers {

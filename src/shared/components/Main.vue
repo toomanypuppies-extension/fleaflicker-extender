@@ -75,6 +75,8 @@ export default defineComponent({
 }
 
 :where(.mainContent) .containerColor {
+  // Help panels (HelpTip) span the section they're in
+  position: relative;
   border: 2px var(--teamSecondaryColor) solid;
   color: var(--themeAccentColor);
   background: var(--themeBaseColor);

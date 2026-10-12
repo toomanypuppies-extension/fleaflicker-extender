@@ -14,7 +14,10 @@
         </div>
         <p class="legend">
           <span class="lightSwatch"></span>
-          Light night: {{ lightNightMax }} or fewer games, so fewer players compete for lineup spots.
+          Light night
+          <HelpTip label="light nights">
+            {{ lightNightMax }} or fewer games, so fewer fantasy players compete for lineup spots: a good night to stream.
+          </HelpTip>
         </p>
       </div>
 
@@ -82,6 +85,7 @@ import { weekGrid, easternDate, LIGHT_NIGHT_MAX_GAMES } from "../collections/sch
 import { currentPeriod } from "../collections/league";
 import { weekStart, periodDates, periodSchedule, coversPeriod } from "../collections/scheduleWeeks";
 import WeekPicker from "./WeekPicker.vue";
+import HelpTip from "./HelpTip.vue";
 
 const MINUTE = 60 * 1000;
 
@@ -94,7 +98,7 @@ const dateParts = (date) => {
 const DAY = 24 * 60 * MINUTE;
 
 export default {
-  components: { WeekPicker },
+  components: { WeekPicker, HelpTip },
   // From Hockey, loads schedule weeks
   inject: { ensureSchedule: { default: () => async () => {} } },
   props: {

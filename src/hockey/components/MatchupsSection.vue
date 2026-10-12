@@ -22,6 +22,14 @@
           <option v-for="(option, key) in methodOptions" :key="key" :value="key">{{ option.label }}</option>
         </select>
       </label>
+      <HelpTip label="projections">
+        <p>{{ lineupOptions[projectionLineup].description }} {{ methodOptions[projectionMethod].description }}</p>
+        <p v-if="projectionLineup === 'set'">
+          Your matchup always uses the lineups teams have set for each day. Other matchups use them once you've
+          opened their Details, and until then show each team's best lineup, marked "best lineups".
+        </p>
+        <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+      </HelpTip>
     </div>
     <p class="note">{{ weekNote }}</p>
     <p v-if="loadingMatchups" class="note" role="status">Loading matchups…</p>
@@ -68,6 +76,7 @@
 import { mapState } from "vuex";
 import MatchupView from "./MatchupView.vue";
 import WeekPicker from "./WeekPicker.vue";
+import HelpTip from "./HelpTip.vue";
 import { periodDates, coversPeriod } from "../collections/scheduleWeeks";
 import { currentPeriod, groupByMatchup, loadPeriodMatchups, loadDayRosters } from "../collections/league";
 import { dayOrdinalAt } from "../collections/boxscores";
@@ -76,7 +85,7 @@ import {
 } from "../collections/projection";
 
 export default {
-  components: { MatchupView, WeekPicker },
+  components: { MatchupView, WeekPicker, HelpTip },
   // From Hockey, loads schedule weeks
   inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
@@ -167,12 +176,8 @@ export default {
     },
     weekNote() {
       if (this.phase === 'past') return 'Final scores.';
-      const lineups = this.projectionLineup === 'set'
-        ? 'Projections use the lineups teams have set for each day: always for your matchup, for others once '
-          + "you've opened their Details. Until then they assume each team's best lineup."
-        : PROJECTION_LINEUPS.best.description;
-      if (this.phase === 'future') return `Starts ${this.formatDay(this.selectedPeriod.start)}. ${lineups}`;
-      return `Scores as of ${this.formatTime(this.league.fetchedAt)}. ${lineups}`;
+      if (this.phase === 'future') return `Starts ${this.formatDay(this.selectedPeriod.start)}.`;
+      return `Scores as of ${this.formatTime(this.league.fetchedAt)}.`;
     },
     // Each matchup's projected final scores and who's favored, by game id
     projections() {
@@ -451,6 +456,7 @@ export default {
 .projectionControls {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5em 1.5em;
 
   label {
