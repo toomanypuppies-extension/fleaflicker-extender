@@ -32,8 +32,7 @@
       </HelpTip>
     </div>
     <p class="note">{{ weekNote }}</p>
-    <p v-if="loadingMatchups" class="note" role="status">Loading matchups…</p>
-    <p v-else-if="phase !== 'past' && !scheduleReady" class="note" role="status">Loading the NHL schedule for this week…</p>
+    <LoadingIndicator v-if="loadingText" :text="loadingText" />
     <p v-else-if="!matchups" class="note">This week's matchups couldn't be loaded. Use Refresh to try again.</p>
 
     <div class="matchups">
@@ -86,6 +85,7 @@ import { mapState } from "vuex";
 import MatchupView from "./MatchupView.vue";
 import WeekPicker from "./WeekPicker.vue";
 import HelpTip from "./HelpTip.vue";
+import LoadingIndicator from "./LoadingIndicator.vue";
 import { periodDates, coversPeriod } from "../collections/scheduleWeeks";
 import { currentPeriod, groupByMatchup, loadPeriodMatchups, loadDayRosters } from "../collections/league";
 import { dayOrdinalAt } from "../collections/boxscores";
@@ -94,7 +94,7 @@ import {
 } from "../collections/projection";
 
 export default {
-  components: { MatchupView, WeekPicker, HelpTip },
+  components: { MatchupView, WeekPicker, HelpTip, LoadingIndicator },
   // From Hockey, loads schedule weeks
   inject: { ensureSchedule: { default: () => async () => {} } },
   props: {
@@ -102,6 +102,8 @@ export default {
     league: Object,
     rosters: Object,
     loadingRosters: Boolean,
+    // Projections need the players' stats
+    loadingPlayers: Boolean,
     players: Array,
     schedule: Array,
     now: Number,
@@ -170,6 +172,15 @@ export default {
     },
     openGroup() {
       return this.openMatchupId ? this.groups.find(group => group.matchup?.gameId === this.openMatchupId) : null;
+    },
+    // What the page is waiting on, matchups first, then what projections need
+    loadingText() {
+      if (this.loadingMatchups) return 'Loading matchups…';
+      if (this.phase === 'past') return null;
+      if (!this.scheduleReady) return 'Loading the NHL schedule for this week…';
+      if (this.loadingPlayers && !this.players?.length) return 'Loading players for projections…';
+      if (this.loadingRosters) return 'Loading rosters for projections…';
+      return null;
     },
     // The NHL schedule has every day of the week, so projections are complete
     scheduleReady() {

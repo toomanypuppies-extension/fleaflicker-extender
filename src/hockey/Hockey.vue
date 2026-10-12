@@ -18,7 +18,7 @@
   </template>
   <ScheduleView v-else-if="activeTab === 'schedule'" :schedule="schedule" :league="league" />
   <LeagueView v-else-if="leagueTabs.includes(activeTab)" :section="activeTab" :leagueId="leagueId" :league="league" :players="tablePlayers"
-    :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
+    :leagueLoading="leagueLoading" :loadingPlayers="loading" :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
 
   <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
     @clearSelectedPlayer="clearSelectedPlayer" />
@@ -84,6 +84,8 @@ export default {
       gamesByTeam: {},
       gameWeek: {},
       league: null,
+      // Until the first league load finishes, so the Matchups and Rosters tabs show it's loading
+      leagueLoading: true,
       // The NHL's next four weeks, see convertSchedule
       schedule: null,
       activityItems: [],
@@ -227,6 +229,7 @@ export default {
     },
     async loadLeague({ forceRefresh = false, refreshScores = false, skipActivity = false } = {}) {
       const league = await loadLeagueInfo(this.leagueId, { forceRefresh, refreshScores });
+      this.leagueLoading = false;
       if (league) {
         this.league = league;
         // For the Ownership filter
@@ -289,6 +292,8 @@ export default {
   },
   created() {
     this.leagueId = getLeagueId();
+    // Without a league there's nothing to wait for
+    this.leagueLoading = !!this.leagueId;
     // The standalone site keeps the tab in the URL, so it can be linked to
     // In the extension, fleaflicker's menu links to the signed in user's team
     if (!process.env.STANDALONE && !this.$store.state.myTeamId) {

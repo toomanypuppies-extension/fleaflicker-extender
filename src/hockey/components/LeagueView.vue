@@ -1,6 +1,9 @@
 <template>
   <div class="leagueView">
-    <p v-if="!league" class="notice containerColor">League info couldn't be loaded. Use Refresh to try again.</p>
+    <div v-if="!league && leagueLoading" class="notice containerColor">
+      <LoadingIndicator text="Loading the league…" />
+    </div>
+    <p v-else-if="!league" class="notice containerColor">League info couldn't be loaded. Use Refresh to try again.</p>
 
     <template v-else>
       <TeamView v-if="openTeam" :key="openTeam.teamId" :leagueId="leagueId" :league="league" :teamId="openTeam.teamId"
@@ -10,7 +13,7 @@
         @close="openTeamPage(null)" @openPlayer="openPlayer" />
 
       <MatchupsSection v-else-if="section === 'matchups'" :leagueId="leagueId" :league="league" :rosters="rosters"
-        :loadingRosters="loadingRosters" :players="players" :schedule="schedule" :now="now"
+        :loadingRosters="loadingRosters" :loadingPlayers="loadingPlayers" :players="players" :schedule="schedule" :now="now"
         @openPlayer="openPlayer" @openTeam="openTeamPage" />
 
       <template v-else>
@@ -28,7 +31,7 @@
           <p v-if="acquisitionLimit === null && !league.settings" class="periodNote">
             The league's add limit couldn't be loaded.
           </p>
-          <p v-if="loadingRosters" class="loading" role="status">Loading rosters…</p>
+          <LoadingIndicator v-if="loadingRosters" class="loading" text="Loading rosters…" />
 
           <div class="teamCards">
             <button v-for="summary in summaries" :key="summary.teamId" type="button" class="teamCard"
@@ -86,9 +89,10 @@ import MatchupsSection from "./MatchupsSection.vue";
 import ActivityTimeline from "./ActivityTimeline.vue";
 import TeamView from "./TeamView.vue";
 import HelpTip from "./HelpTip.vue";
+import LoadingIndicator from "./LoadingIndicator.vue";
 
 export default {
-  components: { MatchupsSection, ActivityTimeline, TeamView, HelpTip },
+  components: { MatchupsSection, ActivityTimeline, TeamView, HelpTip, LoadingIndicator },
   props: {
     // The tab shown: matchups or rosters
     section: String,
@@ -97,6 +101,9 @@ export default {
     league: Object,
     // The table's players, for opening player details
     players: Array,
+    // Whether league info and players are still loading
+    leagueLoading: Boolean,
+    loadingPlayers: Boolean,
     // The NHL schedule, for projections
     schedule: Array,
     now: Number,
