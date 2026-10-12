@@ -1,5 +1,6 @@
 <template>
   <va-modal
+    :z-index="modalZIndex"
     :model-value="modelValue"
     @update:model-value="(value) => $emit('update:modelValue', value)"
     title="Columns"
@@ -36,6 +37,7 @@
 
 <script>
 import { mapGetters } from "vuex";
+import { MODAL_Z_INDEX } from "../constants";
 import { COLUMNS, COLUMN_GROUPS, DEFAULT_COLUMN_KEYS } from "../collections/columns";
 
 export default {
@@ -49,6 +51,7 @@ export default {
     };
   },
   computed: {
+    modalZIndex: () => MODAL_Z_INDEX,
     ...mapGetters([
       'themeBaseColor',
       'themeAccentColor'

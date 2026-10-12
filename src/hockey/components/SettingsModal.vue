@@ -1,5 +1,6 @@
 <template>
   <va-modal
+    :z-index="modalZIndex"
     v-model="open"
     title="Settings"
     hide-default-actions
@@ -56,7 +57,7 @@
 </template>
 
 <script>
-import { HOCKEY_TEAM_LIST } from "../constants";
+import { HOCKEY_TEAM_LIST, MODAL_Z_INDEX } from "../constants";
 import { version } from "../../../package.json";
 import { mapGetters } from "vuex";
 
@@ -68,6 +69,7 @@ export default {
     };
   },
   computed: {
+    modalZIndex: () => MODAL_Z_INDEX,
     ...mapGetters([
       'themeBaseColor',
       'themeAccentColor'

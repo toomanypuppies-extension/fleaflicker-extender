@@ -358,3 +358,6 @@ export const HOCKEY_TEAM_ABBR_TO_COLORS = {
     secondary: '#7B303E',
   },
 }
+
+// Modals cover the app: above sticky table headers (up to 3) and help panels and sheets (20)
+export const MODAL_Z_INDEX = 50;

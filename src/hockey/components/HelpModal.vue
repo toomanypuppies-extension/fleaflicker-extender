@@ -1,5 +1,6 @@
 <template>
   <va-modal
+    :z-index="modalZIndex"
     v-model="open"
     title="Help"
     hide-default-actions
@@ -53,9 +54,11 @@
 
 <script>
 import { mapGetters } from "vuex";
+import { MODAL_Z_INDEX } from "../constants";
 
 export default {
   computed: {
+    modalZIndex: () => MODAL_Z_INDEX,
     ...mapGetters([
       'themeBaseColor',
       'themeAccentColor'
