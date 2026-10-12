@@ -1,5 +1,7 @@
 <template>
   <div class="tableArea">
+    <!-- The count and the column chooser (sort on phones) sit in the table's own frame, above its rows -->
+    <div class="tableFrame containerColor">
     <div class="tableHeader">
       <span class="resultCount" role="status">{{ resultCount }}</span>
       <div v-if="narrow" class="mobileSort">
@@ -15,13 +17,13 @@
           <va-icon class="material-icons" size="1.1em">swap_vert</va-icon>
         </button>
       </div>
-      <button v-else type="button" class="tableButton" @click="columnsOpen = true">
+      <button v-else type="button" class="tableButton headerButton" @click="columnsOpen = true">
         <va-icon class="material-icons" size="1.1em">view_column</va-icon>
         Columns
       </button>
     </div>
 
-    <div ref="scroller" class="tableContainer containerColor">
+    <div ref="scroller" class="tableContainer">
       <va-inner-loading :loading="loading" :size="60" :color="teamSecondaryColor">
         <ul v-if="narrow" class="playerCards" :class="{ tableLoading: loading }">
           <li v-for="player in renderedPlayers" :key="player.id" class="playerCardRow" tabindex="0"
@@ -107,6 +109,7 @@
         </table>
       </va-inner-loading>
     </div>
+    </div>
 
     <ColumnsModal v-model="columnsOpen" />
   </div>
@@ -173,7 +176,7 @@ export default {
     columns() {
       // Columns that would be the same for every player shown
       const hidden = new Set();
-      if (this.ownership === "Free Agent" || this.ownership === "Addable now") {
+      if (["Free Agent", "Addable now", "On waivers"].includes(this.ownership)) {
         hidden.add("owner");
       }
       if (this.ownership === "Owned") {
@@ -228,12 +231,17 @@ export default {
       }
       const total = this.players?.length || 0;
       const shown = this.visiblePlayers.length;
-      return shown === total ? `${total} players` : `Showing ${shown} of ${total} players`;
+      if (shown === total) return `${total} players`;
+      // Shorter on phones, so it fits beside the sort
+      return this.narrow ? `${shown} of ${total} players` : `Showing ${shown} of ${total} players`;
     },
     emptyHints() {
       const hints = [];
       if (this.ownership === "Addable now" && !this.availabilityKnown) {
         hints.push("The league's waiver settings couldn't be loaded, so no one is known to be addable right now.");
+      }
+      if (this.ownership === "On waivers" && !this.availabilityKnown) {
+        hints.push("The league's waiver settings couldn't be loaded, so no one is known to be on waivers.");
       }
       if (this.gameDaysSelections.length > 1 && this.gameDaysMode === "all") {
         hints.push("Game Days shows teams playing on every day you picked. Switch it to any day to see more.");
@@ -317,12 +325,32 @@ export default {
   flex: 1 1 auto;
 }
 
+.tableFrame {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .tableHeader {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5em;
-  padding: 0 0.25em;
+  gap: 0.4em 0.75em;
+  padding: 0.35em 0.6em;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.3);
+}
+
+// Lighter than the table's other buttons, it's part of the header bar
+.tableButton.headerButton {
+  border-color: transparent;
+  min-height: 30px;
+  padding: 0.2em 0.5em;
+
+  &:hover {
+    border-color: currentColor;
+  }
 }
 
 .resultCount {
@@ -496,12 +524,14 @@ export default {
     background: var(--themeBaseColor);
     border: 1px solid currentColor;
     border-radius: 4px;
-    min-height: 40px;
-    padding: 0 0.4em;
+    min-height: 36px;
+    max-width: 9em;
+    padding: 0 0.3em;
+    font-size: 0.9em;
   }
 
   .tableButton {
-    min-height: 40px;
+    min-height: 36px;
   }
 }
 

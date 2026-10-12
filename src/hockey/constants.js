@@ -70,6 +70,8 @@ export const OWNERSHIP_OPTIONS = [
   "Free Agent",
   // Free agents who can be added right away, not on waivers
   "Addable now",
+  // Free agents who can only be claimed right now
+  "On waivers",
   "Owned",
   "All"
 ]

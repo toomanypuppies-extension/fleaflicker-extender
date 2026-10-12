@@ -99,6 +99,18 @@ test('addable now keeps free agents who are not on waivers', () => {
   assert.deepEqual(ids(filterPlayers(players, { ownership: 'Addable now' }, {})), [1]);
 });
 
+test('on waivers keeps free agents who can only be claimed', () => {
+  const players = [
+    player({ id: 1, availability: { status: 'free' } }),
+    player({ id: 2, availability: { status: 'waivers', until: 1 } }),
+    // Waivers processed, first come first served not open yet
+    player({ id: 3, availability: { status: 'locked', until: 1 } }),
+    player({ id: 4, owner: 'Team A', availability: { status: 'owned' } }),
+    player({ id: 5 }),
+  ];
+  assert.deepEqual(ids(filterPlayers(players, { ownership: 'On waivers' }, {})), [2]);
+});
+
 test('lineup spots keep players who can fill every one, with their team playing that day', () => {
   const teamsByDate = { '2026-10-12': ['SEA', 'VAN'], '2026-10-13': ['SEA'] };
   const spots = (...list) => ids(filterPlayers(PLAYERS, { spotFilters: list }, GAMES_BY_TEAM, teamsByDate));

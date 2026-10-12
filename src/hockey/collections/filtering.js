@@ -40,6 +40,10 @@ const matchesOwnership = (player, ownership) => {
   if (ownership === "Addable now") {
     return !player.owner && player.availability?.status === WAIVER_STATUS.free;
   }
+  // Claimable now. Players locked after waivers are processed can't be claimed or added yet.
+  if (ownership === "On waivers") {
+    return !player.owner && player.availability?.status === WAIVER_STATUS.waivers;
+  }
   return !OWNERSHIP_OPTIONS.includes(ownership) && player.owner === ownership;
 };
 
