@@ -72,6 +72,8 @@ export default {
       leagueTabs: LEAGUE_TABS,
       // The page last added to the browser's history, or shown from it
       recordedPage: null,
+      // The last season stats load under way, if any
+      lastSeasonLoad: null,
       // Today's starting goalies from Daily Faceoff, see loadStartingGoalies
       startingGoalies: null,
       teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
@@ -225,7 +227,13 @@ export default {
       if (this.lastSeasonById || !needed) {
         return;
       }
-      this.lastSeasonById = await loadLastSeasonStats(this.leagueId);
+      // It's a second full player listing: tab switches and column changes while it loads wait for
+      // the same load rather than starting another
+      if (!this.lastSeasonLoad) {
+        this.lastSeasonLoad = loadLastSeasonStats(this.leagueId).finally(() => { this.lastSeasonLoad = null; });
+      }
+      const stats = await this.lastSeasonLoad;
+      this.lastSeasonById = this.lastSeasonById || stats;
     },
     async loadLeague({ forceRefresh = false, refreshScores = false, skipActivity = false } = {}) {
       const league = await loadLeagueInfo(this.leagueId, { forceRefresh, refreshScores });
