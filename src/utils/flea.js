@@ -118,12 +118,6 @@ export const getAllHockeyPlayers = async (leagueId, { stopIfNoPoints = true, fre
     if (stopIfNoPoints && (firstPlayerOfSegment?.viewingActualPoints?.value > 0 && !lastPlayerOfSegment?.viewingActualPoints?.value || lastPlayerOfSegment?.viewingActualPoints?.value === 0)) {
       morePlayersLeft = false;
     }
-
-    // exit early in dev
-    if (process.env.NODE_ENV === 'development' && offset > 50) {
-      console.log('local env, exiting getAllHockeyPlayers early')
-      morePlayersLeft = false;
-    }
   }
 
   return { players: playersList, seasons };
