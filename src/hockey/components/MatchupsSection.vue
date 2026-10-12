@@ -2,7 +2,8 @@
   <MatchupView v-if="openGroup" :key="openGroup.matchup.gameId" :leagueId="leagueId" :league="league" :group="openGroup"
     :period="selectedPeriod" :rosters="rosters" :players="players" :schedule="schedule" :now="now"
     :previousPeriod="previousPeriod" :nextPeriod="nextPeriod"
-    @close="openMatchup(null)" @page="pageMatchup" @openPlayer="$emit('openPlayer', $event)" />
+    @close="openMatchup(null)" @page="pageMatchup" @openPlayer="$emit('openPlayer', $event)"
+    @openTeam="$emit('openTeam', $event)" />
 
   <section v-else class="matchupsSection containerColor" aria-labelledby="matchupsHeading">
     <h2 id="matchupsHeading" class="visuallyHidden">Matchups</h2>
@@ -87,7 +88,7 @@ export default {
     schedule: Array,
     now: Number,
   },
-  emits: ['openPlayer'],
+  emits: ['openPlayer', 'openTeam'],
   data() {
     return {
       // The selected week's matchups, when it isn't the current one

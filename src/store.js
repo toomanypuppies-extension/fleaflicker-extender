@@ -38,8 +38,12 @@ const initState = {
   // League tab timeline: a team id or null for every team, and TIMELINE_FILTERS keys
   timelineTeamId: null,
   timelineFilters: [],
-  // League tab section: matchups or activity
+  // League tab section: matchups or rosters
   leagueSection: 'matchups',
+  // The team page open on the League tab, or null
+  openTeamId: null,
+  // The team page's COMPARE_RANGES key
+  teamRange: 'matchup',
   // The matchup period (week) shown, null for the current one
   selectedPeriod: null,
   // The matchup open on the League tab (its box score game id), or null for the list

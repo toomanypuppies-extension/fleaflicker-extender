@@ -61,8 +61,9 @@
 
       <div class="scoreboard">
         <div v-for="(teamId, index) in teamIds" :key="teamId" class="teamScore" :class="{ right: index === 1 }">
-          <a class="scoreTeam" :href="teamLink(teamId)" :target="fleaTarget" :title="`${teamName(teamId)} on Fleaflicker`"
-            @click="leavingForFleaflicker"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</a>
+          <button type="button" class="scoreTeam" :title="`${teamName(teamId)}: roster, projections and moves`"
+            @click="$emit('openTeam', teamId)"><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}<span
+              class="material-icons" aria-hidden="true">chevron_right</span></button>
           <template v-if="phase === 'past'">
             <span class="finalScore">{{ format(scores[index]) }}</span>
             <span class="scoreParts">final</span>
@@ -115,38 +116,6 @@
       <BarChart v-if="dayRows.length" class="chart" title="Points by day" rowHeading="Day"
         :series="chartSeries(teamIds)" :rows="dayRows" />
 
-      <div v-if="phase !== 'past'" class="playerTables">
-        <div v-for="(teamId, index) in teamIds" :key="teamId" class="playerTable">
-          <h4><span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}</h4>
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Player</th>
-                <th scope="col" title="Games left in the lineup">Starts</th>
-                <th scope="col">Pts/game</th>
-                <th scope="col">Expected</th>
-                <th scope="col" title="Games left on the bench, and their expected points">Bench</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="player in projections[index].players" :key="player.id" :class="{ idle: !player.games && !player.benchGames }">
-                <th scope="row">
-                  <button type="button" class="playerButton" @click="$emit('openPlayer', player.id)">{{ player.name }}</button>
-                  <span class="playerMeta">
-                    {{ player.position }} · {{ player.team }}
-                    <template v-if="player.injured"> · out ({{ player.injury }})</template>
-                    <template v-else-if="player.startRate < 1"> · starts {{ percent(player.startRate) }}</template>
-                  </span>
-                </th>
-                <td>{{ player.games }}</td>
-                <td>{{ format(player.rate) }}</td>
-                <td>{{ format(player.expected) }}</td>
-                <td>{{ player.benchGames ? `${player.benchGames} (${format(player.benchExpected)})` : '' }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </section>
 
     <section class="compareSection containerColor" aria-labelledby="compareHeading">
@@ -168,7 +137,7 @@
         </span>
       </div>
       <p class="note">
-        Only points that counted: starters' points, not the bench's.
+        Only points that counted: starters' points, not the bench's. Each team's page breaks them down by player.
         <template v-if="phase !== 'past'">The lighter part of each bar is what's projected for the rest of this matchup.</template>
         <template v-if="phase === 'future'">This matchup hasn't started: longer ranges count points scored up to now.</template>
         <template v-else-if="compareRange !== 'matchup'">Ranges end at this matchup.</template>
@@ -192,12 +161,6 @@
         <BarChart class="chart" title="By position" rowHeading="Position" :series="chartSeries(compareTeams)" :rows="positionRows"
           :stacked="!!compareProjections" />
 
-        <div class="playerCharts">
-          <BarChart v-for="(teamId, index) in compareTeams" :key="teamId" class="chart"
-            :title="`By player: ${teamName(teamId)}`" rowHeading="Player"
-            :series="[{ name: teamName(teamId) }]" :rows="playerRows[index]" :colorOffset="index"
-            :stacked="!!compareProjections" />
-        </div>
       </div>
     </section>
   </div>
@@ -210,16 +173,12 @@ import {
   projectTeam, teamGamesPlayed, winChance, formatChance, PROJECTION_METHODS, PROJECTION_LINEUPS,
 } from "../collections/projection";
 import {
-  loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, dayOrdinalAt, dayDate, COMPARE_RANGES,
+  loadTeamDays, totalPoints, dayOrdinalAt, dayDate, COMPARE_RANGES,
 } from "../collections/boxscores";
 import { loadDayRosters } from "../collections/league";
 import { primaryPosition, POSITIONS } from "../collections/boxscores";
 import { periodDates } from "../collections/scheduleWeeks";
-
-// Players shown in each team's chart
-const TOP_PLAYERS = 12;
-// Players named in the tooltip of the rest
-const OTHERS_NAMED = 4;
+import { positionBreakdown, positionChartRows } from "../collections/breakdowns";
 
 export default {
   components: { BarChart },
@@ -242,7 +201,7 @@ export default {
     schedule: Array,
     now: Number,
   },
-  emits: ['close', 'page', 'openPlayer'],
+  emits: ['close', 'page', 'openPlayer', 'openTeam'],
   data() {
     return {
       methods: PROJECTION_METHODS,
@@ -419,82 +378,16 @@ export default {
       return this.compareTeams.map(teamId => (this.compareDays?.[teamId] || []).length);
     },
     positionRows() {
-      const scored = this.compareTeams.map(teamId => pointsByPosition(this.compareDays?.[teamId] || []));
-      const projected = (this.compareProjections || []).map(projection => {
-        const byPosition = Object.fromEntries(POSITIONS.map(position => [position, { points: 0, games: 0 }]));
-        for (const player of projection.players) {
-          const total = byPosition[primaryPosition(player.position, player.positions)];
-          if (total) {
-            total.points += player.expected;
-            total.games += player.games;
-          }
-        }
-        return byPosition;
-      });
-      return POSITIONS.map((position, index) => ({
-        key: position,
-        label: position,
-        values: scored.map((totals, team) => (this.compareProjections
-          ? [totals[index].points, projected[team][position].points]
-          : totals[index].points)),
-        details: scored.map((totals, team) => (this.compareProjections
-          ? [`${totals[index].games} games started`, `${projected[team][position].games} starts left`]
-          : `${totals[index].games} games started`)),
-      }));
-    },
-    // Each compared team's players by points, scored and projected for the rest of this matchup
-    playerRows() {
-      return this.compareTeams.map((teamId, team) => {
-        const byId = new Map();
-        const playerFor = (id, name, position) => {
-          if (!byId.has(id)) byId.set(id, { id, name, position, scored: 0, games: 0, projected: 0, starts: 0 });
-          return byId.get(id);
-        };
-        for (const player of pointsByPlayer(this.compareDays?.[teamId] || [])) {
-          Object.assign(playerFor(player.playerId, player.name, player.position), { scored: player.points, games: player.games });
-        }
-        for (const player of this.compareProjections?.[team].players || []) {
-          if (player.expected > 0) {
-            Object.assign(playerFor(player.id, player.name, player.position), { projected: player.expected, starts: player.games });
-          }
-        }
-        const players = [...byId.values()].sort((a, b) => (b.scored + b.projected) - (a.scored + a.projected));
-        const stacked = !!this.compareProjections;
-        const rows = players.slice(0, TOP_PLAYERS).map(player => {
-          const scoredDetail = `${player.position} · ${player.games} games started`
-            + (player.games ? ` · ${this.format(player.scored / player.games)} per game` : '');
-          const projectedDetail = `${player.starts} ${player.starts === 1 ? 'start' : 'starts'} left`;
-          return {
-            key: player.id,
-            label: player.name,
-            values: [stacked ? [player.scored, player.projected] : player.scored],
-            details: [stacked ? [scoredDetail, projectedDetail] : scoredDetail],
-          };
-        });
-        const rest = players.slice(TOP_PLAYERS);
-        if (rest.length) {
-          const sum = (key) => rest.reduce((total, player) => total + player[key], 0);
-          // A few names, a long list makes a tooltip taller than the chart
-          const names = rest.slice(0, OTHERS_NAMED).map(player => player.name).join(', ');
-          const more = rest.length > OTHERS_NAMED ? ` and ${rest.length - OTHERS_NAMED} more` : '';
-          const detail = `${names}${more}`;
-          rows.push({
-            key: 'others',
-            label: `${rest.length} others`,
-            values: [stacked ? [sum('scored'), sum('projected')] : sum('scored')],
-            details: [stacked ? [detail, detail] : detail],
-          });
-        }
-        return rows;
-      });
+      const stacked = !!this.compareProjections;
+      return positionChartRows(
+        this.compareTeams.map((teamId, index) => positionBreakdown(this.compareDays?.[teamId], this.compareProjections?.[index])),
+        { stacked },
+      );
     },
   },
   methods: {
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
-    },
-    teamLink(teamId) {
-      return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/teams/${teamId}`;
     },
     // In the extension links open in this tab, so close the panel to show fleaflicker's page
     leavingForFleaflicker() {
@@ -755,11 +648,29 @@ select {
   opacity: 0.85;
 }
 
-.fleaLink,
-a.scoreTeam {
+.fleaLink {
   color: inherit;
   text-decoration: underline;
   text-decoration-color: rgba(127, 127, 127, 0.6);
+}
+
+button.scoreTeam {
+  display: inline-flex;
+  align-items: center;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(127, 127, 127, 0.6);
+
+  .material-icons {
+    font-size: 1.2em;
+    opacity: 0.7;
+  }
 }
 
 .fleaLink {
@@ -875,70 +786,6 @@ a.scoreTeam {
   margin-top: 0.25em;
 }
 
-.playerTables,
-.playerCharts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1em;
-}
-
-.playerTable {
-  min-width: 0;
-  overflow-x: auto;
-
-  h4 {
-    font-size: 1em;
-    font-weight: 700;
-    margin: 0 0 0.25em;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
-  }
-
-  th,
-  td {
-    padding: 0.3em 0.4em;
-    border-bottom: 1px solid rgba(127, 127, 127, 0.3);
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    vertical-align: top;
-  }
-
-  th:first-child {
-    text-align: left;
-    font-weight: normal;
-  }
-
-  thead th {
-    font-weight: 700;
-    font-size: 0.85em;
-  }
-
-  .idle {
-    opacity: 0.6;
-  }
-}
-
-.playerButton {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-color: rgba(127, 127, 127, 0.6);
-  cursor: pointer;
-}
-
-.playerMeta {
-  display: block;
-  font-size: 0.85em;
-  opacity: 0.8;
-}
 
 .compareFilters {
   display: flex;
@@ -1013,10 +860,6 @@ a.scoreTeam {
 }
 
 @media (max-width: 640px) {
-  .playerTables,
-  .playerCharts {
-    grid-template-columns: minmax(0, 1fr);
-  }
 
   .finalScore {
     font-size: 1.7em;

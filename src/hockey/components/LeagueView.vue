@@ -6,8 +6,8 @@
       <div class="leagueBar containerColor">
         <div class="sectionTabs" role="group" aria-label="League section">
           <button v-for="(label, key) in sections" :key="key" type="button" class="sectionTab"
-            :class="{ active: section === key }" :aria-pressed="section === key"
-            @click="setKey('leagueSection', key)">{{ label }}</button>
+            :class="{ active: section === key && !openTeam }" :aria-pressed="section === key && !openTeam"
+            @click="showSection(key)">{{ label }}</button>
         </div>
         <label class="myTeamPicker">
           Your team
@@ -18,116 +18,64 @@
         </label>
       </div>
 
-      <MatchupsSection v-if="section === 'matchups'" :leagueId="leagueId" :league="league" :rosters="rosters"
-        :loadingRosters="loadingRosters" :players="players" :schedule="schedule" :now="now" @openPlayer="openPlayer" />
+      <TeamView v-if="openTeam" :key="openTeam.teamId" :leagueId="leagueId" :league="league" :teamId="openTeam.teamId"
+        :roster="rosters[openTeam.teamId]" :summary="openTeam" :period="period" :players="players" :schedule="schedule"
+        :now="now" :activityItems="activityItems" :activityLoaded="activityLoaded" :activityLoading="loadingActivity"
+        :activityError="activityError" :myTeamId="myTeamId" :opponentId="opponentId"
+        @close="openTeamPage(null)" @openPlayer="openPlayer" />
+
+      <MatchupsSection v-else-if="section === 'matchups'" :leagueId="leagueId" :league="league" :rosters="rosters"
+        :loadingRosters="loadingRosters" :players="players" :schedule="schedule" :now="now"
+        @openPlayer="openPlayer" @openTeam="openTeamPage" />
 
       <template v-else>
-      <section class="teamsSection containerColor" aria-labelledby="teamsHeading">
-        <div class="sectionHeader">
-          <h2 id="teamsHeading">Teams now</h2>
-        </div>
-        <p v-if="period" class="periodNote">
-          Adds are counted since this matchup started on {{ formatDay(period.start) }}.
-          Pick a team to see only its moves below.
-          <template v-if="acquisitionLimit === null && !league.settings">
-            The league's add limit couldn't be loaded.
-          </template>
-        </p>
-        <p v-if="loadingRosters" class="loading" role="status">Loading rosters…</p>
+        <section class="rostersSection containerColor" aria-labelledby="rostersHeading">
+          <div class="sectionHeader">
+            <h2 id="rostersHeading">Rosters</h2>
+          </div>
+          <p v-if="period" class="periodNote">
+            Adds are counted since this matchup started on {{ formatDay(period.start) }}.
+            Open a team for its roster, projections and moves.
+            <template v-if="acquisitionLimit === null && !league.settings">
+              The league's add limit couldn't be loaded.
+            </template>
+          </p>
+          <p v-if="loadingRosters" class="loading" role="status">Loading rosters…</p>
 
-        <div class="matchups">
-          <section v-for="group in matchupGroups" :key="group.teams.map(team => team.teamId).join('-')" class="matchup"
-            :class="{ myMatchup: group.teams.some(team => team.teamId === myTeamId) }"
-            :aria-label="group.matchup ? group.teams.map(team => team.name).join(' vs ') : 'No matchup this period'">
-          <h3 class="matchupHeader">
-            <template v-if="group.matchup">{{ group.teams.map(team => team.name).join(' vs ') }}</template>
-            <template v-else>No matchup this week</template>
-          </h3>
           <div class="teamCards">
-          <button v-for="summary in group.teams" :key="summary.teamId" type="button" class="teamCard"
-            :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId, selected: summary.teamId === timelineTeamId }"
-            :aria-pressed="summary.teamId === timelineTeamId"
-            :title="summary.teamId === timelineTeamId ? 'Show every team\'s moves' : `Show ${summary.name}'s moves`"
-            @click="toggleTimelineTeam(summary.teamId)">
-            <span class="cardTitle">
-              <span class="teamName">{{ summary.name }}</span>
-              <span v-if="summary.teamId === myTeamId" class="badge">You</span>
-              <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
-            </span>
-            <span class="cardMeta">{{ summary.record }} · waiver #{{ summary.waiverPosition }}</span>
-            <span class="cardStats">
-              <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
-              <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
-                <strong>{{ summary.acquisitionLimit === null ? summary.acquisitions : summary.acquisitionsLeft }}</strong>
-                {{ summary.acquisitionLimit === null ? 'adds' : `of ${summary.acquisitionLimit} adds left` }}
+            <button v-for="summary in summaries" :key="summary.teamId" type="button" class="teamCard"
+              :class="{ mine: summary.teamId === myTeamId, opponent: summary.teamId === opponentId }"
+              :title="`Open ${summary.name}`" @click="openTeamPage(summary.teamId)">
+              <span class="cardTitle">
+                <span class="teamName">{{ summary.name }}</span>
+                <span v-if="summary.teamId === myTeamId" class="badge">You</span>
+                <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
+                <span class="material-icons openIcon" aria-hidden="true">chevron_right</span>
               </span>
-              <span v-if="summary.hasRoster" class="stat" :class="{ good: summary.openActiveSpots > 0, warn: summary.openActiveSpots < 0 }">
-                <strong>{{ Math.abs(summary.openActiveSpots) }}</strong>
-                {{ summary.openActiveSpots < 0 ? 'over the roster limit' : summary.openActiveSpots === 1 ? 'open spot' : 'open spots' }}
-              </span>
-              <span v-if="summary.hasRoster" class="stat">
-                <strong>{{ summary.irCount }}/{{ summary.irSlots }}</strong> IR
-              </span>
-            </span>
-            <span v-if="summary.irEligible.length" class="cardLine irEligible">
-              Could go on IR: {{ summary.irEligible.map(player => `${player.name} (${player.injury})`).join(', ') }}
-            </span>
-          </button>
-          </div>
-          </section>
-        </div>
-      </section>
-
-      <section class="timelineSection containerColor" aria-labelledby="timelineHeading">
-        <div class="sectionHeader">
-          <h2 id="timelineHeading">Last 14 days</h2>
-          <div class="timelineFilters">
-            <select :value="timelineTeamId ?? ''" aria-label="Team" @change="setTimelineTeam($event.target.value)">
-              <option value="">Every team</option>
-              <option v-for="team in league.teams" :key="team.id" :value="team.id">{{ team.name }}</option>
-            </select>
-            <button v-for="(filter, key) in timelineFilterOptions" :key="key" type="button" class="filterButton"
-              :class="{ active: timelineFilters.includes(key) }" :aria-pressed="timelineFilters.includes(key)"
-              @click="toggleFilter(key)">{{ filter.label }}</button>
-          </div>
-        </div>
-        <p class="legendNote"><span class="periodSwatch"></span> In the current matchup</p>
-
-        <p v-if="loadingActivity" class="loading" role="status">Loading league activity…</p>
-        <p v-else-if="activityError" class="notice">League activity couldn't be loaded. Use Refresh to try again.</p>
-        <p v-else-if="!timeline.length" class="notice">No moves match.</p>
-
-        <ol class="timeline">
-          <li v-for="day in timeline" :key="day.date" class="timelineDay">
-            <h3>{{ dayLabel(day.date) }}</h3>
-            <ul>
-              <li v-for="row in day.rows" :key="row.key" class="timelineRow" :class="{ inPeriod: row.inPeriod }">
-                <span class="rowTime">{{ formatTime(row.time) }}</span>
-                <span class="rowTeam">{{ row.teamName || 'League' }}</span>
-                <span class="rowText">
-                  <template v-if="row.kind === 'swap'">
-                    {{ row.added.kind === 'claim' ? 'claimed' : 'added' }}
-                    <PlayerName :item="row.added" :players="playersById" @open="openPlayer" />,
-                    dropped
-                    <PlayerName :item="row.dropped" :players="playersById" @open="openPlayer" />
-                    <span v-if="claimNote(row.added)" class="note">{{ claimNote(row.added) }}</span>
-                  </template>
-                  <template v-else-if="playerVerbs[row.kind]">
-                    {{ playerVerbs[row.kind] }}
-                    <PlayerName :item="row" :players="playersById" @open="openPlayer" />
-                    <template v-if="row.kind === 'irOn'"> on IR</template>
-                    <template v-if="row.kind === 'irOff'"> off IR</template>
-                    <span v-if="claimNote(row)" class="note">{{ claimNote(row) }}</span>
-                  </template>
-                  <template v-else-if="row.kind === 'trade'">made a trade</template>
-                  <template v-else-if="row.kind === 'membership'">team or owner change</template>
-                  <template v-else>league change</template>
+              <span class="cardMeta">{{ summary.record }} · waiver #{{ summary.waiverPosition }}</span>
+              <span class="cardStats">
+                <span v-if="!activityLoaded" class="stat pending">Counting adds…</span>
+                <span v-else class="stat" :class="{ warn: summary.acquisitionsLeft === 0 }">
+                  <strong>{{ summary.acquisitionLimit === null ? summary.acquisitions : summary.acquisitionsLeft }}</strong>
+                  {{ summary.acquisitionLimit === null ? 'adds' : `of ${summary.acquisitionLimit} adds left` }}
                 </span>
-              </li>
-            </ul>
-          </li>
-        </ol>
-      </section>
+                <span v-if="summary.hasRoster" class="stat" :class="{ good: summary.openActiveSpots > 0, warn: summary.openActiveSpots < 0 }">
+                  <strong>{{ Math.abs(summary.openActiveSpots) }}</strong>
+                  {{ summary.openActiveSpots < 0 ? 'over the roster limit' : summary.openActiveSpots === 1 ? 'open spot' : 'open spots' }}
+                </span>
+                <span v-if="summary.hasRoster" class="stat">
+                  <strong>{{ summary.irCount }}/{{ summary.irSlots }}</strong> IR
+                </span>
+              </span>
+              <span v-if="summary.irEligible.length" class="cardLine irEligible">
+                Could go on IR: {{ summary.irEligible.map(player => `${player.name} (${player.injury})`).join(', ') }}
+              </span>
+            </button>
+          </div>
+        </section>
+
+        <ActivityTimeline :activityItems="activityItems" :teams="league.teams" :playersById="playersById" :period="period"
+          :now="now" :loading="loadingActivity" :error="activityError" @openPlayer="openPlayer" />
       </template>
     </template>
   </div>
@@ -137,27 +85,19 @@
 import { mapState } from "vuex";
 import { syncActivity, TIMELINE_WINDOW } from "../collections/activity";
 import {
-  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit, groupByMatchup,
+  loadTeamRosters, summarizeTeam, currentPeriod, currentMatchup, acquisitionLimit,
 } from "../collections/league";
-import { buildTimeline, TIMELINE_FILTERS } from "../collections/timeline";
-import PlayerName from "./PlayerName.vue";
 import MatchupsSection from "./MatchupsSection.vue";
+import ActivityTimeline from "./ActivityTimeline.vue";
+import TeamView from "./TeamView.vue";
 
 const SECTIONS = {
   matchups: 'Matchups',
-  activity: 'League activity',
-};
-
-const PLAYER_VERBS = {
-  add: 'added',
-  claim: 'claimed',
-  drop: 'dropped',
-  irOn: 'moved',
-  irOff: 'moved',
+  rosters: 'Rosters',
 };
 
 export default {
-  components: { PlayerName, MatchupsSection },
+  components: { MatchupsSection, ActivityTimeline, TeamView },
   props: {
     leagueId: String,
     // From loadLeagueInfo
@@ -178,22 +118,20 @@ export default {
       loadingActivity: false,
       loadingRosters: false,
       activityError: false,
-      playerVerbs: PLAYER_VERBS,
-      timelineFilterOptions: TIMELINE_FILTERS,
       sections: SECTIONS,
     };
   },
   computed: {
     ...mapState({
       myTeamId: state => state.myTeamId,
-      timelineTeamId: state => state.timelineTeamId,
-      timelineFilters: state => state.timelineFilters,
-      section: state => state.leagueSection,
+      openTeamId: state => state.openTeamId,
+      // Saved as 'activity' by an earlier version
+      section: state => (state.leagueSection === 'matchups' ? 'matchups' : 'rosters'),
     }),
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
     },
-    // Your team's opponent in the current matchup
+    // Your team's opponent this week, only to tag their roster
     opponentId() {
       return this.myTeamId ? currentMatchup(this.league?.scoreboard, this.myTeamId)?.opponentId ?? null : null;
     },
@@ -203,6 +141,7 @@ export default {
     playersById() {
       return new Map((this.players || []).map(player => [player.id, player]));
     },
+    // Every team's status, yours first, then by standings
     summaries() {
       const summaries = (this.league?.teams || []).map(team => ({
         ...summarizeTeam({
@@ -217,19 +156,10 @@ export default {
         rank: team.rank,
         waiverPosition: team.waiverPosition,
       }));
-      return summaries.sort((a, b) => a.rank - b.rank);
+      return summaries.sort((a, b) => (b.teamId === this.myTeamId) - (a.teamId === this.myTeamId) || a.rank - b.rank);
     },
-    // Your matchup first, then the scoreboard's order
-    matchupGroups() {
-      return groupByMatchup(this.summaries, this.league?.scoreboard, this.myTeamId);
-    },
-    timeline() {
-      return buildTimeline(this.activityItems, {
-        since: this.now - TIMELINE_WINDOW,
-        teamId: this.timelineTeamId,
-        filters: this.timelineFilters,
-        period: this.period,
-      });
+    openTeam() {
+      return this.openTeamId ? this.summaries.find(summary => summary.teamId === this.openTeamId) || null : null;
     },
   },
   methods: {
@@ -257,39 +187,23 @@ export default {
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
     },
+    showSection(key) {
+      this.setKey('openTeamId', null);
+      this.setKey('leagueSection', key);
+    },
+    // A team's page, over whichever section it was opened from; null goes back
+    openTeamPage(teamId) {
+      this.setKey('openTeamId', teamId);
+      this.$el?.scrollTo?.({ top: 0 });
+    },
     setMyTeam(value) {
       this.$store.commit('setKeyValue', { key: 'myTeamId', value: value ? parseInt(value, 10) : null });
-    },
-    setTimelineTeam(value) {
-      this.$store.commit('setKeyValue', { key: 'timelineTeamId', value: value ? parseInt(value, 10) : null });
-    },
-    toggleTimelineTeam(teamId) {
-      this.$store.commit('setKeyValue', { key: 'timelineTeamId', value: this.timelineTeamId === teamId ? null : teamId });
-    },
-    toggleFilter(key) {
-      const filters = this.timelineFilters.includes(key)
-        ? this.timelineFilters.filter(filter => filter !== key)
-        : [...this.timelineFilters, key];
-      this.$store.commit('setKeyValue', { key: 'timelineFilters', value: filters });
     },
     openPlayer(playerId) {
       this.$emit('openPlayer', playerId);
     },
-    claimNote(item) {
-      return item.kind === 'claim' && item.claimTeams > 1 ? `(${item.claimTeams} teams claimed)` : '';
-    },
-    formatTime(time) {
-      return new Date(time).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    },
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-    },
-    dayLabel(date) {
-      const [year, month, day] = date.split('-').map(Number);
-      const label = new Date(year, month - 1, day).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-      const today = new Date(this.now);
-      const isToday = today.getFullYear() === year && today.getMonth() === month - 1 && today.getDate() === day;
-      return isToday ? `Today, ${label}` : label;
     },
   },
   watch: {
@@ -355,8 +269,7 @@ export default {
   padding: 1em;
 }
 
-.teamsSection,
-.timelineSection {
+.rostersSection {
   padding: 0.75em 1em;
 }
 
@@ -394,55 +307,17 @@ select {
 }
 
 .periodNote,
-.loading,
-.legendNote {
+.loading {
   font-size: 0.9em;
   opacity: 0.85;
   margin: 0 0 0.75em;
 }
 
-.matchups {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
-  gap: 1em;
-}
-
-.matchup {
-  border: 1px solid rgba(127, 127, 127, 0.3);
-  border-radius: 8px;
-  padding: 0.6em;
-
-  &.myMatchup {
-    border-color: var(--teamSecondaryColor);
-  }
-}
-
-.matchupHeader {
-  display: flex;
-  align-items: center;
-  gap: 0.75em;
-  font-size: 0.95em;
-  font-weight: 700;
-  margin: 0 0 0.5em;
-}
-
 // minmax(0, ...) lets long team names shrink instead of widening the grid
 .teamCards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5em;
-}
-
-@media (max-width: 640px) {
-  .matchups {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 420px) {
-  .teamCards {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 0.6em;
 }
 
 .teamCard {
@@ -450,6 +325,7 @@ select {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.3em;
+  min-width: 0;
   text-align: left;
   font: inherit;
   color: inherit;
@@ -473,10 +349,6 @@ select {
     border-width: 2px;
   }
 
-  &.selected {
-    background: var(--teamSecondaryColor30Opacity);
-  }
-
   &:focus-visible {
     outline: 2px solid var(--teamSecondaryColor);
   }
@@ -486,14 +358,25 @@ select {
   display: flex;
   align-items: center;
   gap: 0.5em;
+  width: 100%;
+  min-width: 0;
 }
 
 .teamName {
   font-weight: 700;
   font-size: 1.05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.openIcon {
+  margin-left: auto;
+  opacity: 0.7;
 }
 
 .badge {
+  flex: none;
   font-size: 0.75em;
   font-weight: 700;
   padding: 0 0.4em;
@@ -539,92 +422,5 @@ select {
 
 .irEligible {
   opacity: 1;
-}
-
-.timelineFilters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4em;
-}
-
-.filterButton {
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  padding: 0.25em 0.7em;
-  min-height: 32px;
-  cursor: pointer;
-  opacity: 0.75;
-
-  &.active {
-    opacity: 1;
-    background: var(--teamSecondaryColor30Opacity);
-    border-color: var(--teamSecondaryColor);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--teamSecondaryColor);
-  }
-}
-
-.periodSwatch {
-  display: inline-block;
-  width: 4px;
-  height: 1em;
-  vertical-align: middle;
-  background: var(--teamSecondaryColor);
-}
-
-.timeline,
-.timeline ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.timelineDay h3 {
-  font-size: 0.95em;
-  font-weight: 700;
-  margin: 1em 0 0.4em;
-}
-
-.timelineRow {
-  display: grid;
-  grid-template-columns: 5.5em minmax(8em, 14em) 1fr;
-  gap: 0.75em;
-  padding: 0.35em 0.5em;
-  border-left: 4px solid transparent;
-  border-bottom: 1px solid rgba(127, 127, 127, 0.15);
-
-  &.inPeriod {
-    border-left-color: var(--teamSecondaryColor);
-  }
-}
-
-.rowTime {
-  opacity: 0.75;
-  white-space: nowrap;
-}
-
-.rowTeam {
-  font-weight: 600;
-}
-
-.note {
-  opacity: 0.75;
-  margin-left: 0.3em;
-}
-
-@media (max-width: 640px) {
-  .timelineRow {
-    grid-template-columns: 4.5em 1fr;
-  }
-
-  .rowText {
-    grid-column: 2;
-  }
 }
 </style>
