@@ -64,10 +64,16 @@ const fitsSpot = (player, { date, eligibility }, teamsByDate) => {
   return canPlay.some(position => slotTakes.includes(position));
 };
 
+// The Goalie starts filter: today's starters with any of the picked Daily Faceoff statuses
+// (goalieStartLabel's: Confirmed, Likely, Unconfirmed)
+const matchesGoalieStart = (player, goalieStartSelections) => (
+  goalieStartSelections.length === 0 || goalieStartSelections.includes(player.goalieStartLabel)
+);
+
 /**
  * @param {Array} players
  * @param {Object} filters the filter state from the store: filter, teamSelections, injurySelections,
- *   positionSelections, gameDaysSelections, gameDaysMode, ownership, statFilters, spotFilters
+ *   positionSelections, gameDaysSelections, gameDaysMode, ownership, statFilters, spotFilters, goalieStartSelections
  * @param {Object} gamesByTeam team abbreviation to the days it plays, e.g. { SEA: ['Mo', 'We'] }
  * @param {Object} teamsByDate date (YYYY-MM-DD) to the teams playing, for spotFilters
  */
@@ -82,6 +88,7 @@ export const filterPlayers = (players, filters, gamesByTeam, teamsByDate = {}) =
     ownership = "",
     statFilters = [],
     spotFilters = [],
+    goalieStartSelections = [],
   } = filters;
 
   const search = filter.trim().toLowerCase();
@@ -98,6 +105,7 @@ export const filterPlayers = (players, filters, gamesByTeam, teamsByDate = {}) =
     (positionSelections.length === 0 || positionSelections.some(pos => player.positions.includes(pos))) &&
     (!search || player.name.toLowerCase().includes(search)) &&
     statFilters.every(statFilter => matchesStatFilter(player, statFilter)) &&
-    spotFilters.every(spot => fitsSpot(player, spot, teamsByDate))
+    spotFilters.every(spot => fitsSpot(player, spot, teamsByDate)) &&
+    matchesGoalieStart(player, goalieStartSelections)
   ));
 };

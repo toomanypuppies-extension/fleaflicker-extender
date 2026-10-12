@@ -37,6 +37,10 @@ export const COLUMNS = [
   },
   { key: 'gameDays', name: 'Game Days', group: COLUMN_GROUPS.basics, isDefault: true, title: 'Days the team plays this week' },
   { key: 'position', name: 'Position', group: COLUMN_GROUPS.basics, sortType: 'string', isDefault: true },
+  {
+    key: 'goalieStartLabel', name: 'Starting', group: COLUMN_GROUPS.basics, sortType: lowFirst('goalieStartOrder'),
+    title: "Today's starting goalies from Daily Faceoff: confirmed, likely, or unconfirmed (listed with no news yet)",
+  },
   { key: 'injury', name: 'Injury', group: COLUMN_GROUPS.basics, sortType: 'string', isDefault: true },
   {
     key: 'percentOwned', name: '% Owned', group: COLUMN_GROUPS.basics, sortType: number, filterable: true,

@@ -30,6 +30,8 @@
             <div class="cardTop">
               <span class="cardName">{{ player.name }}</span>
               <span v-if="player.injury" class="injuryBadge">{{ player.injury }}</span>
+              <span v-if="player.goalieStartLabel" class="startBadge" :class="player.goalieStartLabel.toLowerCase()"
+                :title="`Daily Faceoff: ${player.goalieStartLabel.toLowerCase()} starter today`">{{ player.goalieStartLabel }} starter</span>
               <span class="cardOwner">{{ player.owner || player.availabilityLabel || 'Free agent' }}</span>
             </div>
             <div class="cardMeta">
@@ -159,6 +161,7 @@ export default {
       gameDaysMode: state => state.gameDaysMode,
       statFilters: state => state.statFilters,
       spotFilters: state => state.spotFilters,
+      goalieStartSelections: state => state.goalieStartSelections,
       ownership: state => state.ownership,
       visibleColumnKeys: state => state.visibleColumnKeys,
       excludeIfNoPoints: state => state.excludeIfNoPoints,
@@ -191,6 +194,7 @@ export default {
         gameDaysMode: this.gameDaysMode,
         statFilters: this.statFilters,
         spotFilters: this.spotFilters,
+        goalieStartSelections: this.goalieStartSelections,
         ownership: this.ownership,
       }, this.gamesByTeam, this.teamsByDate);
     },
@@ -539,6 +543,26 @@ export default {
   border-radius: 3px;
   background: #ef5350;
   color: #fff;
+}
+
+.startBadge {
+  font-size: 0.75em;
+  padding: 0 0.35em;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+
+  // Daily Faceoff's colors for each
+  &.confirmed {
+    background: #2e7d32;
+    border-color: #2e7d32;
+    color: #fff;
+  }
+
+  &.likely {
+    background: #e65100;
+    border-color: #e65100;
+    color: #fff;
+  }
 }
 
 .cardOwner {

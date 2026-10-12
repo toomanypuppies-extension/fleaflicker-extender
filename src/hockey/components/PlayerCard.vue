@@ -24,6 +24,16 @@
       </dl>
     </div>
 
+    <section v-if="goalieStart" class="goalieStart" aria-label="Starting today">
+      <h3>{{ goalieStartHeading }}</h3>
+      <p v-if="goalieStart.details">{{ goalieStart.details }}</p>
+      <p class="newsTime">
+        From <a :href="startingGoaliesLink" target="_blank" rel="noopener">Daily Faceoff</a><template v-if="goalieStart.source">
+          via <a v-if="goalieStart.sourceUrl" :href="goalieStart.sourceUrl" target="_blank" rel="noopener">{{ goalieStart.source }}</a><template
+            v-else>{{ goalieStart.source }}</template></template>, fetched {{ goalieFetchedAt }}
+      </p>
+    </section>
+
     <nav class="links" aria-label="More about this player">
       <a :href="fleaflickerLink" @click="$emit('fleaflickerNav')" :target="fleaTarget">Fleaflicker
         <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
@@ -32,6 +42,8 @@
       <a :href="puckpediaLink" target="_blank" rel="noopener">PuckPedia
         <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
       <a v-if="dailyFaceoffLink" :href="dailyFaceoffLink" target="_blank" rel="noopener">Line combinations
+        <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
+      <a v-if="isGoalie" :href="startingGoaliesLink" target="_blank" rel="noopener">Starting goalies
         <va-icon class="material-icons" size="1em">open_in_new</va-icon></a>
     </nav>
 
@@ -55,6 +67,8 @@
 <script>
 import { HOCKEY_TEAM_ABBR_TO_NAME } from "../constants";
 import { slugify } from "../../utils/util";
+import { startingGoaliesUrl, goalieStartLabel, CONFIRMED } from "../collections/startingGoalies";
+import { easternDate } from "../collections/schedule";
 import GameWeek from "./GameWeek.vue";
 import { mapState } from 'vuex';
 
@@ -102,6 +116,27 @@ export default {
       const team = this.selectedPlayer?.team;
       // Teams with no games in the next 4 weeks (eliminated, off-season) aren't in the schedule
       return (team && team !== "FA" && this.gamesByMatchup?.[team]) || {};
+    },
+    isGoalie() {
+      return this.selectedPlayer.position === 'G' || !!this.selectedPlayer.positions?.includes('G');
+    },
+    // Daily Faceoff's start for today, only when the player is the listed starter
+    goalieStart() {
+      return this.selectedPlayer.goalieStart?.starting ? this.selectedPlayer.goalieStart : null;
+    },
+    goalieStartHeading() {
+      const start = this.goalieStart;
+      const status = goalieStartLabel(start);
+      if (status === CONFIRMED) return 'Confirmed starter today';
+      if (status === 'Likely') return 'Likely to start today';
+      return 'Unconfirmed starter today: listed, with no news yet';
+    },
+    goalieFetchedAt() {
+      return new Date(this.goalieStart.fetchedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    },
+    // The day Daily Faceoff's starters are for: the one fetched, or today's (until 6am Eastern)
+    startingGoaliesLink() {
+      return startingGoaliesUrl(this.goalieStart?.date || easternDate(Date.now() - 6 * 60 * 60 * 1000));
     },
     news() {
       return this.selectedPlayer.expandedData?.news;
@@ -280,6 +315,27 @@ h4 {
   p {
     margin-bottom: 0.5em;
     line-height: 1.4;
+  }
+}
+
+.goalieStart {
+  padding: 0.75em;
+  border-left: 3px solid var(--teamSecondaryColor);
+  background: rgba(0, 0, 0, 0.1);
+
+  h3 {
+    font-size: 1.05em;
+    font-weight: 700;
+    margin-bottom: 0.4em;
+  }
+
+  p {
+    margin: 0.25em 0 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: underline;
   }
 }
 

@@ -115,3 +115,21 @@ test('lineup spots keep players who can fill every one, with their team playing 
   // Days the schedule doesn't have yet match no one
   assert.deepEqual(spots({ date: '2026-10-20', ...D }), []);
 });
+
+test("goalie starts keep today's starters with any of the picked statuses", () => {
+  const players = [
+    player({ id: 1, positions: ['G'], goalieStartLabel: 'Confirmed' }),
+    player({ id: 2, positions: ['G'], goalieStartLabel: 'Unconfirmed' }),
+    // Backups and goalies without news have no label
+    player({ id: 3, positions: ['G'], goalieStartLabel: '' }),
+    player({ id: 4, positions: ['G'] }),
+    player({ id: 5, positions: ['C'] }),
+    player({ id: 6, positions: ['G'], goalieStartLabel: 'Likely' }),
+  ];
+  const goalies = (...goalieStartSelections) => ids(filterPlayers(players, { goalieStartSelections }, GAMES_BY_TEAM));
+
+  assert.deepEqual(goalies(), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(goalies('Confirmed'), [1]);
+  assert.deepEqual(goalies('Confirmed', 'Likely'), [1, 6]);
+  assert.deepEqual(goalies('Unconfirmed'), [2]);
+});

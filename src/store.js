@@ -9,7 +9,16 @@ export const DEFAULT_THEME_COLORS = { primary: '#17202b', secondary: '#58a6ff' }
 const themeColors = (state) => (state.settings.colorTheme === 'default' ? DEFAULT_THEME_COLORS : getColors(state));
 
 // lodash is CommonJS, which node (tests) can't import names from
-const { set, debounce, merge, get, cloneDeep } = lodash;
+const { set, debounce, mergeWith, get, cloneDeep } = lodash;
+
+// Saved state over the defaults. Saved lists replace the default ones whole: merged item by item, an
+// empty saved list would keep a default like ['HEALTHY'].
+const merge = (target, source) => mergeWith(target, source, (_, value) => (Array.isArray(value) ? value : undefined));
+
+// What the Players tab's filters start as, and go back to with Clear filters
+export const FILTER_DEFAULTS = { ownership: 'Free Agent', injurySelections: ['HEALTHY'] };
+// Bumped when FILTER_DEFAULTS change, so saved filters from before get them once
+const FILTER_DEFAULTS_VERSION = 1;
 
 const initState = {
   sport: 'nhl',
@@ -30,7 +39,7 @@ const initState = {
   selectedPlayer: null,
   filter: "",
   teamSelections: [],
-  injurySelections: [],
+  injurySelections: [...FILTER_DEFAULTS.injurySelections],
   positionSelections: [],
   gameDaysSelections: [],
   // all or any, see GAME_DAYS_MODES
@@ -40,6 +49,8 @@ const initState = {
   // Lineup spots picked in the matchup's planner, players must fit all of them:
   // [{ date: 'YYYY-MM-DD', label: 'C', eligibility: ['C'] }]
   spotFilters: [],
+  // Daily Faceoff statuses of today's starting goalies to show (Confirmed, Likely, Unconfirmed), empty for anyone
+  goalieStartSelections: [],
   // Columns picked in the column chooser, empty for the defaults
   visibleColumnKeys: [],
   // The user's team in this league, picked in the toolbar or found on fleaflicker's page
@@ -62,7 +73,8 @@ const initState = {
   compareTeamIds: [],
   compareRange: 'matchup',
   owners: [],
-  ownership: "",
+  ownership: FILTER_DEFAULTS.ownership,
+  filterDefaultsVersion: FILTER_DEFAULTS_VERSION,
   gamesByMatchup: null,
   weekStartDates: null,
 }
@@ -76,10 +88,13 @@ const TRANSIENT_KEYS = Object.keys(TRANSIENT_DEFAULTS);
 const createState = () => {
   // A copy, so one league's saved state doesn't become the next league's defaults
   let initialState = cloneDeep(initState);
+  // Nothing saved has the current defaults already
+  let savedDefaultsVersion = FILTER_DEFAULTS_VERSION;
   if (!!getLeagueId()) {
     const localstoreState = getLocalStorage('vuex-state', getLeagueId());
     if (localstoreState) {
       initialState = merge(initialState, localstoreState);
+      savedDefaultsVersion = localstoreState.filterDefaultsVersion || 0;
     }
   }
   const defaultState = JSON.parse(JSON.stringify(initialState));
@@ -91,6 +106,12 @@ const createState = () => {
     defaultState.activeTab = defaultState.leagueSection === 'matchups' ? 'matchups' : 'rosters';
   }
   delete defaultState.leagueSection;
+
+  // Saved before the filters had defaults: start them from the defaults once, after that what the
+  // user picks stays, an empty Injury (any) included
+  if (savedDefaultsVersion < FILTER_DEFAULTS_VERSION) {
+    Object.assign(defaultState, cloneDeep(FILTER_DEFAULTS), { filterDefaultsVersion: FILTER_DEFAULTS_VERSION });
+  }
 
   // Team renamed in 2025
   const renameTeam = (team) => team === 'Utah Hockey Club' ? 'Utah Mammoth' : team;
@@ -108,13 +129,14 @@ export const store = createStore({
     clearFilters(state) {
       state.filter = "";
       state.teamSelections = [];
-      state.injurySelections = [];
+      state.injurySelections = [...FILTER_DEFAULTS.injurySelections];
       state.positionSelections = [];
       state.gameDaysSelections = [];
       state.gameDaysMode = 'all';
       state.statFilters = [];
       state.spotFilters = [];
-      state.ownership = "";
+      state.goalieStartSelections = [];
+      state.ownership = FILTER_DEFAULTS.ownership;
     },
     loadFromLocalStorage(state) {
       const localStorageState = getLocalStorage('vuex-state', state.leagueId);

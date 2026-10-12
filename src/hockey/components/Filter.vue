@@ -69,6 +69,17 @@
         clearable
       />
       <va-select
+        :model-value="goalieStartSelections"
+        @update:model-value="(val) => emitUpdate('goalieStartSelections', val)"
+        :options="goalieStartOptions"
+        :color="themeAccentColor"
+        label="Goalie starts"
+        placeholder="Any"
+        maxHeight="300px"
+        multiple
+        clearable
+      />
+      <va-select
         :model-value="ownership"
         @update:model-value="(val) => emitUpdate('ownership', val)"
         :options="ownershipOptions"
@@ -76,7 +87,6 @@
         label="Ownership"
         placeholder="All"
         maxHeight="300px"
-        clearable
       />
     </div>
     <div v-if="spotFilters.length" class="statFilters" role="group" aria-label="Lineup spots">
@@ -139,9 +149,11 @@
 </template>
 
 <script>
+import { FILTER_DEFAULTS } from "../../store";
 import { mapGetters, mapState } from "vuex";
 import { STAT_FILTER_COLUMNS, COLUMNS_BY_KEY } from "../collections/columns";
 import { GAME_DAYS_MODES } from "../collections/filtering";
+import { GOALIE_START_STATUSES } from "../collections/startingGoalies";
 import { isNarrow } from "../../utils/narrow";
 import {
   DAYS_ARRAY,
@@ -267,6 +279,7 @@ export default {
       ownership: state => state.ownership,
       statFilters: state => state.statFilters,
       spotFilters: state => state.spotFilters,
+      goalieStartSelections: state => state.goalieStartSelections,
       gameDaysMode: state => state.gameDaysMode,
     }),
     narrow() {
@@ -289,10 +302,16 @@ export default {
         this.search?.trim(),
         this.teamSelections.length,
         this.gameDaysSelections.length,
-        this.injurySelections.length,
+        // Filters left at their defaults (FILTER_DEFAULTS) don't count
+        this.injurySelections.join() !== FILTER_DEFAULTS.injurySelections.join(),
         this.positionSelections.length,
-        this.ownership && this.ownership !== "All",
+        this.ownership !== FILTER_DEFAULTS.ownership,
+        this.goalieStartSelections.length,
       ].filter(Boolean).length + this.statFilters.length + this.spotFilters.length;
+    },
+    // Daily Faceoff's statuses for today's starters
+    goalieStartOptions() {
+      return Object.values(GOALIE_START_STATUSES);
     },
     ownershipOptions() {
       return [...OWNERSHIP_OPTIONS, ...this.owners]

@@ -48,11 +48,17 @@ import { getActivityLog, syncActivity } from "./collections/activity";
 import { latestDrops, waiverStatus, availabilityLabel, availabilityOrder } from "./collections/waivers";
 import { loadLastSeasonStats, lastSeasonFields } from "./collections/lastSeason";
 import { usesLastSeason } from "./collections/columns";
+import { loadStartingGoalies, goalieStarts, goalieStartLabel, GOALIE_START_ORDER } from "./collections/startingGoalies";
+import { easternDate } from "./collections/schedule";
 import { navFromState, stateFromNav, sameNav, queryWithNav, queryHasNav } from "./navigation";
 import { loadScheduleWeeks, mergeScheduleWeeks, gamesLeftByTeam, todaysGamesByTeam } from "./collections/scheduleWeeks";
 
 // Waiver status depends on the time, so it's worked out again this often
 const CLOCK_INTERVAL = 60 * 1000;
+// How often today's starting goalies are checked until they're all confirmed
+const GOALIE_CHECK_INTERVAL = 15 * 60 * 1000;
+// Fleaflicker's (and so the app's) days start at 6am Eastern
+const SCORING_DAY_START_HOURS = 6;
 // The extension's page in history entries, beside whatever fleaflicker keeps there
 const HISTORY_KEY = 'fleaflickerExtenderPage';
 
@@ -66,6 +72,8 @@ export default {
       leagueTabs: LEAGUE_TABS,
       // The page last added to the browser's history, or shown from it
       recordedPage: null,
+      // Today's starting goalies from Daily Faceoff, see loadStartingGoalies
+      startingGoalies: null,
       teamAbbrToName: HOCKEY_TEAM_ABBR_TO_NAME,
       leagueId: null,
       loading: true,
@@ -250,10 +258,19 @@ export default {
      * they were fetched) and owners, the scoreboard and standings, then league activity once.
      * The NHL schedule, roster rules and league settings rarely change and keep their own expiry.
      */
+    // Today's starting goalies, until every one is confirmed
+    async loadGoalies(forceRefresh = false) {
+      const date = this.goalieDate;
+      const day = await loadStartingGoalies(date, { now: Date.now(), forceRefresh });
+      if (date === this.goalieDate) {
+        this.startingGoalies = day;
+      }
+    },
     async refreshAll() {
       await Promise.all([
         this.loadPlayers(true, { keepShown: true, skipActivity: true }),
         this.leagueId ? this.loadLeague({ refreshScores: true, skipActivity: true }) : null,
+        this.loadGoalies(true),
       ]);
       if (this.players.length) {
         this.loadActivity();
@@ -294,6 +311,7 @@ export default {
     this.clock = setInterval(() => { this.now = Date.now(); }, CLOCK_INTERVAL);
     this.loadPlayers();
     this.loadGames();
+    this.loadGoalies();
     if (this.leagueId) {
       this.loadLeague();
     }
@@ -311,6 +329,26 @@ export default {
     activeTab() {
       if (!this.loading) {
         this.loadLastSeasonIfNeeded();
+      }
+    },
+    // An open player panel shows the player's latest data, like a starting goalie announced since
+    tablePlayers(players) {
+      const open = this.$store.state.selectedPlayer;
+      const latest = open && players.find(player => player.id === open.id);
+      if (latest) {
+        this.setKey('selectedPlayer', latest);
+      }
+    },
+    // A new day's starters at 6am Eastern
+    goalieDate() {
+      this.startingGoalies = null;
+      this.loadGoalies();
+    },
+    // Starters are announced through the day: check again every 15 minutes until they're all confirmed
+    now() {
+      const day = this.startingGoalies;
+      if (day && !day.complete && this.now - day.fetchedAt >= GOALIE_CHECK_INTERVAL) {
+        this.loadGoalies();
       }
     },
     // Going to another page adds it to the browser's history
@@ -355,6 +393,14 @@ export default {
     page() {
       return navFromState(this.$store.state);
     },
+    // Today's scoring day in Eastern, which runs until 6am like fleaflicker's
+    goalieDate() {
+      return easternDate(this.now - SCORING_DAY_START_HOURS * 60 * 60 * 1000);
+    },
+    // Each goalie's start today by player id, see goalieStarts
+    goalieStartsById() {
+      return goalieStarts(this.startingGoalies, this.players);
+    },
     // Date to the teams playing that day, for lineup spot filters
     teamsByDate() {
       const byDate = {};
@@ -380,6 +426,10 @@ export default {
             todaysGameStart: todaysGame?.todaysGameStart,
             hasGameToday: !!todaysGame,
           }),
+          // Daily Faceoff's starter for today, only for goalies on teams it lists
+          goalieStart: this.goalieStartsById.get(stored.id),
+          goalieStartLabel: goalieStartLabel(this.goalieStartsById.get(stored.id)),
+          goalieStartOrder: GOALIE_START_ORDER[goalieStartLabel(this.goalieStartsById.get(stored.id))],
         };
         const availability = waiverStatus(player, context);
         return {

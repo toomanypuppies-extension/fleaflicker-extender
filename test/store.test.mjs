@@ -78,3 +78,24 @@ test('the default theme replaces the favorite team colors, charts included', asy
   // Your opponent wears the second chart color, the one they have in your matchup's charts
   assert.equal(store.getters.opponentColors.background, store.getters.chartColors[1]);
 });
+
+test('filters start on healthy free agents, saved filters get that once, and Clear goes back to it', async () => {
+  storage.reset();
+  const { store } = await import('../src/store.js');
+  const load = (leagueId, saved) => {
+    if (saved) storage.setItem(`ff-extender-${leagueId}-vuex-state`, JSON.stringify(saved));
+    setLeague(leagueId);
+    store.commit('loadLeagueState');
+    return [store.state.ownership, store.state.injurySelections];
+  };
+
+  assert.deepEqual(load('600'), ['Free Agent', ['HEALTHY']]);
+  // Saved before the defaults: unpicked filters take them
+  assert.deepEqual(load('601', { ownership: '', injurySelections: [] }), ['Free Agent', ['HEALTHY']]);
+  // Saved since: any injury (empty) and All stay
+  assert.deepEqual(load('602', { ownership: 'All', injurySelections: [], filterDefaultsVersion: 1 }), ['All', []]);
+  assert.deepEqual(load('603', { injurySelections: ['DTD'], filterDefaultsVersion: 1 }), ['Free Agent', ['DTD']]);
+
+  store.commit('clearFilters');
+  assert.deepEqual([store.state.ownership, store.state.injurySelections], ['Free Agent', ['HEALTHY']]);
+});
