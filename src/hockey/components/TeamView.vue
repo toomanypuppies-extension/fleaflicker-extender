@@ -117,8 +117,18 @@
       </p>
       <p v-if="failed" class="note">{{ failed }} box scores couldn't be loaded, so totals may be low. Use Refresh to try again.</p>
       <div class="charts" :class="{ stale: loadingDays }">
-        <BarChart class="chart" title="By player" rowHeading="Player" :series="[{ name: team.name }]"
-          :rows="playerRows" :stacked="!!period" />
+        <div class="chart">
+          <BarChart title="By player" rowHeading="Player" :series="[{ name: team.name }]"
+            :rows="playerRows" :stacked="!!period" />
+          <div v-if="breakdownPlayers.length > topPlayers" class="moreButtons">
+            <button v-if="hiddenPlayers > 0" type="button" class="filterButton" @click="shownPlayers += morePlayers">
+              Show {{ Math.min(morePlayers, hiddenPlayers) }} more
+            </button>
+            <button v-if="shownPlayers > topPlayers" type="button" class="filterButton" @click="shownPlayers = topPlayers">
+              Show fewer
+            </button>
+          </div>
+        </div>
         <BarChart class="chart" title="By position" rowHeading="Position" :series="[{ name: team.name }]"
           :rows="positionRows" :stacked="!!period" />
       </div>
@@ -136,7 +146,12 @@ import ActivityTimeline from "./ActivityTimeline.vue";
 import { ROSTER_GROUPS, loadDayRosters } from "../collections/league";
 import { loadTeamDays, totalPoints, dayOrdinalAt, COMPARE_RANGES } from "../collections/boxscores";
 import { periodDates } from "../collections/scheduleWeeks";
-import { playerBreakdown, positionBreakdown, playerChartRows, positionChartRows } from "../collections/breakdowns";
+import {
+  playerBreakdown, positionBreakdown, playerChartRows, positionChartRows, TOP_PLAYERS,
+} from "../collections/breakdowns";
+
+// Players added to the chart by each "Show more"
+const MORE_PLAYERS = 10;
 import { projectTeam, teamGamesPlayed, PROJECTION_METHODS, PROJECTION_LINEUPS } from "../collections/projection";
 import { ordinal } from "../../utils/util";
 
@@ -190,6 +205,10 @@ export default {
       progress: { done: 0, total: 0 },
       // Only the latest load is shown
       loadId: 0,
+      // Players with their own bar, the rest are one row
+      shownPlayers: TOP_PLAYERS,
+      topPlayers: TOP_PLAYERS,
+      morePlayers: MORE_PLAYERS,
     };
   },
   computed: {
@@ -241,8 +260,15 @@ export default {
     totalPoints() {
       return totalPoints(this.days);
     },
+    breakdownPlayers() {
+      return playerBreakdown(this.days, this.period ? this.projection : null);
+    },
+    // Players folded into the "others" row
+    hiddenPlayers() {
+      return Math.max(this.breakdownPlayers.length - this.shownPlayers, 0);
+    },
     playerRows() {
-      return playerChartRows(playerBreakdown(this.days, this.period ? this.projection : null), { stacked: !!this.period });
+      return playerChartRows(this.breakdownPlayers, { stacked: !!this.period, shown: this.shownPlayers });
     },
     positionRows() {
       return positionChartRows([positionBreakdown(this.days, this.period ? this.projection : null)], { stacked: !!this.period });
@@ -567,6 +593,13 @@ select {
     background: rgba(127, 127, 127, 0.25);
     font-weight: 700;
   }
+}
+
+.moreButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-top: 0.6em;
 }
 
 .charts {

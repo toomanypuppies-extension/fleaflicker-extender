@@ -1,7 +1,7 @@
 import { pointsByPlayer, pointsByPosition, primaryPosition, POSITIONS } from "./boxscores";
 
-// Players shown in a chart, and named in the tooltip of the rest
-const TOP_PLAYERS = 12;
+// Players shown in a chart at first, and named in the tooltip of the rest
+export const TOP_PLAYERS = 12;
 const OTHERS_NAMED = 4;
 
 const round = (value) => Math.round(value * 100) / 100;
@@ -54,12 +54,12 @@ export const positionBreakdown = (days, projection = null) => {
 const format = (value) => (value ?? 0).toFixed(1);
 
 /**
- * BarChart rows for one team's playerBreakdown: the top players, then the rest as one row.
+ * BarChart rows for one team's playerBreakdown: the top `shown` players, then the rest as one row.
  * With `stacked`, each value is [scored, projected].
  */
-export const playerChartRows = (players, { stacked = false } = {}) => {
+export const playerChartRows = (players, { stacked = false, shown = TOP_PLAYERS } = {}) => {
   const value = (scored, projected) => (stacked ? [scored, projected] : scored);
-  const rows = players.slice(0, TOP_PLAYERS).map(player => {
+  const rows = players.slice(0, shown).map(player => {
     const scoredDetail = `${player.position} · ${player.games} games started`
       + (player.games ? ` · ${format(player.scored / player.games)} per game` : '');
     const projectedDetail = `${player.starts} ${player.starts === 1 ? 'start' : 'starts'} left`;
@@ -70,7 +70,7 @@ export const playerChartRows = (players, { stacked = false } = {}) => {
       details: [stacked ? [scoredDetail, projectedDetail] : scoredDetail],
     };
   });
-  const rest = players.slice(TOP_PLAYERS);
+  const rest = players.slice(shown);
   if (rest.length) {
     const sum = (key) => round(rest.reduce((total, player) => total + player[key], 0));
     // A few names, a long list makes a tooltip taller than the chart
@@ -79,7 +79,7 @@ export const playerChartRows = (players, { stacked = false } = {}) => {
     const detail = `${names}${more}`;
     rows.push({
       key: 'others',
-      label: `${rest.length} others`,
+      label: rest.length === 1 ? '1 other' : `${rest.length} others`,
       values: [value(sum('scored'), sum('projected'))],
       details: [stacked ? [detail, detail] : detail],
     });

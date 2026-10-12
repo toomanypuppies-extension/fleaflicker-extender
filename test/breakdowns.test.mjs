@@ -48,6 +48,11 @@ test('chart rows stack scored and projected, and fold the rest into one row', ()
     details: [['P12, P13, P14', 'P12, P13, P14']],
   });
   assert.deepEqual(playerChartRows(many.slice(0, 1)).map(row => row.values), [[15]]);
+  // More shown, fewer in the rest
+  const more = playerChartRows(many, { shown: 14 });
+  assert.equal(more.length, 15);
+  assert.equal(more[14].label, '1 other');
+  assert.equal(playerChartRows(many, { shown: 22 }).length, 15);
 
   const positionRows = positionChartRows([positionBreakdown(days, projection), positionBreakdown(days)], { stacked: true });
   assert.deepEqual(positionRows[0].values, [[5, 18], [5, 0]]);
