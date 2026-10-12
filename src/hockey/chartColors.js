@@ -110,12 +110,15 @@ export const passes = ([first, second], mode) => {
     const { L, C } = oklch(hex);
     return L >= low && L <= high && C >= CHROMA_FLOOR;
   };
-  return color(first) && color(second)
+  // A team's black, white or silver, shown as a neutral that stands out from the surface
+  const neutral = (hex) => oklch(hex).C < HUELESS_CHROMA && contrast(hex, CHART_SURFACES[mode]) >= CONTRAST_MIN;
+  return (color(first) || neutral(first)) && (color(second) || neutral(second))
     && Math.min(deltaE(first, second, 'protan'), deltaE(first, second, 'deutan')) >= CVD_TARGET
     && deltaE(first, second) >= NORMAL_FLOOR;
 };
 
-// A team color moved into the theme's band, or null if it has no hue to keep
+// A team color moved into the theme's band, or null if it has no hue to keep. Lightness moves as
+// little as it can: dark colors like Dallas green can't be colorful enough at their own lightness.
 const adapt = (hex, mode, L = null) => {
   const color = oklch(hex);
   if (color.C < HUELESS_CHROMA) {
@@ -123,12 +126,10 @@ const adapt = (hex, mode, L = null) => {
   }
   const [low, high] = BAND[mode].map((edge, index) => edge + (index ? -BAND_MARGIN : BAND_MARGIN));
   const surface = CHART_SURFACES[mode];
-  const lightness = Math.min(Math.max(L ?? color.L, low), high);
-  // Away from the surface (lighter on dark, darker on light) until it has 3:1 contrast, or as close
-  // as the band allows
-  const step = mode === 'dark' ? 0.01 : -0.01;
+  const from = Math.min(Math.max(L ?? color.L, low), high);
+  // Nearest lightness with 3:1 contrast against the surface, or the best contrast the band allows
   let closest = null;
-  for (let target = lightness; target >= low - 1e-9 && target <= high + 1e-9; target += step) {
+  for (const target of lightnessSteps(from, [low, high], 0.01)) {
     const candidate = fromOklch({ L: target, C: Math.max(color.C, CHROMA_FLOOR + 0.01), h: color.h });
     const { L: candidateL, C: candidateC } = oklch(candidate);
     if (candidateC < CHROMA_FLOOR || candidateL < BAND[mode][0] || candidateL > BAND[mode][1]) continue;
@@ -143,37 +144,51 @@ const adapt = (hex, mode, L = null) => {
 };
 
 // Lightness steps across the band, nearest to `from` first
-const lightnessSteps = (from, [low, high]) => {
-  const steps = [];
-  for (let L = low; L <= high + 1e-9; L += 0.02) steps.push(L);
+const lightnessSteps = (from, [low, high], step = 0.02) => {
+  const steps = [from];
+  for (let L = low; L <= high + 1e-9; L += step) steps.push(L);
   return steps.sort((a, b) => Math.abs(a - from) - Math.abs(b - from));
 };
+
+// Lightness of a team's black or white in charts: dark on the light theme, light on the dark.
+// Silver, for a team with no hue at all, sits between it and the surface.
+const NEUTRAL_LIGHTNESS = { light: 0.32, dark: 0.88 };
+const SILVER_LIGHTNESS = { light: [0.58, 0.56, 0.54, 0.52, 0.5], dark: [0.7, 0.72, 0.74, 0.76] };
+export const neutralColor = (mode) => fromOklch({ L: NEUTRAL_LIGHTNESS[mode], C: 0, h: 0 });
 
 /**
  * The two series colors for charts in a theme ('light' or 'dark'), from a team's primary and
  * secondary colors. Always passes the checks.
+ * Preference: the team's colors with a hue, then black or white as a neutral (every team wears
+ * them), then for teams with no hue at all (the Kings) a silver, and only then the reference
+ * palette. A neutral isn't a dataviz series color on its own merits (it's below the chroma floor),
+ * but beside a hue it's as easy to tell apart, with or without color blindness, and it keeps
+ * teams like the Flyers (orange and black) in their own colors. Two neutrals, black and silver,
+ * are told apart by lightness alone, which also holds with color blindness.
  */
 export const teamSeriesColors = (team, mode) => {
   const fallback = FALLBACK_COLORS[mode];
-  const first = (team?.primary && adapt(team.primary, mode))
-    || (team?.secondary && adapt(team.secondary, mode))
-    || fallback[0];
-  // The second team color if it has a hue and isn't the one already used
-  const secondSource = [team?.secondary, team?.primary].find(hex => hex && adapt(hex, mode) && adapt(hex, mode) !== first);
+  const sources = [team?.primary, team?.secondary].filter(Boolean);
+  const hued = sources.filter(hex => oklch(hex).C >= HUELESS_CHROMA);
+  const neutral = neutralColor(mode);
 
-  if (secondSource) {
-    const start = adapt(secondSource, mode);
-    if (passes([first, start], mode)) {
-      return [first, start];
-    }
-    for (const L of lightnessSteps(oklch(start).L, BAND[mode])) {
-      const candidate = adapt(secondSource, mode, L);
+  const firstSource = hued.find(hex => adapt(hex, mode));
+  const first = firstSource ? adapt(firstSource, mode) : neutral;
+
+  // The team's other color with a hue, at its own lightness or the nearest that's distinct enough
+  const other = hued.find(hex => hex !== firstSource);
+  const start = other && adapt(other, mode);
+  if (start) {
+    for (const L of [null, ...lightnessSteps(oklch(start).L, BAND[mode])]) {
+      const candidate = adapt(other, mode, L);
       if (candidate && passes([first, candidate], mode)) {
         return [first, candidate];
       }
     }
   }
-  // The team's other color can't be told apart from its first: whichever reference color can
-  const other = fallback.find(hex => passes([first, hex], mode));
-  return other ? [first, other] : fallback;
+  const neutrals = first === neutral
+    ? SILVER_LIGHTNESS[mode].map(L => fromOklch({ L, C: 0, h: 0 }))
+    : [neutral];
+  const second = [...neutrals, ...fallback].find(hex => hex !== first && passes([first, hex], mode));
+  return second ? [first, second] : fallback;
 };

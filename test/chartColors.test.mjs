@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HOCKEY_TEAM_ABBR_TO_COLORS } from '../src/hockey/constants.js';
-import { teamSeriesColors, passes, oklch, FALLBACK_COLORS } from '../src/hockey/chartColors.js';
+import { teamSeriesColors, passes, oklch, neutralColor, FALLBACK_COLORS } from '../src/hockey/chartColors.js';
 
 const TEAMS = Object.entries(HOCKEY_TEAM_ABBR_TO_COLORS);
 const hueDifference = (a, b) => {
@@ -29,11 +29,28 @@ test("colors keep the team's hue when it has one", () => {
   assert.ok(hueDifference(edmonton[1], '#FF4C00') < 0.35, String(edmonton));
 });
 
-test('colors without a hue fall back to the reference palette', () => {
-  assert.deepEqual(teamSeriesColors({ primary: '#000000', secondary: '#FFFFFF' }, 'dark'), FALLBACK_COLORS.dark);
-  assert.deepEqual(teamSeriesColors(undefined, 'light'), FALLBACK_COLORS.light);
-  // One usable color is kept, the other comes from the reference palette
-  const [first, second] = teamSeriesColors({ primary: '#000000', secondary: '#C8102E' }, 'light');
-  assert.ok(hueDifference(first, '#C8102E') < 0.35);
-  assert.ok(FALLBACK_COLORS.light.includes(second));
+test("a team's black, white or silver shows as a neutral, not the reference palette", () => {
+  for (const mode of ['light', 'dark']) {
+    const neutral = neutralColor(mode);
+    // Flyers: orange and black
+    const flyers = teamSeriesColors({ primary: '#000000', secondary: '#F74902' }, mode);
+    assert.ok(hueDifference(flyers[0], '#F74902') < 0.35, String(flyers));
+    assert.equal(flyers[1], neutral);
+    // Kings: black and silver, two neutrals told apart by lightness
+    const kings = teamSeriesColors({ primary: '#111111', secondary: '#A2AAAD' }, mode);
+    assert.equal(kings[0], neutral);
+    assert.ok(oklch(kings[1]).C < 0.01 && Math.abs(oklch(kings[1]).L - oklch(kings[0]).L) > 0.15, String(kings));
+    // Minnesota's green and red can't be told apart with color blindness: the red gives way to a neutral
+    assert.deepEqual(teamSeriesColors({ primary: '#154734', secondary: '#A6192E' }, mode)[1], neutral);
+  }
+  assert.deepEqual(teamSeriesColors(undefined, 'light').length, 2);
+});
+
+test('no team needs the reference palette', () => {
+  for (const mode of ['light', 'dark']) {
+    for (const [team, colors] of TEAMS) {
+      const series = teamSeriesColors(colors, mode);
+      assert.ok(series.every(hex => !FALLBACK_COLORS[mode].includes(hex)), `${team} ${mode}: ${series}`);
+    }
+  }
 });
