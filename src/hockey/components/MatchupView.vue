@@ -91,7 +91,7 @@
         <caption>Starts{{ phase === 'current' ? ': so far + left' : phase === 'past' ? '' : ' left' }}</caption>
         <thead>
           <tr>
-            <th scope="col">Position</th>
+            <th scope="col">Slot</th>
             <th v-for="(teamId, index) in teamIds" :key="teamId" scope="col">
               <span class="swatch" :style="{ background: seriesColor(index) }"></span>{{ teamName(teamId) }}
             </th>
@@ -182,7 +182,7 @@ import {
   loadTeamDays, totalPoints, dayOrdinalAt, dayDate, COMPARE_RANGES,
 } from "../collections/boxscores";
 import { loadDayRosters } from "../collections/league";
-import { primaryPosition, POSITIONS } from "../collections/boxscores";
+import { startsBySlot } from "../collections/boxscores";
 import { periodDates } from "../collections/scheduleWeeks";
 import { positionBreakdown, positionChartRows } from "../collections/breakdowns";
 
@@ -335,40 +335,32 @@ export default {
       }
       return rows;
     },
-    // Starts by position for each team: so far from the box scores, left from the projection
+    // Starts by lineup slot for each team: so far from the box scores, left from the projection
     startRows() {
-      const emptyCounts = () => Object.fromEntries(POSITIONS.map(position => [position, 0]));
-      const soFar = this.teamIds.map(teamId => {
-        const counts = emptyCounts();
-        for (const day of this.liveDays?.[teamId] || []) {
-          for (const slot of day.lineup) {
-            const position = primaryPosition(slot.position, slot.eligibility);
-            if (slot.group === 'START' && slot.games > 0 && position in counts) counts[position] += slot.games;
+      const labels = (this.league.rules?.startSlots || []).map(slot => slot.label);
+      const soFar = this.teamIds.map(teamId => startsBySlot(this.liveDays?.[teamId] || []));
+      const left = this.projections.map(projection => {
+        const counts = {};
+        for (const player of projection.players) {
+          for (const [label, slot] of Object.entries(player.slots || {})) {
+            counts[label] = (counts[label] || 0) + slot.games;
           }
         }
         return counts;
       });
-      const left = this.projections.map(projection => {
-        const counts = emptyCounts();
-        for (const player of projection.players) {
-          const position = primaryPosition(player.position, player.positions);
-          if (position in counts) counts[position] += player.games;
-        }
-        return counts;
-      });
-      const total = (counts, position) => (position === 'Total'
-        ? Object.values(counts).reduce((sum, count) => sum + count, 0)
-        : counts[position]);
-      const cell = (index, position) => {
-        const done = total(soFar[index], position);
-        const toCome = total(left[index], position);
+      const count = (counts, label) => (label === 'Total'
+        ? Object.values(counts).reduce((sum, games) => sum + games, 0)
+        : counts[label] || 0);
+      const cell = (index, label) => {
+        const done = count(soFar[index], label);
+        const toCome = count(left[index], label);
         if (this.phase === 'past') return String(done);
         if (this.phase === 'future') return String(toCome);
         return `${done} + ${toCome} = ${done + toCome}`;
       };
-      return [...POSITIONS, 'Total'].map(position => ({
-        position,
-        cells: this.teamIds.map((_, index) => cell(index, position)),
+      return [...labels, 'Total'].map(label => ({
+        position: label,
+        cells: this.teamIds.map((_, index) => cell(index, label)),
       }));
     },
     fleaTarget() {

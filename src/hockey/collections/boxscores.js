@@ -183,11 +183,21 @@ export const loadTeamDays = async (leagueId, {
   return { days, failed };
 };
 
-// A player's main position: the first listed (C/LW counts as C), or for players listed as F or W,
-// the first they're eligible for
-export const primaryPosition = (position, eligibility = []) => {
-  const first = (position || '').split('/')[0];
-  return POSITIONS.includes(first) ? first : eligibility.find(candidate => POSITIONS.includes(candidate)) || first;
+/**
+ * How a start counts toward positions, as [[position, share]]: the slot it filled (a W in an RW
+ * slot is an RW). In a flexible slot (F, F/D) it's the player's listed position, the first of
+ * C/LW, and a player listed as W or F is split evenly over the positions they can play.
+ */
+export const positionShares = (slotLabel, position, eligibility = []) => {
+  if (POSITIONS.includes(slotLabel)) {
+    return [[slotLabel, 1]];
+  }
+  const listed = (position || '').split('/').find(candidate => POSITIONS.includes(candidate));
+  if (listed) {
+    return [[listed, 1]];
+  }
+  const eligible = (eligibility || []).filter(candidate => POSITIONS.includes(candidate) && candidate !== 'G');
+  return eligible.map(candidate => [candidate, 1 / eligible.length]);
 };
 
 // Starters with a game that day, the only players whose points count
@@ -210,18 +220,33 @@ export const pointsByPlayer = (days) => {
 };
 
 /**
- * Counted points by the players' main position: [{ position, points, games }] in POSITIONS order
+ * Counted points by position (positionShares): [{ position, points, games }] in POSITIONS order.
+ * Games are rounded, a W in a flexible slot counts half a game at LW and half at RW.
  */
 export const pointsByPosition = (days) => {
   const totals = Object.fromEntries(POSITIONS.map(position => [position, { position, points: 0, games: 0 }]));
   for (const slot of countedSlots(days)) {
-    const total = totals[primaryPosition(slot.position, slot.eligibility)];
-    if (total) {
-      total.points += slot.points;
-      total.games += slot.games;
+    for (const [position, share] of positionShares(slot.slot, slot.position, slot.eligibility)) {
+      totals[position].points += slot.points * share;
+      totals[position].games += slot.games * share;
     }
   }
-  return POSITIONS.map(position => ({ ...totals[position], points: round(totals[position].points) }));
+  return POSITIONS.map(position => ({
+    ...totals[position],
+    points: round(totals[position].points),
+    games: Math.round(totals[position].games),
+  }));
+};
+
+/**
+ * Games started in each lineup slot (C, LW, F, F/D…) over the days: { [slotLabel]: games }
+ */
+export const startsBySlot = (days) => {
+  const starts = {};
+  for (const slot of countedSlots(days)) {
+    starts[slot.slot] = (starts[slot.slot] || 0) + slot.games;
+  }
+  return starts;
 };
 
 // What fleaflicker counted over the days

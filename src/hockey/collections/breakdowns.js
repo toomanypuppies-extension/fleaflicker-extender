@@ -1,4 +1,4 @@
-import { pointsByPlayer, pointsByPosition, primaryPosition, POSITIONS } from "./boxscores";
+import { pointsByPlayer, pointsByPosition, positionShares, POSITIONS } from "./boxscores";
 
 // Players shown in a chart at first, and named in the tooltip of the rest
 export const TOP_PLAYERS = 12;
@@ -36,10 +36,11 @@ export const positionBreakdown = (days, projection = null) => {
   const scored = pointsByPosition(days || []);
   const projected = Object.fromEntries(POSITIONS.map(position => [position, { points: 0, starts: 0 }]));
   for (const player of projection?.players || []) {
-    const total = projected[primaryPosition(player.position, player.positions)];
-    if (total) {
-      total.points += player.expected;
-      total.starts += player.games;
+    for (const [label, slot] of Object.entries(player.slots || {})) {
+      for (const [position, share] of positionShares(label, player.position, player.positions)) {
+        projected[position].points += slot.expected * share;
+        projected[position].starts += slot.games * share;
+      }
     }
   }
   return scored.map(({ position, points, games }) => ({
@@ -47,7 +48,7 @@ export const positionBreakdown = (days, projection = null) => {
     scored: points,
     games,
     projected: round(projected[position].points),
-    starts: projected[position].starts,
+    starts: Math.round(projected[position].starts),
   }));
 };
 

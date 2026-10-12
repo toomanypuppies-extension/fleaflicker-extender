@@ -13,8 +13,9 @@ const days = [{
 // Player 4 hasn't scored this matchup but is projected to
 const projection = {
   players: [
-    { id: 1, name: 'A', position: 'C', positions: ['C'], expected: 6, games: 2 },
-    { id: 4, name: 'D', position: 'F', positions: ['C', 'LW', 'RW'], expected: 12, games: 3 },
+    { id: 1, name: 'A', position: 'C', positions: ['C'], expected: 6, games: 2, slots: { C: { games: 2, expected: 6 } } },
+    // An F in the flexible F slot counts a third at each forward position
+    { id: 4, name: 'D', position: 'F', positions: ['C', 'LW', 'RW'], expected: 12, games: 3, slots: { F: { games: 3, expected: 12 } } },
     { id: 5, name: 'E', position: 'G', positions: ['G'], expected: 0, games: 0 },
   ],
 };
@@ -31,7 +32,7 @@ test('positions add projected starts to scored ones', () => {
   const positions = positionBreakdown(days, projection);
 
   assert.deepEqual(positions.map(p => [p.position, p.scored, p.projected, p.starts]), [
-    ['C', 5, 18, 5], ['LW', 0, 0, 0], ['RW', 0, 0, 0], ['D', 4, 0, 0], ['G', 0, 0, 0],
+    ['C', 5, 10, 3], ['LW', 0, 4, 1], ['RW', 0, 4, 1], ['D', 4, 0, 0], ['G', 0, 0, 0],
   ]);
 });
 
@@ -55,5 +56,5 @@ test('chart rows stack scored and projected, and fold the rest into one row', ()
   assert.equal(playerChartRows(many, { shown: 22 }).length, 15);
 
   const positionRows = positionChartRows([positionBreakdown(days, projection), positionBreakdown(days)], { stacked: true });
-  assert.deepEqual(positionRows[0].values, [[5, 18], [5, 0]]);
+  assert.deepEqual(positionRows[0].values, [[5, 10], [5, 0]]);
 });

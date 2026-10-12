@@ -133,6 +133,9 @@ test("a team projection uses each day's set lineup, and calls out bench points",
   const bestById = Object.fromEntries(best.players.map(player => [player.id, player]));
   assert.deepEqual([bestById[1].games, bestById[1].benchGames, bestById[3].games, bestById[3].benchGames], [2, 0, 0, 2]);
   assert.equal(best.variance, projection.bestVariance);
+  // Starts are recorded by the slot they fill
+  assert.deepEqual(bestById[1].slots, { C: { games: 2, expected: 6 } });
+  assert.deepEqual(bestById[5].slots, { G: { games: 2, expected: 5 } });
 });
 
 test('win chance', () => {

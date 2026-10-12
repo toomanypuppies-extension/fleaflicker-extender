@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createFakeFlea, startClock, stopClock, settle, setLeague, resetStorage } from './support/fakeFlea.mjs';
 import {
-  convertBoxscore, dayOrdinalAt, dayDate, periodsInRange, loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints,
+  convertBoxscore, dayOrdinalAt, dayDate, periodsInRange, loadTeamDays, pointsByPlayer, pointsByPosition, totalPoints, startsBySlot,
 } from '../src/hockey/collections/boxscores.js';
 
 const MINUTE = 60 * 1000;
@@ -160,25 +160,29 @@ test("box scores that can't be loaded are counted, and the rest still are", asyn
   assert.deepEqual(progress.at(-1), [3, 3]);
 });
 
-test('only starters with a game count, by player and by main position', () => {
+test('only starters with a game count, by player and by the position they filled', () => {
   const day = (lineup, points) => ({ lineup, points });
   const days = [
     day([
-      { group: 'START', playerId: 1, name: 'A', position: 'C/LW', games: 1, points: 5 },
-      { group: 'START', playerId: 2, name: 'B', position: 'D', games: 0, points: 0 },
-      { group: 'BENCH', playerId: 3, name: 'C', position: 'RW', games: 1, points: 9 },
-      { group: 'START', playerId: 4, name: 'G', position: 'G', games: 1, points: -2 },
+      { group: 'START', slot: 'C', playerId: 1, name: 'A', position: 'C/LW', games: 1, points: 5 },
+      { group: 'START', slot: 'D', playerId: 2, name: 'B', position: 'D', games: 0, points: 0 },
+      { group: 'BENCH', slot: 'BN', playerId: 3, name: 'C', position: 'RW', games: 1, points: 9 },
+      { group: 'START', slot: 'G', playerId: 4, name: 'G', position: 'G', games: 1, points: -2 },
     ], 3),
     day([
-      { group: 'START', playerId: 1, name: 'A', position: 'C/LW', games: 1, points: 2.5 },
-      { group: 'START', playerId: 2, name: 'B', position: 'D', games: 1, points: 4 },
-      // Fleaflicker lists some forwards as F or W
-      { group: 'START', playerId: 5, name: 'F', position: 'F', eligibility: ['C', 'LW', 'RW'], games: 1, points: 1 },
-      { group: 'START', playerId: 6, name: 'W', position: 'W', eligibility: ['LW', 'RW'], games: 1, points: 2 },
-    ], 9.5),
+      // In the flexible F slot, a C/LW counts as a C
+      { group: 'START', slot: 'F', playerId: 1, name: 'A', position: 'C/LW', games: 1, points: 2.5 },
+      { group: 'START', slot: 'D', playerId: 2, name: 'B', position: 'D', games: 1, points: 4 },
+      // Fleaflicker lists some forwards as W or F: in an RW slot a W is an RW, in a flexible slot
+      // its points are split over the positions it can play
+      { group: 'START', slot: 'RW', playerId: 6, name: 'W', position: 'W', eligibility: ['LW', 'RW'], games: 1, points: 2 },
+      { group: 'START', slot: 'F/D', playerId: 7, name: 'W2', position: 'W', eligibility: ['LW', 'RW'], games: 1, points: 4 },
+      { group: 'START', slot: 'F', playerId: 5, name: 'F', position: 'F', eligibility: ['C', 'LW', 'RW'], games: 1, points: 3 },
+    ], 15.5),
   ];
 
-  assert.deepEqual(pointsByPlayer(days).map(p => [p.playerId, p.points, p.games]), [[1, 7.5, 2], [2, 4, 1], [6, 2, 1], [5, 1, 1], [4, -2, 1]]);
-  assert.deepEqual(pointsByPosition(days).map(p => [p.position, p.points]), [['C', 8.5], ['LW', 2], ['RW', 0], ['D', 4], ['G', -2]]);
-  assert.equal(totalPoints(days), 12.5);
+  assert.deepEqual(pointsByPlayer(days).map(p => [p.playerId, p.points, p.games]), [[1, 7.5, 2], [2, 4, 1], [7, 4, 1], [5, 3, 1], [6, 2, 1], [4, -2, 1]]);
+  assert.deepEqual(pointsByPosition(days).map(p => [p.position, p.points]), [['C', 8.5], ['LW', 3], ['RW', 5], ['D', 4], ['G', -2]]);
+  assert.deepEqual(startsBySlot(days), { C: 1, G: 1, F: 2, D: 1, RW: 1, 'F/D': 1 });
+  assert.equal(totalPoints(days), 18.5);
 });

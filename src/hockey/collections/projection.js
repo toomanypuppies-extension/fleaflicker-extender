@@ -233,6 +233,8 @@ export const projectTeam = ({
         gameVariance: chance * (spread ** 2 + rate ** 2) - (chance * rate) ** 2,
         // Games in the lineup, and on the bench
         games: 0,
+        // Starts and expected points by the lineup slot they're in: { [label]: { games, expected } }
+        slots: {},
         benchGames: 0,
         expected: 0,
         benchExpected: 0,
@@ -286,16 +288,21 @@ export const projectTeam = ({
     const best = chosen.reduce((total, player) => total + player.gameValue, 0);
     bestVariance += chosen.reduce((total, player) => total + player.gameVariance, 0);
 
-    // Who starts: the lineup as set, or the best one
+    // Who starts and in which slot: the lineup as set, or the best one
     const starting = lineupChoice === 'set'
-      ? starterSlots.map(slot => slot.player).filter(playsLater).map(playerFor)
-      : chosen;
-    const startingIds = new Set(starting.map(player => player.id));
+      ? starterSlots.filter(slot => playsLater(slot.player)).map(slot => ({ player: playerFor(slot.player), label: slot.label }))
+      : lineup
+        .map((index, slotIndex) => (index === null ? null : { player: candidates[index], label: openSlots[slotIndex].label }))
+        .filter(Boolean);
+    const startingIds = new Set(starting.map(({ player }) => player.id));
     const sitting = candidates.filter(player => !startingIds.has(player.id));
 
     let expected = 0;
     let bench = 0;
-    for (const player of starting) {
+    for (const { player, label } of starting) {
+      const slot = player.slots[label] || (player.slots[label] = { games: 0, expected: 0 });
+      slot.games += 1;
+      slot.expected += player.gameValue;
       player.games += 1;
       player.expected += player.gameValue;
       expected += player.gameValue;
