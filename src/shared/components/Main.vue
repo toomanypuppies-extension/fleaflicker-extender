@@ -107,6 +107,11 @@ export default defineComponent({
   --va-input-wrapper-border-color: color-mix(in srgb, var(--themeAccentColor) 50%, transparent);
 }
 
+/* Vuestic's pale border disappears on the light theme's background, so an unchecked box couldn't be seen */
+.mainContent .va-checkbox__square {
+  border-color: var(--themeAccentColor);
+}
+
 .mainContent.darkTheme .va-checkbox__square {
   color: #e2e2e2 !important;
   background: #333333 !important;
