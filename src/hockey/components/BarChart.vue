@@ -48,7 +48,7 @@
     <div v-else class="plot" @pointerleave="hovered = null">
       <div v-for="row in rows" :key="row.key" class="row">
         <span class="rowLabel" :title="row.label">{{ row.label }}</span>
-        <span class="track">
+        <span class="track" :class="{ hasNegative: domain.min < 0 }">
           <span class="baseline" :style="{ left: percent(zeroAt) }"></span>
           <span v-for="(value, index) in row.values" :key="index" class="barLine">
             <template v-for="(segment, part) in segments(value)" :key="part">
@@ -178,6 +178,8 @@ export default {
 .barChart {
   margin: 0;
   min-width: 0;
+  // Rows switch to labels above bars when the chart itself is narrow, wherever it's placed
+  container-type: inline-size;
 }
 
 .chartHeader {
@@ -246,6 +248,18 @@ export default {
   gap: 0.5em;
 }
 
+// Narrow charts: each label over its bars, so the bars get the full width
+@container (max-width: 520px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.15em;
+  }
+
+  .rowLabel {
+    font-size: 0.85em;
+  }
+}
+
 .rowLabel {
   font-size: 0.9em;
   overflow: hidden;
@@ -259,7 +273,13 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  margin: 0 3.5em;
+  // Room past the bar ends for their values: right of positive bars, and left of negative ones
+  // only when the chart has them
+  margin: 0 3.5em 0 0;
+
+  &.hasNegative {
+    margin-left: 3.5em;
+  }
 }
 
 .baseline {
