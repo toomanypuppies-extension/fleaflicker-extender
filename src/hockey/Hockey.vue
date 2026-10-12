@@ -257,7 +257,7 @@ export default {
     drops() {
       return latestDrops(this.activityItems);
     },
-    // Like "4 of 7 adds left", once the activity back to the matchup's start has been read
+    // { left, limit } adds this matchup, once the activity back to the matchup's start has been read
     myAddsLeft() {
       const myTeamId = this.$store.state.myTeamId;
       const limit = acquisitionLimit(this.league?.settings);
@@ -266,7 +266,7 @@ export default {
         return null;
       }
       const left = Math.max(limit - countAcquisitions(this.activityItems, myTeamId, period), 0);
-      return `${left} of ${limit} adds left`;
+      return { left, limit };
     },
     // Players with availability and last season's stats, for the table
     tablePlayers() {

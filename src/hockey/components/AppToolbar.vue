@@ -21,7 +21,10 @@
           <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
         </select>
       </label>
-      <span v-if="addsLeft" class="addsLeft" title="Your team's adds and claims left this matchup">{{ addsLeft }}</span>
+      <span v-if="addsLeft" class="addsLeft" title="Your team's adds and claims left this matchup">
+        <span class="addsLong">{{ addsLeft.left }} of {{ addsLeft.limit }} adds left</span>
+        <span class="addsShort" aria-hidden="true">{{ addsLeft.left }}/{{ addsLeft.limit }} adds</span>
+      </span>
       <span class="freshness" :title="updatedTitle">{{ freshness }}</span>
       <button type="button" class="toolbarButton" :disabled="loading" aria-label="Refresh"
         title="Check fleaflicker for changes now" @click="$emit('refresh')">
@@ -51,8 +54,8 @@ export default {
     loading: Boolean,
     // When the players' stats were fetched
     updatedAt: Number,
-    // Your team's adds left this matchup, like "4 of 7 adds left"
-    addsLeft: String,
+    // Your team's adds left this matchup: { left, limit }
+    addsLeft: Object,
     // The league's teams, to pick yours from
     teams: { type: Array, default: () => [] },
   },
@@ -140,9 +143,17 @@ export default {
 
 .toolbarActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.25em;
+  min-width: 0;
+  max-width: 100%;
   margin-left: auto;
+}
+
+.addsShort {
+  display: none;
 }
 
 .myTeam {
@@ -230,19 +241,33 @@ export default {
     white-space: nowrap;
   }
 
-  .myTeam select {
-    max-width: 9em;
+  .myTeam {
+    margin-right: 0.25em;
   }
 
-  .addsLeft {
-  font-weight: 700;
-  padding: 0.15em 0.6em;
-  border-radius: 1em;
-  background: var(--teamSecondaryColor30Opacity);
-  white-space: nowrap;
-}
+  .myTeam select {
+    max-width: 7.5em;
+  }
 
-.freshness {
+  .toolbarButton {
+    padding: 0 0.4em;
+  }
+
+  // "4/7 adds" instead of "4 of 7 adds left"; the long one stays for screen readers
+  .addsLong {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .addsShort {
+    display: inline;
+  }
+
+  .freshness {
     display: none;
   }
 }
