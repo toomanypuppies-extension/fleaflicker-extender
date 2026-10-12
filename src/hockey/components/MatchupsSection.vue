@@ -52,6 +52,15 @@
             </div>
             <span class="status">{{ statusLabel(group) }}</span>
           </div>
+          <div v-if="projectionFor(group)" class="winBar" role="img"
+            :aria-label="`Win chance: ${group.teams[0].name} ${projectionFor(group).chances[0]}, ${group.teams[1].name} ${projectionFor(group).chances[1]}`">
+            <span :style="{ width: percent(projectionFor(group).chance), background: chartColors[0] }"></span>
+            <span :style="{ width: percent(1 - projectionFor(group).chance), background: chartColors[1] }"></span>
+          </div>
+          <div v-if="projectionFor(group)" class="winLabels" aria-hidden="true">
+            <span>{{ projectionFor(group).chances[0] }}</span>
+            <span>{{ projectionFor(group).chances[1] }}</span>
+          </div>
           <div class="matchupFooter">
             <span v-if="projectionFor(group)">
               Projected <strong>{{ projectionFor(group).finals[0] }}</strong> to <strong>{{ projectionFor(group).finals[1] }}</strong>
@@ -118,6 +127,9 @@ export default {
       projectionMethod: state => state.projectionMethod,
       projectionLineup: state => state.projectionLineup,
     }),
+    chartColors() {
+      return this.$store.getters.chartColors;
+    },
     periods() {
       return this.league.scoreboard?.periods || [];
     },
@@ -216,6 +228,9 @@ export default {
         projections[group.matchup.gameId] = {
           finals: [scores[0] + firstExpected, scores[1] + secondExpected].map(score => score.toFixed(1)),
           winLabel: `${group.teams[leader].name} ${formatChance(Math.max(chance, 1 - chance), true)} to win`,
+          // The first team's, for the bar
+          chance,
+          chances: [formatChance(chance, true), formatChance(1 - chance, true)],
           // Set lineups were asked for but aren't loaded
           fallback: this.projectionLineup === 'set' && !setLineups,
         };
@@ -224,6 +239,9 @@ export default {
     },
   },
   methods: {
+    percent(fraction) {
+      return `${Math.round(fraction * 1000) / 10}%`;
+    },
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
     },
@@ -442,6 +460,32 @@ export default {
     background: #ef5350;
     color: #fff;
   }
+}
+
+.winBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+
+  span {
+    min-width: 2px;
+
+    &:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+
+    &:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+  }
+}
+
+.winLabels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -0.3em;
+  font-size: 0.8em;
+  opacity: 0.85;
 }
 
 .matchupFooter {

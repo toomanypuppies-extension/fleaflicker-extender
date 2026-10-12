@@ -1,5 +1,6 @@
 <template>
   <div class="matchupView">
+    <section class="pageHeader containerColor" aria-label="Matchup">
     <div class="viewHeader">
       <button type="button" class="backButton" @click="$emit('close')">
         <span class="material-icons" aria-hidden="true">arrow_back</span> All matchups
@@ -24,6 +25,7 @@
         <span class="material-icons" aria-hidden="true">chevron_right</span>
       </button>
     </div>
+    </section>
 
     <section class="projectionSection containerColor" aria-labelledby="projectionHeading">
       <div class="sectionHeader">
@@ -517,6 +519,19 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 1em;
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  padding: 0.6em 1em;
+}
+
+// The week pager sits under the title, set off by a hairline
+.pageHeader .weekPager {
+  padding-top: 0.6em;
+  border-top: 1px solid rgba(127, 127, 127, 0.3);
 }
 
 .viewHeader {

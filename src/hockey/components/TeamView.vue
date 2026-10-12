@@ -1,18 +1,17 @@
 <template>
   <div class="teamView">
+    <section class="statusSection containerColor" aria-labelledby="teamHeading">
     <div class="viewHeader">
       <button type="button" class="backButton" @click="$emit('close')">
         <span class="material-icons" aria-hidden="true">arrow_back</span> Back
       </button>
-      <h2>{{ team.name }}</h2>
+      <h2 id="teamHeading">{{ team.name }}</h2>
       <span v-if="teamId === myTeamId" class="badge">You</span>
       <span v-if="teamId === opponentId" class="badge opponentBadge">Your opponent</span>
       <a class="fleaLink" :href="teamLink" :target="fleaTarget" @click="leavingForFleaflicker">
         Team on Fleaflicker <span class="material-icons" aria-hidden="true">open_in_new</span>
       </a>
     </div>
-
-    <section class="statusSection containerColor" aria-label="Status">
       <span class="meta">
         <strong>{{ ordinal(team.rank) }}</strong> of {{ league.teams.length }} · {{ team.record }}<template v-if="team.streak">
         ({{ team.streak }})</template> · PF {{ format(team.pointsFor) }}<template v-if="summary.pointsForRank">
