@@ -164,9 +164,46 @@ test('rosters are fetched once, then only for teams with new activity', async ()
   assert.deepEqual(flea.calls, ['FetchRoster']);
   flea.calls = [];
 
-  // The same activity doesn't fetch it again
+  // The proxy may have served a roster cached from before the move, so it's checked again
+  advanceClock(MINUTE);
+  await rosters(activity);
+  assert.deepEqual(flea.calls, ['FetchRoster']);
+  flea.calls = [];
+
+  // Fetched long enough after the move, the same activity doesn't fetch it again
+  advanceClock(2 * MINUTE);
+  await rosters(activity);
+  flea.calls = [];
   await rosters(activity);
   assert.deepEqual(flea.calls, []);
+});
+
+test('a trade fetches every roster again', async () => {
+  flea.rosters = { [TEAM]: FIXTURES.roster, [OTHER_TEAM]: { groups: [] } };
+  await rosters();
+  flea.calls = [];
+
+  advanceClock(MINUTE);
+  await rosters([{ time: Date.now() - 10 * 1000, kind: ACTIVITY_KINDS.trade, unknownOwnership: true }]);
+
+  assert.equal(flea.callsTo('FetchRoster'), 2);
+});
+
+test("a team's move drops its stored day lineups", async () => {
+  flea.rosters = { [TEAM]: FIXTURES.roster, [OTHER_TEAM]: { groups: [] } };
+  flea.dayRosters[`${TEAM}:10`] = FIXTURES.roster;
+  flea.dayRosters[`${OTHER_TEAM}:10`] = FIXTURES.roster;
+  await rosters();
+  await settle(loadDayRosters(LEAGUE, [TEAM, OTHER_TEAM], [10], { now: Date.now() }));
+  flea.calls = [];
+
+  advanceClock(MINUTE);
+  await rosters([{ teamId: TEAM, time: Date.now() - 10 * 1000, kind: ACTIVITY_KINDS.drop }]);
+  flea.calls = [];
+  const stored = await settle(loadDayRosters(LEAGUE, [TEAM, OTHER_TEAM], [10], { now: Date.now(), fetch: false }));
+
+  assert.deepEqual(Object.keys(stored[TEAM]), []);
+  assert.deepEqual(Object.keys(stored[OTHER_TEAM]), ['10']);
 });
 
 test('rosters are fetched again on a new day, injuries change without activity', async () => {
@@ -230,8 +267,9 @@ test('adds and claims in the matchup period count as acquisitions', () => {
 test('the current matchup from either team', async () => {
   const league = await info();
 
-  assert.deepEqual(currentMatchup(league.scoreboard, 63145), { opponentId: 63134, score: '217', opponentScore: '117', inProgress: true });
-  assert.deepEqual(currentMatchup(league.scoreboard, 63134), { opponentId: 63145, score: '117', opponentScore: '217', inProgress: true });
+  const { gameId } = league.scoreboard.matchups.find(matchup => matchup.homeId === 63145 || matchup.awayId === 63145);
+  assert.deepEqual(currentMatchup(league.scoreboard, 63145), { gameId, opponentId: 63134, score: '217', opponentScore: '117', inProgress: true });
+  assert.deepEqual(currentMatchup(league.scoreboard, 63134), { gameId, opponentId: 63145, score: '117', opponentScore: '217', inProgress: true });
   assert.equal(currentMatchup(league.scoreboard, 1), null);
 });
 
@@ -303,13 +341,13 @@ test("the lineups teams set for each day are kept for a few minutes", async () =
   await settle(loadDayRosters(LEAGUE, [1], [10, 11], { now: now + 20 * MINUTE }));
   assert.equal(flea.callsTo('FetchRoster'), 2);
 });
-
+
 test('places by points for, ties sharing one', () => {
   const teams = [{ id: 1, pointsFor: 100 }, { id: 2, pointsFor: 250.5 }, { id: 3, pointsFor: 100 }, { id: 4, pointsFor: 90 }];
 
   assert.deepEqual(pointsForRanks(teams), { 2: 1, 1: 2, 3: 2, 4: 4 });
 });
-
+
 test('refreshing scores fetches the scoreboard and standings only', async () => {
   await info();
   flea.calls = [];

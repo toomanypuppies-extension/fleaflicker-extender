@@ -72,6 +72,8 @@ const initState = {
   // PROJECTION_METHODS and PROJECTION_LINEUPS keys
   projectionMethod: 'mix',
   projectionLineup: 'best',
+  // Whether projections count day to day (DTD) players as playing, rather than as zero
+  projectionCountsDayToDay: false,
   // Teams compared in the open matchup, empty for the matchup's two teams, and a COMPARE_RANGES key
   compareTeamIds: [],
   compareRange: 'matchup',

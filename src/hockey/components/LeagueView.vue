@@ -10,7 +10,8 @@
         :roster="rosters[openTeam.teamId]" :summary="openTeam" :period="period" :players="players"
         :now="now" :activityItems="activityItems" :activityLoaded="activityLoaded" :activityLoading="loadingActivity"
         :activityError="activityError" :myTeamId="myTeamId" :opponentId="opponentId"
-        @close="openTeamPage(null)" @openPlayer="openPlayer" />
+        :matchup="matchupOf(openTeam.teamId)" @close="openTeamPage(null)" @openPlayer="openPlayer"
+        @openMatchup="openMatchup" />
 
       <MatchupsSection v-else-if="section === 'matchups'" :leagueId="leagueId" :league="league" :rosters="rosters"
         :loadingRosters="loadingRosters" :loadingPlayers="loadingPlayers" :players="players" :schedule="schedule" :now="now"
@@ -27,6 +28,10 @@
                 <p>Open a team for its roster, projections and moves.</p>
               </HelpTip>
             </span>
+            <button v-if="myMatchup" type="button" class="matchupButton" @click="openMatchup(myMatchup.gameId)">
+              Your matchup: vs {{ teamName(myMatchup.opponentId) }}, {{ myMatchup.score }}–{{ myMatchup.opponentScore }}
+              <span class="material-icons" aria-hidden="true">chevron_right</span>
+            </button>
           </div>
           <p v-if="acquisitionLimit === null && !league.settings" class="periodNote">
             The league's add limit couldn't be loaded.
@@ -128,9 +133,12 @@ export default {
     period() {
       return currentPeriod(this.league?.scoreboard, this.now);
     },
+    myMatchup() {
+      return this.myTeamId ? this.matchupOf(this.myTeamId) : null;
+    },
     // Your team's opponent this week, only to tag their roster
     opponentId() {
-      return this.myTeamId ? currentMatchup(this.league?.scoreboard, this.myTeamId)?.opponentId ?? null : null;
+      return this.myMatchup?.opponentId ?? null;
     },
     acquisitionLimit() {
       return acquisitionLimit(this.league?.settings);
@@ -196,6 +204,22 @@ export default {
     },
     openPlayer(playerId) {
       this.$emit('openPlayer', playerId);
+    },
+    // A team's matchup this week, from its side
+    matchupOf(teamId) {
+      return currentMatchup(this.league?.scoreboard, teamId);
+    },
+    teamName(teamId) {
+      return this.league.teams.find(team => team.id === teamId)?.name || 'Team';
+    },
+    // This week's matchup on the Matchups tab, comparing its two teams
+    openMatchup(gameId) {
+      this.setKey('selectedPeriod', null);
+      this.setKey('compareTeamIds', []);
+      this.setKey('openMatchupId', gameId);
+      this.setKey('openTeamId', null);
+      this.setKey('activeTab', 'matchups');
+      this.$el?.scrollTo?.({ top: 0 });
     },
     ordinal,
     format(value) {
@@ -268,6 +292,33 @@ select {
   gap: 0.15em;
 }
 
+
+.matchupButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font: inherit;
+  font-size: 0.9em;
+  color: inherit;
+  background: none;
+  border: 1px solid var(--opponentColor);
+  border-radius: 999px;
+  padding: 0.25em 0.4em 0.25em 0.75em;
+  min-height: 32px;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(127, 127, 127, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
+
+  .material-icons {
+    font-size: 1.2em;
+  }
+}
 
 .periodNote,
 .loading {

@@ -147,6 +147,12 @@ test("a team projection uses each day's set lineup, and calls out bench points",
   // As set, tomorrow P3 is in P1's place
   assert.deepEqual(slotsOn(projection.days[1]), [['C', 3, false], ['C', 2, false], ['G', 5, false]]);
   assert.deepEqual(projection.days[1].sitting.map(player => player.id), [1]);
+
+  // Counting DTD players as playing, P4 (10) takes the open C slot
+  const withDayToDay = projectTeam({ ...options, lineup: 'best', countDayToDay: true });
+  assert.deepEqual(slotsOn(withDayToDay.days[0]), [['C', 2, true], ['C', 4, false], ['G', 5, false]]);
+  assert.deepEqual(withDayToDay.days[0].slots[1].player, { id: 4, name: 'P4', injury: 'DTD', expected: 10 });
+  assert.equal(withDayToDay.players.find(player => player.id === 4).injured, false);
 });
 
 test('win chance', () => {
