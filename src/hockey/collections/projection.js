@@ -192,21 +192,21 @@ const round = (value) => Math.round(value * 100) / 100;
 /**
  * Expected points a team adds over the rest of a matchup period:
  * { expected, bench, best, variance, bestVariance, days: [{ day, date, expected, bench, best, hasLineup, slots, sitting }], players }.
- * Each day's `slots` has every start slot in order: { label, player: { id, name, expected } | null, locked },
+ * Each day's `slots` has every start slot in order: { label, player: { id, name, injury, expected } | null, locked },
  * locked when the player's game has begun, null player when no one with a game is in it. `sitting`
- * is who has a game but doesn't start: [{ id, name, expected }].
+ * is who has a game but doesn't start: [{ id, name, injury, expected }].
  * Only starters' points count: with `lineup` 'best', the players expected to score the most each day,
  * with 'set', the starters in the lineup the team set (PROJECTION_LINEUPS). `bench` is what players
  * with games who don't start are expected to score, `best` what the best lineup would score.
- * Injured players, DTD too, are expected to score nothing. Games that started before `scoreAsOf` are
- * left out, their points are already in the score.
+ * Injured players, DTD too unless `countDayToDay`, are expected to score nothing. Games that started
+ * before `scoreAsOf` are left out, their points are already in the score.
  * @param lineupFor (day) => that day's roster groups, like loadTeamRosters', or null if not known.
  *   The best lineup only needs who's on the roster, so today's roster does for every day.
  * @param playersById the player table's players, for averages
  */
 export const projectTeam = ({
   lineupFor, playersById, startSlots = [], schedule, period, method = DEFAULT_PROJECTION_METHOD, teamGames = {}, scoreAsOf = Date.now(),
-  lineup: lineupChoice = DEFAULT_PROJECTION_LINEUP,
+  lineup: lineupChoice = DEFAULT_PROJECTION_LINEUP, countDayToDay = false,
 }) => {
   if (!period) {
     return { expected: 0, bench: 0, best: 0, variance: 0, days: [], players: [] };
@@ -217,7 +217,7 @@ export const projectTeam = ({
     if (!players.has(rosterPlayer.id)) {
       const player = { ...rosterPlayer, ...playersById.get(rosterPlayer.id) };
       const positions = player.positions || (player.position || '').split('/');
-      const injured = IR_ELIGIBLE_INJURIES.includes(player.injury);
+      const injured = IR_ELIGIBLE_INJURIES.includes(player.injury) && !(countDayToDay && player.injury === 'DTD');
       const rate = pointsPerGame(player, method);
       const chance = injured ? 0 : startRate({ ...player, positions }, teamGames);
       const spread = player.consistency ?? Math.abs(rate) * DEFAULT_SPREAD_RATIO;
@@ -330,7 +330,7 @@ export const projectTeam = ({
       bench += player.gameValue;
     }
 
-    const summary = (player) => ({ id: player.id, name: player.name, expected: round(player.gameValue) });
+    const summary = (player) => ({ id: player.id, name: player.name, injury: player.injury, expected: round(player.gameValue) });
     const slots = allSlots.map((slot, index) => {
       const locked = lockedIn.get(index);
       const start = starting.find(candidate => candidate.index === index);

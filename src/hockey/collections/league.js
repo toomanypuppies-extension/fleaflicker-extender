@@ -90,12 +90,13 @@ const convertScoreboard = (scoreboard) => {
   };
 };
 
-// A team's current opponent and the score, from the team's side: { opponentId, score, opponentScore, inProgress }
+// A team's current matchup from the team's side: { gameId, opponentId, score, opponentScore, inProgress }
 export const currentMatchup = (scoreboard, teamId) => {
   const matchup = scoreboard?.matchups?.find(m => m.awayId === teamId || m.homeId === teamId);
   if (!matchup) return null;
   const home = matchup.homeId === teamId;
   return {
+    gameId: matchup.gameId,
     opponentId: home ? matchup.awayId : matchup.homeId,
     score: home ? matchup.homeScore : matchup.awayScore,
     opponentScore: home ? matchup.awayScore : matchup.homeScore,
@@ -264,10 +265,17 @@ const convertRoster = (roster) => (roster.groups || []).map(group => ({
   }),
 }));
 
-const newestActivityFor = (teamId, activityItems) => Math.max(
+// The team's own moves, and trades and commissioner changes, which don't say which teams they touch
+const touchesTeam = (teamId, item) => item.teamId === teamId || item.unknownOwnership;
+
+const newestActivityFor = (teamId, activityItems, until = Infinity) => Math.max(
   0,
-  ...activityItems.filter(item => item.teamId === teamId).map(item => item.time)
+  ...activityItems.filter(item => touchesTeam(teamId, item) && item.time <= until).map(item => item.time)
 );
+
+// The proxy caches rosters for a minute, so one fetched soon after a move may be from before it.
+// Moves this recent are checked for again on the next load.
+const ROSTER_SETTLE_TIME = 2 * MINUTE;
 
 // Owners can change lineups for today and later days at any time
 const DAY_ROSTER_MAX_AGE = 15 * MINUTE;
@@ -312,23 +320,35 @@ export const loadDayRosters = async (leagueId, teamIds, days, { now = Date.now()
     .map(day => [day, kept[`${teamId}:${day}`].groups]))]));
 };
 
+// After a team's move its stored lineups may have players it no longer has, or lack new ones
+const dropDayRosters = async (leagueId, teamIds) => {
+  const stored = (await getStored('hockey_dayRosters', leagueId)) || {};
+  const kept = Object.fromEntries(Object.entries(stored).filter(([key]) => !teamIds.includes(Number(key.split(':')[0]))));
+  if (Object.keys(kept).length !== Object.keys(stored).length) {
+    await setStored('hockey_dayRosters', kept, leagueId);
+  }
+};
+
 /**
  * Every team's roster, keyed by team id. A team's stored roster is used until the activity log
- * shows a move by that team, or a new day starts (injuries change without any activity).
+ * shows a move by that team (or a trade), or a new day starts (injuries change without any activity).
+ * A move also drops the lineups loadDayRosters stored for the team.
  */
 export const loadTeamRosters = async (leagueId, teamIds, activityItems, { now = Date.now() } = {}) => {
   const stored = (await getStored('hockey_rosters', leagueId)) || {};
   const rosters = { ...stored };
 
+  const moved = teamIds.filter(teamId => stored[teamId] && newestActivityFor(teamId, activityItems) > stored[teamId].activitySeen);
   const outdated = teamIds.filter(teamId => {
     const roster = stored[teamId];
-    return !roster ||
-      easternDay(roster.fetchedAt) !== easternDay(now) ||
-      newestActivityFor(teamId, activityItems) > roster.activitySeen;
+    return !roster || easternDay(roster.fetchedAt) !== easternDay(now) || moved.includes(teamId);
   });
 
   if (outdated.length === 0) {
     return rosters;
+  }
+  if (moved.length) {
+    await dropDayRosters(leagueId, moved);
   }
 
   // One at a time, fleaClient spaces out the calls anyway
@@ -339,7 +359,7 @@ export const loadTeamRosters = async (leagueId, teamIds, activityItems, { now = 
         rosters[teamId] = {
           groups: convertRoster(roster),
           fetchedAt: now,
-          activitySeen: newestActivityFor(teamId, activityItems),
+          activitySeen: newestActivityFor(teamId, activityItems, now - ROSTER_SETTLE_TIME),
         };
       }
     } catch (err) {

@@ -33,7 +33,8 @@
           <h3 id="projectionHeading">{{ phase === 'past' ? 'Result' : 'Projection' }}</h3>
           <HelpTip v-if="phase !== 'past'" label="projections">
             <p>{{ lineups[lineupChoice].description }} {{ methods[method].description }}</p>
-            <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+            <p>Goalies count for the share of their team's games they've started. Injured players count as zero,
+              day to day (DTD) ones too unless DTD players is set to Play.</p>
             <p v-if="phase === 'current'">Games already under way count only what they've scored so far.</p>
             <p>Starts are games in the lineup: so far, plus what's left.</p>
           </HelpTip>
@@ -49,6 +50,13 @@
             <span class="pickerLabel">Points per game</span>
             <select :value="method" @change="setKey('projectionMethod', $event.target.value)">
               <option v-for="(option, key) in methods" :key="key" :value="key">{{ option.label }}</option>
+            </select>
+          </label>
+          <label class="methodPicker">
+            <span class="pickerLabel">DTD players</span>
+            <select :value="dayToDayChoice" @change="setDayToDay($event.target.value)">
+              <option value="sit">Sit</option>
+              <option value="play">Play</option>
             </select>
           </label>
         </div>
@@ -160,6 +168,8 @@
             <p v-else>The best lineup for each day left, as the projection counts it: the players expected to score
               the most. Open slots are ones no one on the roster with a game can fill, room to stream a player.</p>
             <p>Players whose game has begun are locked in, shown in italics. Benched is who has a game but doesn't start.</p>
+            <p>Day to day (DTD) players sit unless the projection's DTD players is set to Play. Those playing are
+              marked DTD.</p>
           </HelpTip>
         </span>
         <span class="rangeButtons" role="group" aria-label="Team">
@@ -191,6 +201,7 @@
                 <template v-if="!day.hasLineup">–</template>
                 <button v-else type="button" class="spotButton" :aria-pressed="isSpotPicked(day.date, slot.label)"
                   :title="plannerCellTitle(day.slots[slotIndex])" @click="toggleSpot(day.date, slot.label)">
+                  <span v-if="day.slots[slotIndex].player?.injury === 'DTD'" class="dtdTag">DTD</span>
                   {{ day.slots[slotIndex].player ? shortName(day.slots[slotIndex].player.name) : 'Open' }}
                 </button>
               </td>
@@ -202,7 +213,8 @@
               <td v-for="day in plannerDays" :key="day.day" class="sittingCell">
                 <template v-for="player in day.sitting" :key="player.id">
                   <button type="button" class="playerButton" :title="`${player.name}, ${format(player.expected)} pts expected`"
-                    @click="$emit('openPlayer', player.id)">{{ shortName(player.name) }}</button>
+                    @click="$emit('openPlayer', player.id)"><span v-if="player.injury === 'DTD'" class="dtdTag">DTD</span>
+                    {{ shortName(player.name) }}</button>
                 </template>
               </td>
             </tr>
@@ -337,6 +349,7 @@ export default {
       compareRange: state => state.compareRange,
       compareTeamIds: state => state.compareTeamIds,
       spotFilters: state => state.spotFilters,
+      countsDayToDay: state => state.projectionCountsDayToDay,
     }),
     teamIds() {
       return this.group.teams.map(team => team.teamId);
@@ -403,7 +416,12 @@ export default {
         method: this.method,
         teamGames: this.teamGames,
         scoreAsOf: this.scoreAsOf,
+        countDayToDay: this.countsDayToDay,
       });
+    },
+    // The DTD players picker's value
+    dayToDayChoice() {
+      return this.countsDayToDay ? 'play' : 'sit';
     },
     // The planner's team's days left
     plannerDays() {
@@ -504,6 +522,9 @@ export default {
     page(delta) {
       this.$emit('page', { teamId: this.teamIds[0], delta });
     },
+    setDayToDay(choice) {
+      this.setKey('projectionCountsDayToDay', choice === 'play');
+    },
     setCompareTeam(index, value) {
       const teams = [...this.compareTeams];
       teams[index] = parseInt(value, 10);
@@ -552,7 +573,8 @@ export default {
     },
     plannerCellTitle(slot) {
       if (!slot.player) return `${slot.label}: open. Select to find players for it`;
-      return `${slot.player.name}, ${slot.locked ? 'game under way' : `${this.format(slot.player.expected)} pts expected`}. Select to find players for it`;
+      const dayToDay = slot.player.injury === 'DTD' ? ' (DTD)' : '';
+      return `${slot.player.name}${dayToDay}, ${slot.locked ? 'game under way' : `${this.format(slot.player.expected)} pts expected`}. Select to find players for it`;
     },
     // A spot is a slot on a day, two C slots the same day are the same spot
     isSpotPicked(date, label) {
@@ -609,8 +631,9 @@ export default {
       this.liveLoadedAt = loadedAt;
       this.loadingLive = false;
     },
-    async loadLineups() {
-      if (!this.remainingDays.length || this.lineupChoice !== 'set' || this.dayLineups) return;
+    // reload brings the lineups up to date, only the ones not stored are fetched again
+    async loadLineups({ reload = false } = {}) {
+      if (!this.remainingDays.length || this.lineupChoice !== 'set' || (this.dayLineups && !reload)) return;
       this.loadingLineups = true;
       const teamIds = [...new Set([...this.teamIds, ...this.compareTeams])];
       this.dayLineups = await loadDayRosters(this.leagueId, teamIds, this.remainingDays, { now: Date.now() });
@@ -655,6 +678,10 @@ export default {
     },
     compareRange() {
       this.loadCompare();
+    },
+    // Refreshed: a team's move drops its stored lineups
+    rosters() {
+      this.loadLineups({ reload: true });
     },
   },
   async mounted() {
@@ -981,6 +1008,13 @@ button.scoreTeam {
   &:focus-visible {
     outline: 2px solid var(--teamSecondaryColor);
   }
+}
+
+.dtdTag {
+  font-size: 0.75em;
+  font-weight: 700;
+  font-style: normal;
+  color: #ef5350;
 }
 
 .spotBar {

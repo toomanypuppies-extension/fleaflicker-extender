@@ -32,6 +32,10 @@
       <p v-if="summary.irEligible.length" class="note">
         Could go on IR: {{ summary.irEligible.map(player => `${player.name} (${player.injury})`).join(', ') }}
       </p>
+      <button v-if="matchup" type="button" class="matchupButton" @click="$emit('openMatchup', matchup.gameId)">
+        This week: vs {{ teamName(matchup.opponentId) }}, {{ matchup.score }}–{{ matchup.opponentScore }}
+        <span class="material-icons" aria-hidden="true">chevron_right</span>
+      </button>
     </section>
 
     <section class="depthSection containerColor" aria-labelledby="depthHeading">
@@ -222,8 +226,10 @@ export default {
     activityError: Boolean,
     myTeamId: Number,
     opponentId: Number,
+    // From currentMatchup, the team's matchup this week
+    matchup: Object,
   },
-  emits: ['close', 'openPlayer'],
+  emits: ['close', 'openPlayer', 'openMatchup'],
   data() {
     return {
       ranges: COMPARE_RANGES,
@@ -313,6 +319,9 @@ export default {
     },
     stats(playerId) {
       return this.playersById.get(playerId);
+    },
+    teamName(teamId) {
+      return this.league.teams.find(team => team.id === teamId)?.name || 'Team';
     },
     cellValue(column, player) {
       if (column.key === 'change') {
@@ -461,6 +470,34 @@ export default {
   font-size: 0.9em;
   opacity: 0.85;
   margin: 0;
+}
+
+.matchupButton {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 0.2em;
+  font: inherit;
+  font-size: 0.9em;
+  color: inherit;
+  background: none;
+  border: 1px solid rgba(127, 127, 127, 0.6);
+  border-radius: 999px;
+  padding: 0.25em 0.4em 0.25em 0.75em;
+  min-height: 32px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--teamSecondaryColor);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--teamSecondaryColor);
+  }
+
+  .material-icons {
+    font-size: 1.2em;
+  }
 }
 
 .stats {

@@ -22,13 +22,21 @@
           <option v-for="(option, key) in methodOptions" :key="key" :value="key">{{ option.label }}</option>
         </select>
       </label>
-      <HelpTip label="projections">
+      <label>
+        <span class="pickerLabel">DTD players</span>
+        <select :value="projectionCountsDayToDay ? 'play' : 'sit'" @change="setKey('projectionCountsDayToDay', $event.target.value === 'play')">
+          <option value="sit">Sit</option>
+          <option value="play">Play</option>
+        </select>
+      </label>
+      <HelpTip label="projections" class="controlsHelp">
         <p>{{ lineupOptions[projectionLineup].description }} {{ methodOptions[projectionMethod].description }}</p>
         <p v-if="projectionLineup === 'set'">
           Your matchup always uses the lineups teams have set for each day. Other matchups use them once you've
           opened their Details, and until then show each team's best lineup, marked "best lineups".
         </p>
-        <p>Goalies count for the share of their team's games they've started. Injured players, day to day included, count as zero.</p>
+        <p>Goalies count for the share of their team's games they've started. Injured players count as zero,
+          day to day (DTD) ones too unless DTD players is set to Play.</p>
       </HelpTip>
     </div>
     <p class="note">{{ weekNote }}</p>
@@ -128,6 +136,7 @@ export default {
       openMatchupId: state => state.openMatchupId,
       projectionMethod: state => state.projectionMethod,
       projectionLineup: state => state.projectionLineup,
+      projectionCountsDayToDay: state => state.projectionCountsDayToDay,
     }),
     chartColors() {
       return this.$store.getters.chartColors;
@@ -230,6 +239,7 @@ export default {
           teamGames,
           scoreAsOf,
           lineup: setLineups ? 'set' : 'best',
+          countDayToDay: this.projectionCountsDayToDay,
         }));
         // Nothing to project once the matchup's games are over
         if (gamesLeft(first) + gamesLeft(second) === 0) continue;
@@ -349,6 +359,10 @@ export default {
       this.loadLineups();
     },
     projectionLineup() {
+      this.loadLineups();
+    },
+    // Refreshed: a team's move drops its stored lineups
+    rosters() {
       this.loadLineups();
     },
   },
@@ -583,6 +597,12 @@ export default {
     width: 100%;
     font-size: 0.9em;
     padding: 0.2em 0.3em;
+  }
+
+  // Beside the first two pickers, the third goes on the next row
+  .controlsHelp {
+    grid-column: 3;
+    grid-row: 1;
   }
 }
 
