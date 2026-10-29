@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createFakeFlea, startClock, stopClock, settle, storage, setLeague } from './support/fakeFlea.mjs';
-import { fleaClient } from '../src/utils/fleaClient.js';
+import { fleaClient, CALLS_PER_WINDOW } from '../src/utils/fleaClient.js';
 import { getActivityToTimeEpochMilli, getLeagueStandings } from '../src/utils/flea.js';
 
 let flea;
@@ -69,4 +69,23 @@ test('calls are spaced out', async () => {
   assert.equal(times.length, 3);
   assert.ok(times[1] - times[0] >= 300);
   assert.ok(times[2] - times[1] >= 300);
+});
+
+test('the extension makes at most CALLS_PER_WINDOW calls a minute', async () => {
+  const times = [];
+  const adapter = fleaClient.defaults.adapter;
+  fleaClient.defaults.adapter = (config) => {
+    times.push(Date.now());
+    return adapter(config);
+  };
+
+  const calls = CALLS_PER_WINDOW + 10;
+  await settle(Promise.all(Array.from({ length: calls }, () => getLeagueStandings('100'))));
+
+  assert.equal(times.length, calls);
+  for (let i = CALLS_PER_WINDOW; i < times.length; i++) {
+    assert.ok(times[i] - times[i - CALLS_PER_WINDOW] >= 60 * 1000, `call ${i} came too soon`);
+  }
+  // Once the first minute's calls are made, the rest wait for the window
+  assert.ok(times[CALLS_PER_WINDOW] - times[CALLS_PER_WINDOW - 1] > 1000);
 });

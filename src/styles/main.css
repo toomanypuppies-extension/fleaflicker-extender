@@ -1,2 +1,9 @@
 @import './fonts.scss';
 @import './images.scss';
+
+/* Dropdowns are teleported to <body>, and vuestic gives them a low inline z-index from its own count of
+   open layers. That puts them behind the extension's panel (z-index 100) and modals (MODAL_Z_INDEX), so a
+   select in Settings opens out of reach. */
+.va-dropdown__content-wrapper {
+  z-index: var(--va-z-index-teleport-overlay, 1000) !important;
+}
