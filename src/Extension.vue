@@ -37,6 +37,7 @@
       expanded: drawerExpanded,
       collapsed: !drawerExpanded,
       resizing: dragging,
+      sideBySide: splitActive,
     }"
     :style="[bindCssVars, splitDrawerStyle]"
   >
@@ -298,6 +299,12 @@ export default {
   // Follows the pointer while the divider is dragged
   &.resizing {
     transition: none;
+  }
+
+  // Beside fleaflicker, the panel is what fixed elements like modals and their backdrops cover, not the
+  // whole window
+  &.sideBySide {
+    contain: layout;
   }
 }
 
