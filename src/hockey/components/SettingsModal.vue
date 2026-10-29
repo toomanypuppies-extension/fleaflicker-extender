@@ -34,6 +34,14 @@
 
       <va-checkbox v-model="darkMode" :color="themeAccentColor" label="Dark mode" />
 
+      <div v-if="inExtension">
+        <va-checkbox v-model="splitScreen" :color="themeAccentColor" label="Split screen" />
+        <p class="hint">
+          Fleaflicker on the left and this on the right, with links to Fleaflicker opening on the left. Drag the line
+          between them to resize. In a window under 1000px wide, this slides over Fleaflicker as usual.
+        </p>
+      </div>
+
       <div>
         <va-checkbox
           v-model="excludeIfNoPoints"
@@ -66,6 +74,7 @@ export default {
   data() {
     return {
       version,
+      inExtension: !process.env.STANDALONE,
     };
   },
   computed: {
@@ -115,6 +124,14 @@ export default {
         this.$store.commit('setKeyValue', { key: 'excludeIfNoPoints', value })
         // Only the players depend on this, the NHL schedule doesn't need refetching
         this.$emit('reloadPlayers')
+      }
+    },
+    splitScreen: {
+      get() {
+        return !!this.$store.state.settings.splitScreen
+      },
+      set(value) {
+        this.$store.commit('setKeyValue', { key: 'settings.splitScreen', value })
       }
     },
     darkMode: {

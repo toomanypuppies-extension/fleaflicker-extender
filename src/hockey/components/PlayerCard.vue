@@ -90,7 +90,7 @@ export default {
       weekStartDates: state => state.weekStartDates
     }),
     fleaTarget() {
-      return process.env.STANDALONE ? '_blank' : '_self';
+      return this.$store.getters.fleaTarget;
     },
     stats() {
       const player = this.selectedPlayer;

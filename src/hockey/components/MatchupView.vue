@@ -345,7 +345,6 @@ export default {
     ...mapState({
       method: state => state.projectionMethod,
       lineupChoice: state => state.projectionLineup,
-      drawerExpanded: state => state.drawerExpanded,
       compareRange: state => state.compareRange,
       compareTeamIds: state => state.compareTeamIds,
       spotFilters: state => state.spotFilters,
@@ -490,7 +489,7 @@ export default {
       }));
     },
     fleaTarget() {
-      return process.env.STANDALONE ? '_blank' : '_self';
+      return this.$store.getters.fleaTarget;
     },
     matchupLink() {
       return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/scores/${this.group.matchup.gameId}`;
@@ -513,11 +512,8 @@ export default {
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
     },
-    // In the extension links open in this tab, so close the panel to show fleaflicker's page
     leavingForFleaflicker() {
-      if (!process.env.STANDALONE && this.drawerExpanded) {
-        this.$store.commit('toggleDrawer');
-      }
+      this.$store.commit('leavingForFleaflicker');
     },
     page(delta) {
       this.$emit('page', { teamId: this.teamIds[0], delta });

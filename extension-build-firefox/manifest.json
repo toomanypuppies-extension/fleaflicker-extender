@@ -1,13 +1,10 @@
 {
   "manifest_version": 3,
-  "version": "0.3.6",
+  "version": "0.5.3",
   "name": "Fleaflicker Extender",
-  "description": "An extension that provides enhanced searching of players in your NHL fleaflicker league.",
-  "permissions": [
-    "storage"
-  ],
+  "description": "Player search, matchup projections, rosters and schedules for your NHL Fleaflicker league.",
   "host_permissions": [
-    "https://winter-inkwell-365019.uc.r.appspot.com/proxy/nhlv2/*",
+    "https://winter-inkwell-365019.uc.r.appspot.com/proxy/*",
     "https://www.fleaflicker.com/api/*"
   ],
   "icons": {
@@ -21,7 +18,13 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "{4a975edb-e455-40d6-bbbf-6ae23dbab404}"
+      "id": "{4a975edb-e455-40d6-bbbf-6ae23dbab404}",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   },
   "content_scripts": [

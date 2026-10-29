@@ -1,7 +1,7 @@
 import { HOCKEY_TEAM_NAME_TO_ABBR, HOCKEY_TEAM_ABBR_TO_COLORS } from '../hockey/constants';
 
-export const getLeagueId = () => {
-  const url = location.href;
+// The league in a fleaflicker or site address, this page's by default
+export const getLeagueId = (url = location.href) => {
   const matches = url.match(/leagues\/\d{1,8}/);
   return matches && matches[0].split("/")[1];
 };
