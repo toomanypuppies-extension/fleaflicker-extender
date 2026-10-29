@@ -250,7 +250,6 @@ export default {
   computed: {
     ...mapState({
       teamRange: state => state.teamRange,
-      drawerExpanded: state => state.drawerExpanded,
     }),
     team() {
       return this.league.teams.find(team => team.id === this.teamId) || { name: 'Team' };
@@ -307,7 +306,7 @@ export default {
       return positionChartRows([positionBreakdown(this.days)]);
     },
     fleaTarget() {
-      return process.env.STANDALONE ? '_blank' : '_self';
+      return this.$store.getters.fleaTarget;
     },
     teamLink() {
       return `https://www.fleaflicker.com/nhl/leagues/${this.leagueId}/teams/${this.teamId}`;
@@ -350,11 +349,8 @@ export default {
     formatDay(time) {
       return new Date(time).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
     },
-    // In the extension links open in this tab, so close the panel to show fleaflicker's page
     leavingForFleaflicker() {
-      if (!process.env.STANDALONE && this.drawerExpanded) {
-        this.$store.commit('toggleDrawer');
-      }
+      this.$store.commit('leavingForFleaflicker');
     },
     async loadDays() {
       const loadId = ++this.loadId;

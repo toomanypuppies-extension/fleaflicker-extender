@@ -4,6 +4,9 @@ import { getLocalStorage, setLocalStorage } from "./utils/storage";
 import { getColors, getLeagueId } from './utils/util';
 import { teamSeriesColors, textColorOn, FALLBACK_COLORS } from './hockey/chartColors';
 
+// The window name of split screen's fleaflicker frame, which fleaflicker links open in
+export const FLEA_FRAME_NAME = 'fleaflickerFrame';
+
 // The app's own colors, when the favorite team's aren't wanted
 export const DEFAULT_THEME_COLORS = { primary: '#17202b', secondary: '#58a6ff' };
 const themeColors = (state) => (state.settings.colorTheme === 'default' ? DEFAULT_THEME_COLORS : getColors(state));
@@ -31,7 +34,15 @@ const initState = {
     darkMode: true,
     // 'default' for the app's own colors (DEFAULT_THEME_COLORS), 'team' for the favorite team's
     colorTheme: 'default',
+    // Extension only: fleaflicker beside the panel instead of under it
+    splitScreen: false,
   },
+  // Split screen's share of the window for fleaflicker, the rest is the panel's
+  splitRatio: 0.5,
+  // With split screen on, fleaflicker shows in a frame, beside the panel when the window is wide enough
+  // (splitActive) and under it like its own page when not. Set by Extension.
+  fleaFramed: false,
+  splitActive: false,
   // A TABS key
   activeTab: 'players',
   openSettings: false,
@@ -86,7 +97,7 @@ const initState = {
 
 // Open dialogs and the open player card aren't saved, so a reload doesn't reopen them.
 // A picked week isn't either, so the League tab opens on the current one.
-const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null, selectedPeriod: null };
+const TRANSIENT_DEFAULTS = { openSettings: false, openHelp: false, selectedPlayer: null, selectedPeriod: null, fleaFramed: false, splitActive: false };
 const TRANSIENT_KEYS = Object.keys(TRANSIENT_DEFAULTS);
 
 // The state for the league in the URL: its saved state over the defaults
@@ -181,11 +192,24 @@ export const store = createStore({
       // We set this immediately since it happens on nav. Otherwise the debounce would prevent the set
       saveState(state);
     },
+    // A fleaflicker link was followed. In the extension it opens in this tab, under the panel, so the panel
+    // closes; in split screen it opens beside it.
+    leavingForFleaflicker(state) {
+      if (!process.env.STANDALONE && state.drawerExpanded && !state.splitActive) {
+        state.drawerExpanded = false;
+        saveState(state);
+      }
+    },
     toggleKeyValue(state, { key }) {
       set(state, key, !get(state, key))
     },
   },
   getters: {
+    // Where fleaflicker links open: a new tab on the site, split screen's frame, or this tab
+    fleaTarget(state) {
+      if (process.env.STANDALONE) return '_blank';
+      return state.fleaFramed ? FLEA_FRAME_NAME : '_self';
+    },
     themeBaseColor(state) {
       return state.settings.darkMode ? "#333333" : "#e2e2e2";
     },

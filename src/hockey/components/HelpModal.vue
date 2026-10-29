@@ -36,6 +36,10 @@
             <va-icon class="material-icons" size="1em">sports_hockey</va-icon>
             tab on its left edge, or press Esc to close it.
           </li>
+          <li>
+            Split screen in Settings puts Fleaflicker beside it instead of under it. Drag the line between them to
+            resize, and links to Fleaflicker open on the left.
+          </li>
         </ul>
       </template>
 

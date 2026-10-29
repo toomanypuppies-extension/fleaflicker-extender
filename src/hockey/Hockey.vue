@@ -20,7 +20,7 @@
   <LeagueView v-else-if="leagueTabs.includes(activeTab)" :section="activeTab" :leagueId="leagueId" :league="league" :players="tablePlayers"
     :leagueLoading="leagueLoading" :loadingPlayers="loading" :schedule="schedule" :now="now" @activityUpdated="setActivityLog" @openPlayer="openPlayerById" />
 
-  <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="toggleDrawer"
+  <PlayerCard :leagueId="leagueId" :teamAbbrToName="teamAbbrToName" @fleaflickerNav="$store.commit('leavingForFleaflicker')"
     @clearSelectedPlayer="clearSelectedPlayer" />
 
   <SettingsModal @reloadPlayers="loadPlayers()" @resetApp="resetApp" />
@@ -250,9 +250,6 @@ export default {
     },
     setKey(key, value) {
       this.$store.commit('setKeyValue', { key, value });
-    },
-    toggleDrawer() {
-      this.$store.commit('toggleDrawer')
     },
     clearSelectedPlayer() {
       this.$store.commit('setKeyValue', { key: 'selectedPlayer', value: null })

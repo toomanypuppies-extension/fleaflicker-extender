@@ -113,3 +113,37 @@ test('filters start on healthy free agents, saved filters get that once, and Cle
   store.commit('clearFilters');
   assert.deepEqual([store.state.ownership, store.state.injurySelections], ['Free Agent', ['HEALTHY']]);
 });
+
+test("fleaflicker links open in split screen's frame, and only close the panel over fleaflicker's page", async () => {
+  storage.reset();
+  setLeague('100');
+  const { store, FLEA_FRAME_NAME } = await import('../src/store.js');
+  store.commit('loadLeagueState');
+  const set = (key, value) => store.commit('setKeyValue', { key, value });
+
+  // The extension: links open in this tab, under the panel
+  set('drawerExpanded', true);
+  assert.equal(store.getters.fleaTarget, '_self');
+  store.commit('leavingForFleaflicker');
+  assert.equal(store.state.drawerExpanded, false);
+
+  // Split screen side by side: the frame, beside the panel
+  set('fleaFramed', true);
+  set('splitActive', true);
+  set('drawerExpanded', true);
+  assert.equal(store.getters.fleaTarget, FLEA_FRAME_NAME);
+  store.commit('leavingForFleaflicker');
+  assert.equal(store.state.drawerExpanded, true);
+
+  // Split screen in a narrow window: the frame, under the panel
+  set('splitActive', false);
+  assert.equal(store.getters.fleaTarget, FLEA_FRAME_NAME);
+  store.commit('leavingForFleaflicker');
+  assert.equal(store.state.drawerExpanded, false);
+
+  // Whether it's showing isn't saved, Extension works it out again
+  await wait(300);
+  store.commit('loadLeagueState');
+  assert.equal(store.state.fleaFramed, false);
+  assert.equal(store.state.splitActive, false);
+});
