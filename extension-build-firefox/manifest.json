@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.5.4",
+  "version": "0.5.5",
   "name": "Fleaflicker Extender",
   "description": "Player search, matchup projections, rosters and schedules for your NHL Fleaflicker league.",
   "host_permissions": [
