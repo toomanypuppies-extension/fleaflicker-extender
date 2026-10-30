@@ -6,8 +6,8 @@
         <span class="material-icons" aria-hidden="true">arrow_back</span> Back
       </button>
       <h2 id="teamHeading">{{ team.name }}</h2>
-      <span v-if="teamId === myTeamId" class="badge">You</span>
-      <span v-if="teamId === opponentId" class="badge opponentBadge">Your opponent</span>
+      <span v-if="teamId === myTeamId" class="teamBadge">You</span>
+      <span v-if="teamId === opponentId" class="teamBadge opponentBadge">Your opponent</span>
       <a class="fleaLink" :href="teamLink" :target="fleaTarget" @click="leavingForFleaflicker">
         Team on Fleaflicker <span class="material-icons" aria-hidden="true">open_in_new</span>
       </a>
@@ -422,7 +422,7 @@ export default {
   }
 }
 
-.badge {
+.teamBadge {
   font-size: 0.75em;
   font-weight: 700;
   padding: 0 0.4em;
