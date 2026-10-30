@@ -13,7 +13,7 @@
       </li>
       <template v-if="stacked">
         <li v-for="(label, part) in partLabels" :key="label">
-          <span class="swatch partSwatch" :class="{ projected: part === 1 }"></span>{{ label }}
+          <span class="swatch partSwatch" :class="{ projectedPart: part === 1 }"></span>{{ label }}
         </li>
       </template>
     </ul>
@@ -46,7 +46,7 @@
     </table>
 
     <div v-else class="plot" @pointerleave="hovered = null">
-      <div v-for="row in rows" :key="row.key" class="row">
+      <div v-for="row in rows" :key="row.key" class="chartRow">
         <span class="rowLabel" :title="row.label">{{ row.label }}</span>
         <span class="track" :class="{ hasNegative: domain.min < 0 }">
           <span class="baseline" :style="{ left: percent(zeroAt) }"></span>
@@ -55,7 +55,7 @@
               <span v-if="segment.value !== 0 || part === 0" class="bar" tabindex="0" role="img"
                 :class="{
                   negative: segment.value < 0,
-                  projected: part === 1,
+                  projectedPart: part === 1,
                   inner: part === 0 && segments(value)[1]?.value > 0,
                   active: isHovered(row, index, part),
                 }"
@@ -67,9 +67,9 @@
           </span>
         </span>
       </div>
-      <div v-if="hovered" class="tooltip" role="status" :style="hovered.position">
+      <div v-if="hovered" class="chartTooltip" role="status" :style="hovered.position">
         <strong>{{ format(hovered.value) }}</strong>
-        <span class="tooltipKey" :class="{ projected: hovered.part === 1 }" :style="{ background: seriesColor(hovered.index) }"></span>
+        <span class="tooltipKey" :class="{ projectedPart: hovered.part === 1 }" :style="{ background: seriesColor(hovered.index) }"></span>
         {{ series[hovered.index].name }} · {{ hovered.row.label }}<template v-if="stacked"> · {{ partLabels[hovered.part].toLowerCase() }}</template>
         <span v-if="hovered.detail" class="tooltipDetail">{{ hovered.detail }}</span>
       </div>
@@ -241,7 +241,7 @@ export default {
   gap: 6px;
 }
 
-.row {
+.chartRow {
   display: grid;
   grid-template-columns: minmax(4em, 13em) minmax(0, 1fr);
   align-items: center;
@@ -250,7 +250,7 @@ export default {
 
 // Narrow charts: each label over its bars, so the bars get the full width
 @container (max-width: 520px) {
-  .row {
+  .chartRow {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.15em;
   }
@@ -327,7 +327,7 @@ export default {
   pointer-events: none;
 }
 
-.tooltip {
+.chartTooltip {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -362,15 +362,15 @@ export default {
   border-radius: 0;
 }
 
-.bar.projected {
+.bar.projectedPart {
   border-left: 2px solid var(--themeBaseColor);
   background-clip: padding-box;
 }
 
 // Projected points: the series' color, lighter, so the scored part reads first
-.bar.projected,
-.swatch.projected,
-.tooltipKey.projected {
+.bar.projectedPart,
+.swatch.projectedPart,
+.tooltipKey.projectedPart {
   opacity: 0.45;
 }
 

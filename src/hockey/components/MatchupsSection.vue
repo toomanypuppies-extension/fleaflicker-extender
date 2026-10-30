@@ -52,8 +52,8 @@
             <div v-for="(team, index) in group.teams" :key="team.teamId" class="side" :class="{ right: index === 1 }">
               <span class="sideName">
                 <span class="teamName">{{ team.name }}</span>
-                <span v-if="team.teamId === myTeamId" class="badge">You</span>
-                <span v-if="team.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
+                <span v-if="team.teamId === myTeamId" class="teamBadge">You</span>
+                <span v-if="team.teamId === opponentId" class="teamBadge opponentBadge">Your opponent</span>
               </span>
               <span class="sideScore">{{ phase === 'future' ? '–' : scoreFor(group, index) ?? '–' }}</span>
             </div>
@@ -472,7 +472,7 @@ export default {
   opacity: 0.7;
 }
 
-.badge {
+.teamBadge {
   font-size: 0.75em;
   font-weight: 700;
   padding: 0 0.4em;

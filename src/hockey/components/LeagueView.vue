@@ -44,8 +44,8 @@
               :title="`Open ${summary.name}`" @click="openTeamPage(summary.teamId)">
               <span class="cardTitle">
                 <span class="teamName">{{ summary.name }}</span>
-                <span v-if="summary.teamId === myTeamId" class="badge">You</span>
-                <span v-if="summary.teamId === opponentId" class="badge opponentBadge">Your opponent</span>
+                <span v-if="summary.teamId === myTeamId" class="teamBadge">You</span>
+                <span v-if="summary.teamId === opponentId" class="teamBadge opponentBadge">Your opponent</span>
                 <span class="material-icons openIcon" aria-hidden="true">chevron_right</span>
               </span>
               <span class="cardMeta standing">
@@ -389,7 +389,7 @@ select {
   opacity: 0.7;
 }
 
-.badge {
+.teamBadge {
   flex: none;
   font-size: 0.75em;
   font-weight: 700;
